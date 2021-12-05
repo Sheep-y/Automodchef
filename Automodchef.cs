@@ -4,6 +4,8 @@ using System.IO;
 using System.Reflection;
 using HarmonyLib;
 using static System.Reflection.BindingFlags;
+using System.Collections.Generic;
+using UnityEngine;
 
 namespace Automodchef {
    public static class Automodchef {
@@ -50,38 +52,49 @@ namespace Automodchef {
    }
 
    public class Config {
+      public int config_version = 20211205;
       public bool skip_intro = true;
       public bool skip_spacebar = true;
+      public bool efficiency_log = true;
       public bool disable_analytics = true;
 
       internal static void Load ( string path ) { try {
          if ( ! File.Exists( path ) ) { Create( path ); return; }
          Log.Info( "Loading " + path );
-         foreach ( var s in File.ReadAllLines( path ) ) {
-            var split = s.Split( new char[]{ '=' }, 2 );
+         var conf = Patches.config;
+         foreach ( var line in File.ReadAllLines( path ) ) {
+            var split = line.Split( new char[]{ '=' }, 2 );
             if ( split.Length != 2 ) continue;
             var prop = typeof( Config ).GetField( split[ 0 ].Trim() );
             if ( prop == null ) { Log.Warn( "Unknown field: " + split[ 0 ] ); continue; }
             var val = split[1].Trim();
             if ( val.Length > 1 && val.StartsWith( "\"" ) && val.EndsWith( "\"" ) ) val = val.Substring( 1, val.Length - 2 );
             switch ( prop.FieldType.FullName ) {
+               case "System.SByte" : case "System.Int16"  : case "System.Int32"  : case "System.Int64"  :
+               case "System.Byte"  : case "System.UInt16" : case "System.UInt32" : case "System.UInt64" :
+                  if ( Int64.TryParse( val, out long ival ) ) prop.SetValue( conf, ival );
+                  break;
+               case "System.String" :
+                  prop.SetValue( conf, val );
+                  break;
                case "System.Boolean" :
                   val = val.ToLowerInvariant();
-                  prop.SetValue( Patches.config, val == "yes" || val == "1" || val == "true" );
+                  prop.SetValue( conf, val == "yes" || val == "1" || val == "true" );
                   break;
                default :
                   Log.Warn( $"Unexpected field type {prop.FieldType} of {split[0]}" );
                   break;
             }
-            Log.Info( $"{prop.Name} = " + prop.GetValue(Patches.config) );
          }
+         foreach ( var prop in typeof( Config ).GetFields() )
+            Log.Info( prop.Name + " = " + prop.GetValue( conf ) );
       } catch ( Exception ex ) { Log.Warn( ex ); } }
 
       private static void Create ( string ini ) { try {
          Log.Info( "Not found, creating " + ini );
          using ( TextWriter tw = File.CreateText( ini ) ) {
-            tw.Write( "[System]ini_version = 20211205\r\nskip_intro = yes\r\nskip_spacebar = yes\r\ndisable_analytics\r\n\r\n" );
-            tw.Write( "[User Interface]\r\n\r\n" );
+            tw.Write( "[System]config_version = 20211205\r\nskip_intro = yes\r\nskip_spacebar = yes\r\ndisable_analytics\r\n\r\n" );
+            tw.Write( "[User Interface]efficiency_log = \r\n\r\n" );
          }
       } catch ( Exception ) { } }
    }
@@ -107,9 +120,49 @@ namespace Automodchef {
             Modder.TryPatch( typeof( SplashScreen ), "Update", postfix: nameof( SplashScreen_Update_SkipSplash ) );
          if ( config.disable_analytics )
             Modder.TryPatch( typeof( AutomachefAnalytics ), "Track", prefix: nameof( Analytics_Disable ) );
+         if ( config.efficiency_log ) {
+            if ( Modder.TryPatch( typeof( EfficiencyMeter ), "GetEfficiency", postfix: nameof( EfficiencyMeter_Calc_Log ) ) ) {
+               Modder.TryPatch( typeof( LevelStatus ), "RenderEvents", postfix: nameof( LevelStatus_RenderEvents_ShowLog ) );
+               Modder.TryPatch( typeof( KitchenEventsLog ), "ToString", postfix: nameof( KitchenLog_ToString_Append ) );
+            }
+         }
          Log.Info( "Game Patched." );
       }
 
+      private static float[] lastEfficiency = new float[]{ 0, 0, 0 };
+      private static List<string> efficiencyLog = new List<string>();
+
+      private static void EfficiencyMeter_Calc_Log ( bool allGoalsFulfilled, int __result, int ___expectedIngredientsUsage, int ___expectedPowerUsage ) { try {
+         float iUsed = IngredientsCounter.GetInstance().GetUsedIngredients();
+         float pUsed = PowerMeter.GetInstance().GetWattsHour();
+         if ( lastEfficiency[0] == __result && lastEfficiency[1] == iUsed && lastEfficiency[2] == pUsed ) return;
+         lastEfficiency = new float[]{ __result, iUsed, pUsed };
+         float iMark = Mathf.Clamp01( ___expectedIngredientsUsage / iUsed );
+         float pMark = Mathf.Clamp01( ___expectedPowerUsage / pUsed );
+         float mark = ( iMark + pMark ) / 2f;
+         efficiencyLog.Clear();
+         efficiencyLog.Add( $"Ingredients Target {___expectedIngredientsUsage} / Used {iUsed}" );
+         efficiencyLog.Add( $"Ingredients Efficiency {iMark:0.00}" );
+         efficiencyLog.Add( $"Power Target {___expectedPowerUsage}Wh / Used {pUsed}Wh" );
+         efficiencyLog.Add( $"Power Efficiency {pMark:0.00}" );
+         efficiencyLog.Add( $"Average Efficiency {mark:0.00}" );
+         if ( ! allGoalsFulfilled ) {
+            efficiencyLog.Add( "Goals failed -0.1" );
+            mark = Mathf.Clamp01( mark - 0.1f );
+         }
+         efficiencyLog.Add( $"Final Efficiency {mark:0.00}² = {__result/100:0.00}" );
+      } catch ( Exception ex ) { Log.Error( ex ); } }
+
+      // Show modded logs even when kitchen has no events
+      private static void LevelStatus_RenderEvents_ShowLog ( LevelStatus __instance, KitchenEventsLog log ) { try {
+         if ( log.GetEventsCount() <= 0 ) __instance.eventsLogTextField.text = log.ToString();
+      } catch ( Exception ex ) { Log.Error( ex ); } }
+
+      private static void KitchenLog_ToString_Append ( ref string __result ) { try {
+         if ( efficiencyLog.Count <= 0 ) return;
+         __result += "\n" + string.Join( "\n", efficiencyLog.ToArray() );
+      } catch ( Exception ex ) { Log.Error( ex ); } }
+      
       //private static void ClassLog ( object __instance ) { Log.Info( __instance?.GetType().FullName ); }
 
       private static void FaderUIController_Awake_SkipSplash ( ref FaderUIController.SplashStateInfo[] ___m_SplashStates ) { try {

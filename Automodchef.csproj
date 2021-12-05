@@ -19,6 +19,10 @@
       <HintPath>C:\Program Files\Epic Games\Automachef\Automachef_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>C:\Program Files\Epic Games\Automachef\Automachef_Data\Managed\UnityEngine.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="UnityEngine.UnityAnalyticsModule">
       <HintPath>C:\Program Files\Epic Games\Automachef\Automachef_Data\Managed\UnityEngine.UnityAnalyticsModule.dll</HintPath>
       <Private>false</Private>
