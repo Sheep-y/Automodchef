@@ -19,12 +19,8 @@
       <HintPath>C:\Program Files\Epic Games\Automachef\Automachef_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="UnityEngine.UIModule">
-      <HintPath>C:\Program Files\Epic Games\Automachef\Automachef_Data\Managed\UnityEngine.UIModule.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="UnityEngine.VideoModule">
-      <HintPath>C:\Program Files\Epic Games\Automachef\Automachef_Data\Managed\UnityEngine.VideoModule.dll</HintPath>
+    <Reference Include="UnityEngine.UnityAnalyticsModule">
+      <HintPath>C:\Program Files\Epic Games\Automachef\Automachef_Data\Managed\UnityEngine.UnityAnalyticsModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>

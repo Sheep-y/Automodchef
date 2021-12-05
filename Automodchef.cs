@@ -52,6 +52,7 @@ namespace Automodchef {
    public class Config {
       public bool skip_intro = true;
       public bool skip_spacebar = true;
+      public bool disable_analytics = true;
 
       internal static void Load ( string path ) { try {
          if ( ! File.Exists( path ) ) { Create( path ); return; }
@@ -79,7 +80,7 @@ namespace Automodchef {
       private static void Create ( string ini ) { try {
          Log.Info( "Not found, creating " + ini );
          using ( TextWriter tw = File.CreateText( ini ) ) {
-            tw.Write( "[Intro]\r\nskip_intro = yes\r\nskip_spacebar = yes\r\n\r\n" );
+            tw.Write( "[System]ini_version = 20211205\r\nskip_intro = yes\r\nskip_spacebar = yes\r\ndisable_analytics\r\n\r\n" );
             tw.Write( "[User Interface]\r\n\r\n" );
          }
       } catch ( Exception ) { } }
@@ -104,6 +105,8 @@ namespace Automodchef {
             Modder.TryPatch( typeof( FaderUIController ), "Awake", nameof( FaderUIController_Awake_SkipSplash ) );
          if ( config.skip_spacebar )
             Modder.TryPatch( typeof( SplashScreen ), "Update", postfix: nameof( SplashScreen_Update_SkipSplash ) );
+         if ( config.disable_analytics )
+            Modder.TryPatch( typeof( AutomachefAnalytics ), "Track", prefix: nameof( Analytics_Disable ) );
          Log.Info( "Game Patched." );
       }
 
@@ -130,6 +133,8 @@ namespace Automodchef {
          Log.Error( ex );
          ___m_bProcessedCloseRequest = false;
       } }
+
+      private static bool Analytics_Disable () { return false; }
 
       private static MethodInfo Method ( this Type type, string method ) { try {
          return Modder.GetPatchSubject( type, method );
