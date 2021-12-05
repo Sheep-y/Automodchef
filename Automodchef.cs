@@ -4,43 +4,92 @@ using System.IO;
 using System.Reflection;
 using HarmonyLib;
 using static System.Reflection.BindingFlags;
+using System.Collections.Generic;
 
-namespace Automodchef
-{
+namespace Automodchef {
    public static class Automodchef {
 
-      public static void Main () { try {
-         Log.CreateNew();
-         AppDomain.CurrentDomain.AssemblyLoad += AsmLoaded;
-         AppDomain.CurrentDomain.UnhandledException += ( sender, e ) => Log.Error( e );
-         Log.Info( "Mod Initiated" );
-         /*
-         var jsonReader = JsonReaderWriterFactory.CreateJsonReader( Encoding.UTF8.GetBytes(@"{ ""Address"": { ""City"": ""New York"" } }"), new System.Xml.XmlDictionaryReaderQuotas() );
-         var root = XElement.Load(jsonReader);
-         using ( TextWriter tw = File.CreateText( "mod.txt" ) ) {
-             tw.WriteLine( root.XPathSelectElement("//Address/City").Value );
-             tw.Flush();
+      public static void Main () {
+         try {
+            Log.CreateNew();
+            AppDomain.CurrentDomain.AssemblyLoad += AsmLoaded;
+            AppDomain.CurrentDomain.UnhandledException += ( sender, e ) => Log.Error( e );
+            Log.Info( "Mod Initiated" );
+         } catch ( Exception ex ) {
+            Log.Error( ex.ToString() );
          }
-         */
-      } catch ( Exception ex ) {
-         Log.Error( ex.ToString() );
-      } }
+      }
 
       private static void AsmLoaded ( object sender, AssemblyLoadEventArgs args ) {
          //Log.Info( args.LoadedAssembly.FullName );
-         if ( args?.LoadedAssembly?.FullName?.StartsWith( "Assembly-CSharp" ) != true ) return;
+         if ( args?.LoadedAssembly?.FullName?.StartsWith( "Assembly-CSharp," ) != true ) return;
          Log.Info( "Game Loaded" );
          AppDomain.CurrentDomain.AssemblyLoad -= AsmLoaded;
          try {
+            LoadConfig();
             Patches.Apply( args.LoadedAssembly );
          } catch ( Exception ex ) {
             Log.Error( ex.ToString() );
          }
       }
 
+      private static void LoadConfig () { try {
+         var ini = Path.Combine( SaveDir, typeof( Automodchef ).Name + ".ini" );
+         if ( ! File.Exists( ini ) ) { CreateConfig( ini ); return; }
+         Log.Info( "Loading " + ini );
+         foreach ( var s in File.ReadAllLines( ini ) ) {
+            var split = s.Split( new char[]{ '=' }, 2 );
+            if ( split.Length != 2 ) continue;
+            var prop = typeof( Config ).GetField( split[ 0 ].Trim() );
+            if ( prop == null ) { Log.Warn( "Unknown field: " + split[ 0 ] ); continue; }
+            var val = split[1].Trim();
+            if ( val.Length > 1 && val.StartsWith( "\"" ) && val.EndsWith( "\"" ) ) val = val.Substring( 1, val.Length - 2 );
+            switch ( prop.FieldType.FullName ) {
+               case "System.Boolean" :
+                  val = val.ToLowerInvariant();
+                  prop.SetValue( Patches.config, val == "yes" || val == "1" || val == "true" );
+                  break;
+               default :
+                  Log.Warn( $"Unexpected field type {prop.FieldType} of {split[0]}" );
+                  break;
+            }
+            Log.Info( $"{prop.Name} = " + prop.GetValue(Patches.config) );
+         }
+      } catch ( Exception ex ) { Log.Warn( ex ); } }
+
+      private static void CreateConfig ( string ini ) { try {
+         Log.Info( "Not found, creating: " + ini );
+         using ( TextWriter tw = File.CreateText( ini ) ) {
+            tw.Write( "[Intro]\r\nskip_intro = yes\r\nskip_spacebar = yes\r\n\r\n" );
+            tw.Write( "[User Interface]\r\n\r\n" );
+         }
+      } catch ( Exception ) { } }
+
+      private static string _SaveDir;
+      internal static string SaveDir { get {
+         if ( _SaveDir != null ) return _SaveDir;
+         var path = System.Environment.GetFolderPath( System.Environment.SpecialFolder.LocalApplicationData );
+         if ( string.IsNullOrEmpty( path ) ) return null;
+         path = Path.Combine( Directory.GetParent( path ).FullName, "LocalLow", "HermesInteractive", "Automachef" );
+         _SaveDir = path;
+         try {
+            if ( ! Directory.Exists( path ) ) {
+               Directory.CreateDirectory( path );
+               if ( ! Directory.Exists( path ) ) _SaveDir = "";
+            }
+         } catch ( Exception _ ) { _SaveDir = ""; }
+         return _SaveDir;
+      } }
+   }
+
+   public class Config {
+      public bool skip_intro = true;
+      public bool skip_spacebar = true;
    }
 
    internal static class Patches {
+
+      internal static Config config = new Config();
 
       internal static void Apply ( Assembly game ) {
          /*
@@ -53,8 +102,10 @@ namespace Automodchef
             } catch ( AmbiguousMatchException ex ) { }
          }
          */
-         Mod.TryPatch( typeof( FaderUIController ), "Awake", nameof( FaderUIController_Awake_SkipSplash ) );
-         Mod.TryPatch( typeof( SplashScreen ), "Update", postfix: nameof( SplashScreen_Update_SkipSplash ) );
+         if ( config.skip_intro )
+            Modder.TryPatch( typeof( FaderUIController ), "Awake", nameof( FaderUIController_Awake_SkipSplash ) );
+         if ( config.skip_spacebar )
+            Modder.TryPatch( typeof( SplashScreen ), "Update", postfix: nameof( SplashScreen_Update_SkipSplash ) );
          Log.Info( "Game Patched." );
       }
 
@@ -83,11 +134,11 @@ namespace Automodchef
       } }
 
       private static MethodInfo Method ( this Type type, string method ) { try {
-         return Mod.GetPatchSubject( type, method );
+         return Modder.GetPatchSubject( type, method );
       } catch ( Exception ex ) { Log.Warn( ex ); return null; } }
    }
 
-   internal static class Mod {
+   internal static class Modder {
 
       internal static Type Code = typeof( Patches );
       internal static Harmony harmony = new Harmony( "Automodchef" );
@@ -125,18 +176,18 @@ namespace Automodchef
    
    // TODO: Replace with HarmonyX logger
    internal static class Log {
-      private static string LogPath = "mod.txt";
-      internal static void CreateNew () {
+      private static string LogPath = Path.Combine( Automodchef.SaveDir, typeof( Automodchef ).Name + ".log" );
+      internal static void CreateNew () { try {
          using ( TextWriter tw = File.CreateText( LogPath ) ) {
              tw.WriteLine( $"{DateTime.Now:u} Automodchef initiated" );
              tw.Flush();
          }
-      }
-      internal static void Error ( object msg ) { try { Write( Timestamp( "ERROR " + msg ) ); } catch ( Exception ) { } }
+      } catch ( Exception ) { } }
+      internal static void Error ( object msg ) => Write( Timestamp( "ERROR " + msg ) );
       internal static void Warn ( object msg ) => Write( Timestamp( "WARN " + msg ) );
       //internal static void Info ( object msg ) { msg = Timestamp( msg ); Task.Run( () => Write( msg ) ); }
       internal static void Info ( object msg ) => Write( Timestamp( msg ) );
-      internal static void Write ( object msg ) { using ( TextWriter tw = File.AppendText( LogPath ) ) tw.WriteLine( msg ); }
+      internal static void Write ( object msg ) { try { using ( TextWriter tw = File.AppendText( LogPath ) ) tw.WriteLine( msg ); } catch ( Exception ) { } }
       private static string Timestamp ( object msg ) => DateTime.Now.ToString( "HH:mm:ss.fff " ) + ( msg ?? "null" );
    }
 }
