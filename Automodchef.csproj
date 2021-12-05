@@ -7,8 +7,20 @@
 
   <ItemGroup>
     <PackageReference Include="HarmonyX" Version="2.6.0" />
-    <Reference Include="Assembly-CSharp" PrivateAssets="All">
+    <Reference Include="Assembly-CSharp">
       <HintPath>C:\Program Files\Epic Games\Automachef\Automachef_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Rewired_Core">
+      <HintPath>C:\Program Files\Epic Games\Automachef\Automachef_Data\Managed\Rewired_Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>C:\Program Files\Epic Games\Automachef\Automachef_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>C:\Program Files\Epic Games\Automachef\Automachef_Data\Managed\UnityEngine.UIModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>

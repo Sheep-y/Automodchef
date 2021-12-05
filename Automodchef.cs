@@ -38,21 +38,26 @@ namespace Automodchef
       }
 
       private static void PatchGame () {
-         Mod.TryPatch( typeof( Mod ), "ToHarmony", nameof( test ) );
-         Mod.TryPatch( typeof( SplashScreen ), "Start", nameof( splash_start_pre ) );
-         Mod.TryPatch( typeof( MainMenu ), "SetScreen", nameof( main_set_pre ) );
+         Mod.TryPatch( typeof( SplashScreen ), "Update", postfix: nameof( SplashScreen_Update_SkipSplash ) );
          Log.Info( "Game Patched." );
       }
 
-      private static void test () { Log.Info( "ToHarmony" ); }
+      private static void SplashScreen_Update_SkipSplash ( SplashScreen __instance, ref bool ___m_bProcessedCloseRequest ) { try {
+         if ( ___m_bProcessedCloseRequest || InputWrapper.GetController() == null ) return;
+         //if ( ControllerInterface.GetInstance() == null ) { Log.Warn( "ControllerInterface not found" ); return; };
+         //if ( ___m_MenuBackground == null )  { Log.Warn( "___m_MenuBackground not found" ); return; };
+         //if ( ___m_MenuRootCanvasGroup == null )  { Log.Warn( "___m_MenuRootCanvasGroup not found" ); return; };
+         ___m_bProcessedCloseRequest = true;
+         typeof( SplashScreen ).Method( "ProceedToMainMenu" ).Invoke( __instance, Array.Empty<object>() );
+         Log.Info( "Skipped Space Press Splash" );
+      } catch ( Exception ex ) {
+         Log.Error( ex );
+         ___m_bProcessedCloseRequest = false;
+      } }
 
-      private static void splash_start_pre () {
-         Log.Info( "Splash Start" );
-      }
-
-      private static void main_set_pre () {
-         Log.Info( "Main SecScreen" );
-      }
+      private static MethodInfo Method ( this Type type, string method ) { try {
+         return Mod.GetPatchSubject( type, method );
+      } catch ( Exception ex ) { Log.Warn( ex ); return null; } }
    }
 
    
@@ -61,7 +66,7 @@ namespace Automodchef
       internal static Type Code = typeof( Automodchef );
       private static Harmony harmony = new Harmony( "Automodchef" );
 
-      private static MethodInfo GetPatchSubject ( Type type, string method ) { try {
+      internal static MethodInfo GetPatchSubject ( Type type, string method ) { try {
          var result = type.GetMethod( method, Public | NonPublic | Instance | Static );
          if ( result == null ) throw new ApplicationException( $"Not found: {type}.{method}" );
          return result;
