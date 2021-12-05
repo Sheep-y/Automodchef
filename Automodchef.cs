@@ -146,19 +146,13 @@ namespace Automodchef {
       private static void LevelManger_Outcome_ResumeLog ( LevelOutcome __result ) => outcome = (int) __result;
       private static void EfficiencyMeter_Calc_Log ( bool allGoalsFulfilled, int __result, int ___expectedIngredientsUsage, int ___expectedPowerUsage ) { try {
          if ( ! ShowEfficiencyLog ) return;
-         float iUsed = IngredientsCounter.GetInstance().GetUsedIngredients();
-         float pUsed = PowerMeter.GetInstance().GetWattsHour();
-         float iMark = Mathf.Clamp01( ___expectedIngredientsUsage / iUsed );
-         float pMark = Mathf.Clamp01( ___expectedPowerUsage / pUsed );
+         float iUsed = IngredientsCounter.GetInstance().GetUsedIngredients(), pUsed = PowerMeter.GetInstance().GetWattsHour();
+         float iMark = Mathf.Clamp01( ___expectedIngredientsUsage / iUsed ), pMark = Mathf.Clamp01( ___expectedPowerUsage / pUsed );
          float mark = ( iMark + pMark ) / 2f;
          efficiencyLog.Clear();
          efficiencyLog.Add( $"Ingredients Quota {___expectedIngredientsUsage} / {iUsed} Spent = {iMark:0.00}" );
          efficiencyLog.Add( $"Power Quota {___expectedPowerUsage}Wh / {pUsed}Wh Spent = {pMark:0.00}" );
-         if ( ! allGoalsFulfilled ) {
-            efficiencyLog.Add( "Goals failed -0.1" );
-            efficiencyLog.Add( $"( Average {mark:0.00} - 0.1 goal failed )² = {__result/100f:0.00}" );
-         } else
-            efficiencyLog.Add( $"( Average {mark:0.00} )² = Final {__result/100f:0.00}" );
+         efficiencyLog.Add( $"( Average {mark:0.00}" + ( allGoalsFulfilled ? "" : " - 0.1 goal failed" ) + " )² = Final {__result/100f:0.00}" );
       } catch ( Exception ex ) { Log.Error( ex ); } }
 
       // Show modded logs even when kitchen has no events
@@ -174,8 +168,8 @@ namespace Automodchef {
             cookedDish.TryGetValue( dish, out int delivered );
             int eI = dish.expectedIngredients, eP = dish.expectedPower, ordered = orderedDish[ dish ], missed = ordered - delivered;
             int missedPowerPenalty = ( dish.expectedPower - dish.expectedPower / 3 ) * missed;
-            __result += $"Quota/{dish.friendlyName} = {eI} solids & {eP}Wh each\n";
-            __result += $"  {ordered-missed}/{ordered} delivered = {eI*ordered-missed} solids & {eP*ordered-missedPowerPenalty}Wh\n";
+            __result += $"Quota/{dish.friendlyName} = {eI} mats & {eP}Wh each\n";
+            __result += $"  {ordered-missed}/{ordered} done = {eI*ordered-missed} mats & {eP*ordered-missedPowerPenalty}Wh\n";
          }
          __result += "\n" + string.Join( "\n", efficiencyLog.ToArray() );
       } catch ( Exception ex ) { Log.Error( ex ); } }
@@ -193,9 +187,6 @@ namespace Automodchef {
 
       private static void SplashScreen_Update_SkipSplash ( SplashScreen __instance, ref bool ___m_bProcessedCloseRequest ) { try {
          if ( ___m_bProcessedCloseRequest || InputWrapper.GetController() == null ) return;
-         //if ( ControllerInterface.GetInstance() == null ) { Log.Warn( "ControllerInterface not found" ); return; };
-         //if ( ___m_MenuBackground == null )  { Log.Warn( "___m_MenuBackground not found" ); return; };
-         //if ( ___m_MenuRootCanvasGroup == null )  { Log.Warn( "___m_MenuRootCanvasGroup not found" ); return; };
          ___m_bProcessedCloseRequest = true;
          typeof( SplashScreen ).Method( "ProceedToMainMenu" ).Invoke( __instance, Array.Empty<object>() );
          Log.Info( "Skipped Space Press Splash" );
@@ -257,7 +248,7 @@ namespace Automodchef {
              tw.Flush();
          }
       } catch ( Exception ) { } }
-      internal static void Error ( Exception msg ) => Write( Timestamp( "ERROR " + msg + "\n" + msg.StackTrace ) );
+      internal static void Error ( Exception msg ) => Write( Timestamp( "ERROR " + msg ) );
       internal static void Error ( object msg ) => Write( Timestamp( "ERROR " + msg ) );
       internal static void Warn ( object msg ) => Write( Timestamp( "WARN " + msg ) );
       //internal static void Info ( object msg ) { msg = Timestamp( msg ); Task.Run( () => Write( msg ) ); }
