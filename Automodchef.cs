@@ -4,7 +4,6 @@ using System.IO;
 using System.Reflection;
 using HarmonyLib;
 using static System.Reflection.BindingFlags;
-using System.Collections.Generic;
 
 namespace Automodchef {
    public static class Automodchef {
@@ -26,44 +25,12 @@ namespace Automodchef {
          Log.Info( "Game Loaded" );
          AppDomain.CurrentDomain.AssemblyLoad -= AsmLoaded;
          try {
-            LoadConfig();
+            Config.Load( Path.Combine( SaveDir, typeof( Automodchef ).Name + ".ini" ) );
             Patches.Apply( args.LoadedAssembly );
          } catch ( Exception ex ) {
             Log.Error( ex.ToString() );
          }
       }
-
-      private static void LoadConfig () { try {
-         var ini = Path.Combine( SaveDir, typeof( Automodchef ).Name + ".ini" );
-         if ( ! File.Exists( ini ) ) { CreateConfig( ini ); return; }
-         Log.Info( "Loading " + ini );
-         foreach ( var s in File.ReadAllLines( ini ) ) {
-            var split = s.Split( new char[]{ '=' }, 2 );
-            if ( split.Length != 2 ) continue;
-            var prop = typeof( Config ).GetField( split[ 0 ].Trim() );
-            if ( prop == null ) { Log.Warn( "Unknown field: " + split[ 0 ] ); continue; }
-            var val = split[1].Trim();
-            if ( val.Length > 1 && val.StartsWith( "\"" ) && val.EndsWith( "\"" ) ) val = val.Substring( 1, val.Length - 2 );
-            switch ( prop.FieldType.FullName ) {
-               case "System.Boolean" :
-                  val = val.ToLowerInvariant();
-                  prop.SetValue( Patches.config, val == "yes" || val == "1" || val == "true" );
-                  break;
-               default :
-                  Log.Warn( $"Unexpected field type {prop.FieldType} of {split[0]}" );
-                  break;
-            }
-            Log.Info( $"{prop.Name} = " + prop.GetValue(Patches.config) );
-         }
-      } catch ( Exception ex ) { Log.Warn( ex ); } }
-
-      private static void CreateConfig ( string ini ) { try {
-         Log.Info( "Not found, creating: " + ini );
-         using ( TextWriter tw = File.CreateText( ini ) ) {
-            tw.Write( "[Intro]\r\nskip_intro = yes\r\nskip_spacebar = yes\r\n\r\n" );
-            tw.Write( "[User Interface]\r\n\r\n" );
-         }
-      } catch ( Exception ) { } }
 
       private static string _SaveDir;
       internal static string SaveDir { get {
@@ -85,6 +52,37 @@ namespace Automodchef {
    public class Config {
       public bool skip_intro = true;
       public bool skip_spacebar = true;
+
+      internal static void Load ( string path ) { try {
+         if ( ! File.Exists( path ) ) { Create( path ); return; }
+         Log.Info( "Loading " + path );
+         foreach ( var s in File.ReadAllLines( path ) ) {
+            var split = s.Split( new char[]{ '=' }, 2 );
+            if ( split.Length != 2 ) continue;
+            var prop = typeof( Config ).GetField( split[ 0 ].Trim() );
+            if ( prop == null ) { Log.Warn( "Unknown field: " + split[ 0 ] ); continue; }
+            var val = split[1].Trim();
+            if ( val.Length > 1 && val.StartsWith( "\"" ) && val.EndsWith( "\"" ) ) val = val.Substring( 1, val.Length - 2 );
+            switch ( prop.FieldType.FullName ) {
+               case "System.Boolean" :
+                  val = val.ToLowerInvariant();
+                  prop.SetValue( Patches.config, val == "yes" || val == "1" || val == "true" );
+                  break;
+               default :
+                  Log.Warn( $"Unexpected field type {prop.FieldType} of {split[0]}" );
+                  break;
+            }
+            Log.Info( $"{prop.Name} = " + prop.GetValue(Patches.config) );
+         }
+      } catch ( Exception ex ) { Log.Warn( ex ); } }
+
+      private static void Create ( string ini ) { try {
+         Log.Info( "Not found, creating " + ini );
+         using ( TextWriter tw = File.CreateText( ini ) ) {
+            tw.Write( "[Intro]\r\nskip_intro = yes\r\nskip_spacebar = yes\r\n\r\n" );
+            tw.Write( "[User Interface]\r\n\r\n" );
+         }
+      } catch ( Exception ) { } }
    }
 
    internal static class Patches {
