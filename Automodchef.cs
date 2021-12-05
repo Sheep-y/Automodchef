@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.IO;
 using System.Reflection;
 using HarmonyLib;
@@ -26,21 +27,47 @@ namespace Automodchef
       } }
 
       private static void AsmLoaded ( object sender, AssemblyLoadEventArgs args ) {
-         // Log.Info( args.LoadedAssembly.FullName );
-         if ( args?.LoadedAssembly?.FullName?.StartsWith( "Assembly-CSharp," ) != true ) return;
+         //Log.Info( args.LoadedAssembly.FullName );
+         if ( args?.LoadedAssembly?.FullName?.StartsWith( "Assembly-CSharp" ) != true ) return;
          Log.Info( "Game Loaded" );
          AppDomain.CurrentDomain.AssemblyLoad -= AsmLoaded;
          try {
-            PatchGame();
+            Patches.Apply( args.LoadedAssembly );
          } catch ( Exception ex ) {
             Log.Error( ex.ToString() );
          }
       }
 
-      private static void PatchGame () {
+   }
+
+   internal static class Patches {
+
+      internal static void Apply ( Assembly game ) {
+         /*
+         foreach ( var cls in game.GetTypes() ) {
+            if ( ! cls.IsSubclassOf( typeof( MonoBehaviour ) ) ) continue;
+            if ( cls.FullName.StartsWith( "UnityEngine" ) ) continue;
+            try {
+               var m = cls.GetMethod( "Awake", Public | NonPublic | Instance );
+               if ( m != null ) Mod.TryPatch( m, nameof( ClassLog ) );
+            } catch ( AmbiguousMatchException ex ) { }
+         }
+         */
+         Mod.TryPatch( typeof( FaderUIController ), "Awake", nameof( FaderUIController_Awake_SkipSplash ) );
          Mod.TryPatch( typeof( SplashScreen ), "Update", postfix: nameof( SplashScreen_Update_SkipSplash ) );
          Log.Info( "Game Patched." );
       }
+
+      //private static void ClassLog ( object __instance ) { Log.Info( __instance?.GetType().FullName ); }
+
+      private static void FaderUIController_Awake_SkipSplash ( ref FaderUIController.SplashStateInfo[] ___m_SplashStates ) { try {
+         if ( ___m_SplashStates == null || ___m_SplashStates.Length < 1 || ___m_SplashStates[0].m_AnimToPlay != "Unity" ) return;
+         if ( ! ___m_SplashStates.Any( e => e.m_AnimToPlay == "LoadStartScreen" ) ) return;
+         Log.Info( "Skipping Splash Screens" );
+         ___m_SplashStates = ___m_SplashStates.Where( e => e.m_AnimToPlay == "LoadStartScreen" ).ToArray();
+         ___m_SplashStates[0].m_TimeInState = 0.01f;
+         // [ { "Unity, 1, False }, { "HermesInteractive, 2, False }, { "Team 17, 4, True }, { "Legal, 3, False }, { "LoadStartScreen", 2, False } ]
+      } catch ( Exception ex ) { Log.Error( ex ); } }
 
       private static void SplashScreen_Update_SkipSplash ( SplashScreen __instance, ref bool ___m_bProcessedCloseRequest ) { try {
          if ( ___m_bProcessedCloseRequest || InputWrapper.GetController() == null ) return;
@@ -60,11 +87,10 @@ namespace Automodchef
       } catch ( Exception ex ) { Log.Warn( ex ); return null; } }
    }
 
-   
    internal static class Mod {
 
-      internal static Type Code = typeof( Automodchef );
-      private static Harmony harmony = new Harmony( "Automodchef" );
+      internal static Type Code = typeof( Patches );
+      internal static Harmony harmony = new Harmony( "Automodchef" );
 
       internal static MethodInfo GetPatchSubject ( Type type, string method ) { try {
          var result = type.GetMethod( method, Public | NonPublic | Instance | Static );
@@ -111,6 +137,6 @@ namespace Automodchef
       //internal static void Info ( object msg ) { msg = Timestamp( msg ); Task.Run( () => Write( msg ) ); }
       internal static void Info ( object msg ) => Write( Timestamp( msg ) );
       internal static void Write ( object msg ) { using ( TextWriter tw = File.AppendText( LogPath ) ) tw.WriteLine( msg ); }
-      private static string Timestamp ( object msg ) => DateTime.Now.ToString( "HH:mm:ss.fff " ) + msg;
+      private static string Timestamp ( object msg ) => DateTime.Now.ToString( "HH:mm:ss.fff " ) + ( msg ?? "null" );
    }
 }
