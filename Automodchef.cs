@@ -14,7 +14,7 @@ namespace Automodchef {
          try {
             Log.CreateNew();
             AppDomain.CurrentDomain.AssemblyLoad += AsmLoaded;
-            AppDomain.CurrentDomain.UnhandledException += ( sender, e ) => Log.Error( e );
+            AppDomain.CurrentDomain.UnhandledException += ( sender, e ) => Log.Error( e.ExceptionObject );
             Log.Info( "Mod Initiated" );
          } catch ( Exception ex ) {
             Log.Error( ex.ToString() );
@@ -56,6 +56,7 @@ namespace Automodchef {
       public bool skip_intro = true;
       public bool skip_spacebar = true;
       public bool efficiency_log = true;
+      public bool efficiency_log_breakdown = true;
       public bool disable_analytics = true;
 
       internal static void Load ( string path ) { try {
@@ -94,7 +95,7 @@ namespace Automodchef {
          Log.Info( "Not found, creating " + ini );
          using ( TextWriter tw = File.CreateText( ini ) ) {
             tw.Write( "[System]config_version = 20211205\r\nskip_intro = yes\r\nskip_spacebar = yes\r\ndisable_analytics\r\n\r\n" );
-            tw.Write( "[User Interface]efficiency_log = \r\n\r\n" );
+            tw.Write( "[User Interface]efficiency_log = yes\r\nefficiency_log_breakdown = yes\r\n\r\n" );
          }
       } catch ( Exception ) { } }
    }
@@ -111,12 +112,13 @@ namespace Automodchef {
          if ( config.disable_analytics )
             Modder.TryPatch( typeof( AutomachefAnalytics ), "Track", nameof( Analytics_Disable ) );
          if ( config.efficiency_log ) {
-            if ( Modder.TryPatch( typeof( EfficiencyMeter ), "Reset", nameof( EfficiencyMeter_Reset_ClearLog ) ) ) {
-               Modder.TryPatch( typeof( EfficiencyMeter ), "AddOrder", nameof( EfficiencyMeter_AddOrder_Log ) );
-               Modder.TryPatch( typeof( EfficiencyMeter ), "AddDeliveredDish", nameof( EfficiencyMeter_AddDeliveredDish_Log ) );
-            }
+            if ( config.efficiency_log_breakdown )
+               if ( Modder.TryPatch( typeof( EfficiencyMeter ), "Reset", nameof( EfficiencyMeter_Reset_ClearLog ) ) ) {
+                  Modder.TryPatch( typeof( EfficiencyMeter ), "AddOrder", nameof( EfficiencyMeter_AddOrder_Log ) );
+                  Modder.TryPatch( typeof( EfficiencyMeter ), "AddDeliveredDish", nameof( EfficiencyMeter_AddDeliveredDish_Log ) );
+               }
             if ( Modder.TryPatch( typeof( EfficiencyMeter ), "GetEfficiency", postfix: nameof( EfficiencyMeter_Calc_Log ) ) ) {
-
+               Modder.TryPatch( typeof( LevelManager ), "DetermineLevelOutcome", nameof( LevelManger_Outcome_StopLog ), nameof( LevelManger_Outcome_ResumeLog ) );
                Modder.TryPatch( typeof( LevelStatus ), "RenderEvents", postfix: nameof( LevelStatus_RenderEvents_ShowLog ) );
                Modder.TryPatch( typeof( KitchenEventsLog ), "ToString", postfix: nameof( KitchenLog_ToString_Append ) );
             }
@@ -125,49 +127,57 @@ namespace Automodchef {
       }
 
       #region Efficiency Log
-      private static readonly Dictionary< Dish, int > orderedDish = new Dictionary<Dish, int>();
-      private static readonly Dictionary< Dish, int > cookedDish = new Dictionary<Dish, int>();
+      private static readonly Dictionary< object, int > orderedDish = new Dictionary< object, int >();
+      private static readonly Dictionary< object, int > cookedDish  = new Dictionary< object, int >();
 
       private static void EfficiencyMeter_Reset_ClearLog () { orderedDish.Clear(); cookedDish.Clear(); }
       private static void EfficiencyMeter_AddOrder_Log ( Dish dish ) => EfficiencyMeter_Dish_Log( orderedDish, dish );
       private static void EfficiencyMeter_AddDeliveredDish_Log ( Dish dish ) => EfficiencyMeter_Dish_Log( cookedDish, dish );
-      private static void EfficiencyMeter_Dish_Log ( Dictionary< Dish, int > log, Dish dish ) {
+      private static void EfficiencyMeter_Dish_Log ( Dictionary< object, int > log, Dish dish ) {
          log.TryGetValue( dish, out int i );
          log[ dish ] = i + 1;
       }
 
-      private static float[] lastEfficiency = new float[]{ 0, 0, 0 };
+      private static int outcome;
       private static readonly List<string> efficiencyLog = new List<string>();
+      private static bool ShowEfficiencyLog => outcome != (int) LevelOutcome.Failure && outcome != (int) LevelOutcome.InProgress;
 
+      private static void LevelManger_Outcome_StopLog () => outcome = (int) LevelOutcome.InProgress;
+      private static void LevelManger_Outcome_ResumeLog ( LevelOutcome __result ) => outcome = (int) __result;
       private static void EfficiencyMeter_Calc_Log ( bool allGoalsFulfilled, int __result, int ___expectedIngredientsUsage, int ___expectedPowerUsage ) { try {
+         if ( ! ShowEfficiencyLog ) return;
          float iUsed = IngredientsCounter.GetInstance().GetUsedIngredients();
          float pUsed = PowerMeter.GetInstance().GetWattsHour();
-         if ( lastEfficiency[0] == __result && lastEfficiency[1] == iUsed && lastEfficiency[2] == pUsed ) return;
-         lastEfficiency = new float[]{ __result, iUsed, pUsed };
          float iMark = Mathf.Clamp01( ___expectedIngredientsUsage / iUsed );
          float pMark = Mathf.Clamp01( ___expectedPowerUsage / pUsed );
          float mark = ( iMark + pMark ) / 2f;
          efficiencyLog.Clear();
-         efficiencyLog.Add( $"Ingredients Target {___expectedIngredientsUsage} / Used {iUsed}" );
-         efficiencyLog.Add( $"Ingredients Efficiency {iMark:0.00}" );
-         efficiencyLog.Add( $"Power Target {___expectedPowerUsage}Wh / Used {pUsed}Wh" );
-         efficiencyLog.Add( $"Power Efficiency {pMark:0.00}" );
-         efficiencyLog.Add( $"Average Efficiency {mark:0.00}" );
+         efficiencyLog.Add( $"Ingredients Quota {___expectedIngredientsUsage} / {iUsed} Spent = {iMark:0.00}" );
+         efficiencyLog.Add( $"Power Quota {___expectedPowerUsage}Wh / {pUsed}Wh Spent = {pMark:0.00}" );
          if ( ! allGoalsFulfilled ) {
             efficiencyLog.Add( "Goals failed -0.1" );
-            mark = Mathf.Clamp01( mark - 0.1f );
-         }
-         efficiencyLog.Add( $"Final Efficiency {mark:0.00}² = {__result/100:0.00}" );
+            efficiencyLog.Add( $"( Average {mark:0.00} - 0.1 goal failed )² = {__result/100f:0.00}" );
+         } else
+            efficiencyLog.Add( $"( Average {mark:0.00} )² = Final {__result/100f:0.00}" );
       } catch ( Exception ex ) { Log.Error( ex ); } }
 
       // Show modded logs even when kitchen has no events
       private static void LevelStatus_RenderEvents_ShowLog ( LevelStatus __instance, KitchenEventsLog log ) { try {
-         if ( log.GetEventsCount() <= 0 ) __instance.eventsLogTextField.text = log.ToString();
+         if ( ShowEfficiencyLog && log.GetEventsCount() <= 0 ) __instance.eventsLogTextField.text = log.ToString();
       } catch ( Exception ex ) { Log.Error( ex ); } }
 
       private static void KitchenLog_ToString_Append ( ref string __result ) { try {
-         if ( efficiencyLog.Count <= 0 ) return;
-         __result += "\n\n" + string.Join( "\n", efficiencyLog.ToArray() );
+         if ( ! ShowEfficiencyLog || efficiencyLog.Count <= 0 ) return;
+         __result += "\n\n";
+         foreach ( var key in orderedDish.Keys ) {
+            var dish = key as Dish;
+            cookedDish.TryGetValue( dish, out int delivered );
+            int eI = dish.expectedIngredients, eP = dish.expectedPower, ordered = orderedDish[ dish ], missed = ordered - delivered;
+            int missedPowerPenalty = ( dish.expectedPower - dish.expectedPower / 3 ) * missed;
+            __result += $"Quota/{dish.friendlyName} = {eI} solids & {eP}Wh each\n";
+            __result += $"  {ordered-missed}/{ordered} delivered = {eI*ordered-missed} solids & {eP*ordered-missedPowerPenalty}Wh\n";
+         }
+         __result += "\n" + string.Join( "\n", efficiencyLog.ToArray() );
       } catch ( Exception ex ) { Log.Error( ex ); } }
       #endregion
 
@@ -237,7 +247,7 @@ namespace Automodchef {
          return new HarmonyMethod( Code.GetMethod( name, Public | NonPublic | Static ) ?? throw new NullReferenceException( name + " not found" ) );
       }
    }
-   
+
    // TODO: Replace with HarmonyX logger
    internal static class Log {
       private static string LogPath = Path.Combine( Automodchef.SaveDir, typeof( Automodchef ).Name + ".log" );
@@ -247,6 +257,7 @@ namespace Automodchef {
              tw.Flush();
          }
       } catch ( Exception ) { } }
+      internal static void Error ( Exception msg ) => Write( Timestamp( "ERROR " + msg + "\n" + msg.StackTrace ) );
       internal static void Error ( object msg ) => Write( Timestamp( "ERROR " + msg ) );
       internal static void Warn ( object msg ) => Write( Timestamp( "WARN " + msg ) );
       //internal static void Info ( object msg ) { msg = Timestamp( msg ); Task.Run( () => Write( msg ) ); }
