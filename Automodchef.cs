@@ -104,24 +104,19 @@ namespace Automodchef {
       internal static Config config = new Config();
 
       internal static void Apply ( Assembly game ) {
-         /*
-         foreach ( var cls in game.GetTypes() ) {
-            if ( ! cls.IsSubclassOf( typeof( MonoBehaviour ) ) ) continue;
-            if ( cls.FullName.StartsWith( "UnityEngine" ) ) continue;
-            try {
-               var m = cls.GetMethod( "Awake", Public | NonPublic | Instance );
-               if ( m != null ) Mod.TryPatch( m, nameof( ClassLog ) );
-            } catch ( AmbiguousMatchException ex ) { }
-         }
-         */
          if ( config.skip_intro )
             Modder.TryPatch( typeof( FaderUIController ), "Awake", nameof( FaderUIController_Awake_SkipSplash ) );
          if ( config.skip_spacebar )
             Modder.TryPatch( typeof( SplashScreen ), "Update", postfix: nameof( SplashScreen_Update_SkipSplash ) );
          if ( config.disable_analytics )
-            Modder.TryPatch( typeof( AutomachefAnalytics ), "Track", prefix: nameof( Analytics_Disable ) );
+            Modder.TryPatch( typeof( AutomachefAnalytics ), "Track", nameof( Analytics_Disable ) );
          if ( config.efficiency_log ) {
+            if ( Modder.TryPatch( typeof( EfficiencyMeter ), "Reset", nameof( EfficiencyMeter_Reset_ClearLog ) ) ) {
+               Modder.TryPatch( typeof( EfficiencyMeter ), "AddOrder", nameof( EfficiencyMeter_AddOrder_Log ) );
+               Modder.TryPatch( typeof( EfficiencyMeter ), "AddDeliveredDish", nameof( EfficiencyMeter_AddDeliveredDish_Log ) );
+            }
             if ( Modder.TryPatch( typeof( EfficiencyMeter ), "GetEfficiency", postfix: nameof( EfficiencyMeter_Calc_Log ) ) ) {
+
                Modder.TryPatch( typeof( LevelStatus ), "RenderEvents", postfix: nameof( LevelStatus_RenderEvents_ShowLog ) );
                Modder.TryPatch( typeof( KitchenEventsLog ), "ToString", postfix: nameof( KitchenLog_ToString_Append ) );
             }
@@ -129,8 +124,20 @@ namespace Automodchef {
          Log.Info( "Game Patched." );
       }
 
+      #region Efficiency Log
+      private static readonly Dictionary< Dish, int > orderedDish = new Dictionary<Dish, int>();
+      private static readonly Dictionary< Dish, int > cookedDish = new Dictionary<Dish, int>();
+
+      private static void EfficiencyMeter_Reset_ClearLog () { orderedDish.Clear(); cookedDish.Clear(); }
+      private static void EfficiencyMeter_AddOrder_Log ( Dish dish ) => EfficiencyMeter_Dish_Log( orderedDish, dish );
+      private static void EfficiencyMeter_AddDeliveredDish_Log ( Dish dish ) => EfficiencyMeter_Dish_Log( cookedDish, dish );
+      private static void EfficiencyMeter_Dish_Log ( Dictionary< Dish, int > log, Dish dish ) {
+         log.TryGetValue( dish, out int i );
+         log[ dish ] = i + 1;
+      }
+
       private static float[] lastEfficiency = new float[]{ 0, 0, 0 };
-      private static List<string> efficiencyLog = new List<string>();
+      private static readonly List<string> efficiencyLog = new List<string>();
 
       private static void EfficiencyMeter_Calc_Log ( bool allGoalsFulfilled, int __result, int ___expectedIngredientsUsage, int ___expectedPowerUsage ) { try {
          float iUsed = IngredientsCounter.GetInstance().GetUsedIngredients();
@@ -160,11 +167,11 @@ namespace Automodchef {
 
       private static void KitchenLog_ToString_Append ( ref string __result ) { try {
          if ( efficiencyLog.Count <= 0 ) return;
-         __result += "\n" + string.Join( "\n", efficiencyLog.ToArray() );
+         __result += "\n\n" + string.Join( "\n", efficiencyLog.ToArray() );
       } catch ( Exception ex ) { Log.Error( ex ); } }
-      
-      //private static void ClassLog ( object __instance ) { Log.Info( __instance?.GetType().FullName ); }
+      #endregion
 
+      #region Skip Splash
       private static void FaderUIController_Awake_SkipSplash ( ref FaderUIController.SplashStateInfo[] ___m_SplashStates ) { try {
          if ( ___m_SplashStates == null || ___m_SplashStates.Length < 1 || ___m_SplashStates[0].m_AnimToPlay != "Unity" ) return;
          if ( ! ___m_SplashStates.Any( e => e.m_AnimToPlay == "LoadStartScreen" ) ) return;
@@ -186,6 +193,7 @@ namespace Automodchef {
          Log.Error( ex );
          ___m_bProcessedCloseRequest = false;
       } }
+      #endregion
 
       private static bool Analytics_Disable () { return false; }
 
