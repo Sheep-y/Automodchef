@@ -74,12 +74,27 @@ namespace Automodchef {
             Modder.TryPatch( typeof( SplashScreen ), "Awake", nameof( SplashScreen_Awake_DumpCsv ) );
       }
 
-      private static float lastSpeed = 0;
-      private static void LogS () {
-         if ( Time.timeScale == lastSpeed ) return;
-         lastSpeed = Time.timeScale;
-         Log.Info( $"Time = {lastSpeed}" );
-      }
+
+      #region Skip Splash
+      private static void FaderUIController_Awake_SkipSplash ( ref FaderUIController.SplashStateInfo[] ___m_SplashStates ) { try {
+         if ( ___m_SplashStates == null || ___m_SplashStates.Length < 1 || ___m_SplashStates[0].m_AnimToPlay != "Unity" ) return;
+         if ( ! ___m_SplashStates.Any( e => e.m_AnimToPlay == "LoadStartScreen" ) ) return;
+         Log.Info( "Skipping Splash Screens" );
+         ___m_SplashStates = ___m_SplashStates.Where( e => e.m_AnimToPlay == "LoadStartScreen" ).ToArray();
+         ___m_SplashStates[0].m_TimeInState = 0.01f;
+         // [ { "Unity, 1, False }, { "HermesInteractive, 2, False }, { "Team 17, 4, True }, { "Legal, 3, False }, { "LoadStartScreen", 2, False } ]
+      } catch ( Exception ex ) { Log.Error( ex ); } }
+
+      private static void SplashScreen_Update_SkipSplash ( SplashScreen __instance, ref bool ___m_bProcessedCloseRequest ) { try {
+         if ( ___m_bProcessedCloseRequest || InputWrapper.GetController() == null ) return;
+         ___m_bProcessedCloseRequest = true;
+         Modder.TryMethod( typeof( SplashScreen ), "ProceedToMainMenu" ).Invoke( __instance, Array.Empty<object>() );
+         Log.Info( "Skipped Space Press Splash" );
+      } catch ( Exception ex ) {
+         Log.Error( ex );
+         ___m_bProcessedCloseRequest = false;
+      } }
+      #endregion
 
       private static void Initializer_Start_AdjustSpeed ( Initializer __instance ) {
          if ( __instance == null || __instance.speeds == null || __instance.speeds.Count < 4 ) return;
@@ -137,27 +152,6 @@ namespace Automodchef {
          __result += "\n" + string.Join( "\n", efficiencyLog.ToArray() );
          __result = __result.Trim();
       } catch ( Exception ex ) { Log.Error( ex ); } }
-      #endregion
-
-      #region Skip Splash
-      private static void FaderUIController_Awake_SkipSplash ( ref FaderUIController.SplashStateInfo[] ___m_SplashStates ) { try {
-         if ( ___m_SplashStates == null || ___m_SplashStates.Length < 1 || ___m_SplashStates[0].m_AnimToPlay != "Unity" ) return;
-         if ( ! ___m_SplashStates.Any( e => e.m_AnimToPlay == "LoadStartScreen" ) ) return;
-         Log.Info( "Skipping Splash Screens" );
-         ___m_SplashStates = ___m_SplashStates.Where( e => e.m_AnimToPlay == "LoadStartScreen" ).ToArray();
-         ___m_SplashStates[0].m_TimeInState = 0.01f;
-         // [ { "Unity, 1, False }, { "HermesInteractive, 2, False }, { "Team 17, 4, True }, { "Legal, 3, False }, { "LoadStartScreen", 2, False } ]
-      } catch ( Exception ex ) { Log.Error( ex ); } }
-
-      private static void SplashScreen_Update_SkipSplash ( SplashScreen __instance, ref bool ___m_bProcessedCloseRequest ) { try {
-         if ( ___m_bProcessedCloseRequest || InputWrapper.GetController() == null ) return;
-         ___m_bProcessedCloseRequest = true;
-         Modder.TryMethod( typeof( SplashScreen ), "ProceedToMainMenu" ).Invoke( __instance, Array.Empty<object>() );
-         Log.Info( "Skipped Space Press Splash" );
-      } catch ( Exception ex ) {
-         Log.Error( ex );
-         ___m_bProcessedCloseRequest = false;
-      } }
       #endregion
 
       #region Tools (CSV)
