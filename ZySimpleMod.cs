@@ -74,7 +74,7 @@ namespace ZyMod {
    public class IniConfig {
 
       public void Load () => Load( Path.Combine( ZySimpleMod.AppDataDir, ZySimpleMod.ModName + ".ini" ) );
-      public void Load ( string path ) { try {
+      public virtual void Load ( string path ) { try {
          if ( ! File.Exists( path ) ) { Create( path ); return; }
          Log.Info( "Loading " + path );
          foreach ( var line in File.ReadAllLines( path ) ) {
@@ -85,13 +85,17 @@ namespace ZyMod {
             var val = split[1].Trim();
             if ( val.Length > 1 && val.StartsWith( "\"" ) && val.EndsWith( "\"" ) ) val = val.Substring( 1, val.Length - 2 );
             switch ( prop.FieldType.FullName ) {
-               case "System.SByte" : case "System.Int16"  : case "System.Int32"  : case "System.Int64"  :
-               case "System.Byte"  : case "System.UInt16" : case "System.UInt32" : case "System.UInt64" :
-                  if ( Int64.TryParse( val, out long ival ) ) prop.SetValue( this, ival );
-                  break;
-               case "System.String" :
-                  prop.SetValue( this, val );
-                  break;
+               case "System.SByte"  : if ( SByte .TryParse( val, out sbyte  bval ) ) prop.SetValue( this, bval ); break;
+               case "System.Int16"  : if ( Int16 .TryParse( val, out short  sval ) ) prop.SetValue( this, sval ); break;
+               case "System.Int32"  : if ( Int32 .TryParse( val, out int    ival ) ) prop.SetValue( this, ival ); break;
+               case "System.Int64"  : if ( Int64 .TryParse( val, out long   lval ) ) prop.SetValue( this, lval ); break;
+               case "System.Byte"   : if ( Byte  .TryParse( val, out byte   Bval ) ) prop.SetValue( this, Bval ); break;
+               case "System.UInt16" : if ( UInt16.TryParse( val, out ushort Sval ) ) prop.SetValue( this, Sval ); break;
+               case "System.UInt32" : if ( UInt32.TryParse( val, out uint   Ival ) ) prop.SetValue( this, Ival ); break;
+               case "System.UInt64" : if ( UInt64.TryParse( val, out ulong  Lval ) ) prop.SetValue( this, Lval ); break;
+               case "System.Single" : if ( Single.TryParse( val, out float  fval ) ) prop.SetValue( this, fval ); break;
+               case "System.Double" : if ( Double.TryParse( val, out double dval ) ) prop.SetValue( this, dval ); break;
+               case "System.String" : prop.SetValue( this, val ); break;
                case "System.Boolean" :
                   val = val.ToLowerInvariant();
                   prop.SetValue( this, val == "yes" || val == "1" || val == "true" );
