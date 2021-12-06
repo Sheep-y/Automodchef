@@ -21,7 +21,8 @@ namespace ZyMod {
             Log.CreateNew();
             //foreach ( var asm in AppDomain.CurrentDomain.GetAssemblies() ) Log.Info( $"Already loaded: {asm.FullName}, {asm.CodeBase}" );
             AppDomain.CurrentDomain.AssemblyLoad += AsmLoaded;
-            AppDomain.CurrentDomain.UnhandledException += ( sender, e ) => Log.Error( e.ExceptionObject );
+            AppDomain.CurrentDomain.UnhandledException += ( sender, evt ) => Log.Error( evt.ExceptionObject );
+            AppDomain.CurrentDomain.AssemblyResolve += ( sender, evt ) => { Log.Warn( $"Searching for {evt.Name}" ); return null; };
             Log.Info( "Mod Initiated" );
          } catch ( Exception ex ) {
             Log.Error( ex.ToString() );
