@@ -5,10 +5,18 @@ using System.Reflection;
 using HarmonyLib;
 using static System.Reflection.BindingFlags;
 
-namespace Automodchef {
-   public static class ZySimpleMod {
+namespace ZyMod {
+   public abstract class ZySimpleMod {
+      protected static object sync = new object();
+      internal static ZySimpleMod instance;
+      internal static string ModName { get { lock ( sync ) return instance?.GetModName() ?? "ZyMod"; } }
+      internal static Type PatchClass { get { lock ( sync ) return instance?.GetPatchClass() ?? typeof( ZySimpleMod ); } }
 
-      public static void Initialise () {
+      public void Initialize () {
+         lock ( sync ) {
+            if ( instance != null ) throw new ApplicationException( "Mod already initialized" );
+            instance = this;
+         }
          try {
             Log.CreateNew();
             AppDomain.CurrentDomain.AssemblyLoad += AsmLoaded;
@@ -19,44 +27,50 @@ namespace Automodchef {
          }
       }
 
-      private static void AsmLoaded ( object sender, AssemblyLoadEventArgs args ) {
+      private void AsmLoaded ( object sender, AssemblyLoadEventArgs args ) {
          //Log.Info( args.LoadedAssembly.FullName );
          if ( args?.LoadedAssembly?.FullName?.StartsWith( "Assembly-CSharp," ) != true ) return;
-         Log.Info( "Game Loaded" );
+         Log.Info( args.LoadedAssembly.GetName() + " Loaded" );
          AppDomain.CurrentDomain.AssemblyLoad -= AsmLoaded;
          try {
-            Patches.config.Load( Path.Combine( SaveDir, typeof( Automodchef ).Name + ".ini" ) );
-            Patches.Apply( args.LoadedAssembly );
+            OnGameAssemblyLoaded( args.LoadedAssembly );
+            Log.Info( "Bootstrap complete." );
          } catch ( Exception ex ) {
             Log.Error( ex.ToString() );
          }
       }
 
-      private static string _SaveDir;
-      internal static string SaveDir { get {
-         if ( _SaveDir != null ) return _SaveDir;
-         var path = System.Environment.GetFolderPath( System.Environment.SpecialFolder.LocalApplicationData );
-         if ( string.IsNullOrEmpty( path ) ) return null;
-         path = Path.Combine( Directory.GetParent( path ).FullName, "LocalLow", "HermesInteractive", "Automachef" );
-         _SaveDir = path;
+      private static string _AppDataDir;
+      public static string AppDataDir { get {
+         if ( _AppDataDir != null ) return _AppDataDir;
+         lock ( sync ) {
+            if ( instance == null ) return "";
+            _AppDataDir = instance.GetAppDataDir();
+         }
          try {
-            if ( ! Directory.Exists( path ) ) {
-               Directory.CreateDirectory( path );
-               if ( ! Directory.Exists( path ) ) _SaveDir = "";
+            if ( ! Directory.Exists( _AppDataDir ) ) {
+               Directory.CreateDirectory( _AppDataDir );
+               if ( ! Directory.Exists( _AppDataDir ) ) _AppDataDir = "";
             }
-         } catch ( Exception _ ) { _SaveDir = ""; }
-         return _SaveDir;
+         } catch ( Exception _ ) { _AppDataDir = ""; }
+         return _AppDataDir;
       } }
+
+      protected abstract string GetAppDataDir ();
+      protected abstract void OnGameAssemblyLoaded ( Assembly game );
+      protected abstract Type GetPatchClass ();
+      protected virtual string GetModName () => GetType().Name;
    }
 
    public class IniConfig {
 
+      public void Load () => Load( Path.Combine( ZySimpleMod.AppDataDir, ZySimpleMod.ModName + ".ini" ) );
       public void Load ( string path ) { try {
          if ( ! File.Exists( path ) ) { Create( path ); return; }
          Log.Info( "Loading " + path );
          foreach ( var line in File.ReadAllLines( path ) ) {
             var split = line.Split( new char[]{ '=' }, 2 );
-            if ( split.Length != 2 ) continue;
+            if ( split.Length != 2 || line.StartsWith( ";" ) ) continue;
             var prop = GetType().GetField( split[ 0 ].Trim() );
             if ( prop == null ) { Log.Warn( "Unknown field: " + split[ 0 ] ); continue; }
             var val = split[1].Trim();
@@ -78,23 +92,24 @@ namespace Automodchef {
                   break;
             }
          }
-         foreach ( var prop in typeof( Config ).GetFields() )
+         foreach ( var prop in GetType().GetFields() )
             Log.Info( prop.Name + " = " + prop.GetValue( this ) );
       } catch ( Exception ex ) { Log.Warn( ex ); } }
 
       public virtual void Create ( string ini ) { try {
          Log.Info( "Not found, creating " + ini );
          using ( TextWriter tw = File.CreateText( ini ) ) {
-            tw.Write( "[System]config_version = 20211205\r\nskip_intro = yes\r\nskip_spacebar = yes\r\ndisable_analytics\r\n\r\n" );
-            tw.Write( "[User Interface]efficiency_log = yes\r\nefficiency_log_breakdown = yes\r\n\r\n" );
+            foreach ( var f in GetType().GetFields() )
+               if ( f.IsPublic && ! f.IsStatic )
+                  tw.WriteLine( f.Name + " = " + f.GetValue( this ) );
          }
       } catch ( Exception ) { } }
    }
 
    public static class Modder {
 
-      internal static Type Code = typeof( Patches );
-      internal static Harmony harmony = new Harmony( "Automodchef" );
+      private static Type Code;
+      private static Harmony harmony;
 
       public static MethodInfo TryMethod ( this Type type, string method ) { try { return Method( type, method ); } catch ( ApplicationException ) { return null; } }
 
@@ -108,6 +123,7 @@ namespace Automodchef {
          Patch( Method( type, method ), prefix, postfix, transpiler );
 
       internal static void Patch ( MethodBase method, string prefix = null, string postfix = null, string transpiler = null ) {
+         if ( harmony == null ) harmony = new Harmony( ZySimpleMod.ModName );
          harmony.Patch( method, ToHarmony( prefix ), ToHarmony( postfix ), ToHarmony( transpiler ) );
          Log.Info( $"Patched {method.DeclaringType} {method} | Pre: {prefix} | Post: {postfix} | Trans: {transpiler}" );
       }
@@ -125,24 +141,23 @@ namespace Automodchef {
 
       private static HarmonyMethod ToHarmony ( string name ) {
          if ( string.IsNullOrWhiteSpace( name ) ) return null;
+         if ( Code == null ) Code = ZySimpleMod.PatchClass;
          return new HarmonyMethod( Code.GetMethod( name, Public | NonPublic | Static ) ?? throw new NullReferenceException( name + " not found" ) );
       }
    }
 
    // TODO: Replace with HarmonyX logger
    internal static class Log {
-      internal static string LogPath = Path.Combine( ZySimpleMod.SaveDir, typeof( Automodchef ).Name + ".log" );
+      internal static string LogPath = Path.Combine( ZySimpleMod.AppDataDir, ZySimpleMod.ModName + ".log" );
       internal static void CreateNew () { try {
-         using ( TextWriter tw = File.CreateText( LogPath ) ) {
-             tw.WriteLine( $"{DateTime.Now:u} Automodchef initiated" );
-             tw.Flush();
-         }
+         using ( TextWriter f = File.CreateText( LogPath ) )
+             f.WriteLine( $"{DateTime.Now:u} {ZySimpleMod.ModName} initiated" );
       } catch ( Exception ) { } }
       internal static void Error ( object msg ) => Write( Timestamp( "ERROR " + msg ) );
       internal static void Warn ( object msg ) => Write( Timestamp( "WARN " + msg ) );
       //internal static void Info ( object msg ) { msg = Timestamp( msg ); Task.Run( () => Write( msg ) ); }
       internal static void Info ( object msg ) => Write( Timestamp( msg ) );
-      internal static void Write ( object msg ) { try { using ( TextWriter tw = File.AppendText( LogPath ) ) tw.WriteLine( msg ); } catch ( Exception ) { } }
+      internal static void Write ( object msg ) { try { using ( TextWriter f = File.AppendText( LogPath ) ) f.WriteLine( msg ); } catch ( Exception ) { } }
       private static string Timestamp ( object msg ) => DateTime.Now.ToString( "HH:mm:ss.fff " ) + ( msg ?? "null" );
    }
 }

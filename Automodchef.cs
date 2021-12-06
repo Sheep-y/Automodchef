@@ -1,14 +1,22 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Collections.Generic;
 using UnityEngine;
+using ZyMod;
 
 namespace Automodchef {
-   public static class Automodchef {
-      public static void Main () {
-         ZySimpleMod.Initialise();
+
+   public class Automodchef : ZySimpleMod {
+      public static void Main () => new Automodchef().Initialize();
+      protected override string GetAppDataDir () {
+         var path = System.Environment.GetFolderPath( System.Environment.SpecialFolder.LocalApplicationData );
+         if ( string.IsNullOrEmpty( path ) ) return null;
+         return Path.Combine( Directory.GetParent( path ).FullName, "LocalLow", "HermesInteractive", "Automachef" );
       }
+      protected override Type GetPatchClass () => typeof( Patches );
+      protected override void OnGameAssemblyLoaded ( Assembly game ) => Patches.Apply( game );
    }
 
    public class Config : IniConfig {
@@ -18,6 +26,14 @@ namespace Automodchef {
       public bool efficiency_log = true;
       public bool efficiency_log_breakdown = true;
       public bool disable_analytics = true;
+
+      public virtual void Create ( string ini ) { try {
+         Log.Info( "Not found, creating " + ini );
+         using ( TextWriter tw = File.CreateText( ini ) ) {
+            tw.Write( "[System]\nconfig_version = 20211205\r\nskip_intro = yes\r\nskip_spacebar = yes\r\ndisable_analytics\r\n\r\n" );
+            tw.Write( "[User Interface]\nefficiency_log = yes\r\nefficiency_log_breakdown = yes\r\n\r\n" );
+         }
+      } catch ( Exception ) { } }
    }
 
    internal static class Patches {
@@ -25,6 +41,7 @@ namespace Automodchef {
       internal static Config config = new Config();
 
       internal static void Apply ( Assembly game ) {
+         config.Load();
          if ( config.skip_intro )
             Modder.TryPatch( typeof( FaderUIController ), "Awake", nameof( FaderUIController_Awake_SkipSplash ) );
          if ( config.skip_spacebar )
@@ -43,7 +60,6 @@ namespace Automodchef {
                Modder.TryPatch( typeof( KitchenEventsLog ), "ToString", postfix: nameof( KitchenLog_ToString_Append ) );
             }
          }
-         Log.Info( "Game Patched." );
       }
 
       #region Efficiency Log
