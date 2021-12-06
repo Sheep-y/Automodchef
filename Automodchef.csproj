@@ -15,6 +15,10 @@
       <HintPath>C:\Program Files\Epic Games\Automachef\Automachef_Data\Managed\Rewired_Core.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>C:\Program Files\Epic Games\Automachef\Automachef_Data\Managed\UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>C:\Program Files\Epic Games\Automachef\Automachef_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
       <Private>false</Private>

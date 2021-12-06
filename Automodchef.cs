@@ -6,6 +6,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using ZyMod;
 using System.Text;
+using I2.Loc;
+using MaterialUI;
+using System.Runtime.CompilerServices;
 
 namespace Automodchef {
 
@@ -35,6 +38,8 @@ namespace Automodchef {
       public byte speed2 = 5;
       [ ConfigAttribute( "User Interface", "Speed of triple time (three arrows).  0-100 integer.  Game default 5.  Mod default 20." ) ]
       public byte speed3 = 20;
+      [ ConfigAttribute( "User Interface", "Max number if options to convert dropdown to toggle button.  Default 3.  0 to disable." ) ]
+      public byte dropdown_toogle_threshold = 3;
       [ ConfigAttribute( "User Interface", "Add effiency calculation to kitchen log.  True or false.  Default true." ) ]
       public bool efficiency_log = true;
       [ ConfigAttribute( "User Interface", "Breakdown efficiency quotas by dishes.  True or false.  Default true." ) ]
@@ -65,9 +70,18 @@ namespace Automodchef {
             Modder.TryPatch( typeof( AutomachefAnalytics ), "Track", nameof( Analytics_Disable ) );
          if ( config.speed2 != 3 || config.speed3 != 5 )
             Modder.TryPatch( typeof( Initializer ), "Start", nameof( Initializer_Start_AdjustSpeed ) );
+         if ( config.dropdown_toogle_threshold > 0 ) {
+            dropdownProp = new ConditionalWeakTable< MaterialDropdown, KitchenPartProperty >();
+            dropdownIcon = new ConditionalWeakTable< MaterialDropdown, DropdownIcon >();
+            Modder.TryPatch( typeof( PartProperties ), "PopulateDropdownForProperty", nameof( TrackDropdown ) );
+            Modder.TryPatch( typeof( MaterialDropdown ), "ShowDropdown", nameof( ToggleDropdown ) );
+         }
          if ( config.efficiency_log ) {
+            efficiencyLog = new List<string>();
             if ( config.efficiency_log_breakdown )
                if ( Modder.TryPatch( typeof( EfficiencyMeter ), "Reset", nameof( EfficiencyMeter_Reset_ClearLog ) ) ) {
+                  orderedDish = new Dictionary<object, int>();
+                  cookedDish = new Dictionary<object, int>();
                   Modder.TryPatch( typeof( EfficiencyMeter ), "AddOrder", nameof( EfficiencyMeter_AddOrder_Log ) );
                   Modder.TryPatch( typeof( EfficiencyMeter ), "AddDeliveredDish", nameof( EfficiencyMeter_AddDeliveredDish_Log ) );
                }
@@ -108,10 +122,31 @@ namespace Automodchef {
          __instance.speeds[3] = config.speed3;
       }
 
-      #region Efficiency Log
-      private static readonly Dictionary< object, int > orderedDish = new Dictionary< object, int >();
-      private static readonly Dictionary< object, int > cookedDish  = new Dictionary< object, int >();
+      #region Dropdown Toggle
+      private static ConditionalWeakTable< MaterialDropdown, KitchenPartProperty > dropdownProp;
+      private static ConditionalWeakTable< MaterialDropdown, DropdownIcon > dropdownIcon;
 
+      private static void TrackDropdown ( MaterialDropdown dropdown, KitchenPartProperty prop, DropdownIcon icon ) { try {
+         dropdownProp.Remove( dropdown );
+         dropdownProp.Add( dropdown, prop );
+         dropdownIcon.Remove( dropdown );
+         dropdownIcon.Add( dropdown, icon );
+      } catch ( Exception ex ) { Log.Error( ex ); } }
+
+      private static bool ToggleDropdown ( MaterialDropdown __instance, ref int ___m_CurrentlySelected ) { try {
+         if ( ! dropdownProp.TryGetValue( __instance, out KitchenPartProperty prop ) ) return true;
+         if ( ( prop.friendlyValues?.Count ?? 0 ) > 3 ) return true;
+         if ( Initializer.GetInstance().levelManager.GetLevel().IsTutorial() ) return true;
+         var new_selection = ___m_CurrentlySelected + 1;
+         if ( new_selection >= prop.friendlyValues.Count ) new_selection = 0;
+         __instance.Select( new_selection );
+         if ( dropdownIcon.TryGetValue( __instance, out DropdownIcon icon ) ) icon.UpdateIcon();
+         return false;
+      } catch ( Exception ex ) { Log.Error( ex ); return true; } }
+      #endregion
+
+      #region Efficiency Log
+      private static Dictionary< object, int > orderedDish, cookedDish;
       private static void EfficiencyMeter_Reset_ClearLog () { orderedDish.Clear(); cookedDish.Clear(); }
       private static void EfficiencyMeter_AddOrder_Log ( Dish dish ) => EfficiencyMeter_Dish_Log( orderedDish, dish );
       private static void EfficiencyMeter_AddDeliveredDish_Log ( Dish dish ) => EfficiencyMeter_Dish_Log( cookedDish, dish );
@@ -121,7 +156,7 @@ namespace Automodchef {
       }
 
       private static int outcome;
-      private static readonly List<string> efficiencyLog = new List<string>();
+      private static List<string> efficiencyLog;
       private static bool ShowEfficiencyLog => outcome != (int) LevelOutcome.Failure && outcome != (int) LevelOutcome.InProgress;
 
       private static void LevelManger_Outcome_StopLog () => outcome = (int) LevelOutcome.InProgress;
