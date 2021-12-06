@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Collections.Generic;
 using UnityEngine;
 using ZyMod;
+using System.Text;
 
 namespace Automodchef {
 
@@ -19,10 +20,10 @@ namespace Automodchef {
       protected override void OnGameAssemblyLoaded ( Assembly game ) => Patches.Apply( game );
    }
 
-   [ ConfigAttribute(  "Automodchef config file.  True/false values are case insensitive." ) ]
    public class Config : IniConfig {
-      [ ConfigAttribute( "System", "Version of this file.  Don't touch!" ) ]
-      public int config_version = 20211205;
+      [ ConfigAttribute( "Version of this Automodchef config file.  Don't touch!" ) ]
+      public int config_version = 20211206;
+
       [ ConfigAttribute( "System", "Skip Unity, Hermes, Team 17, and Autosave screens.  True or false.  Default true." ) ]
       public bool skip_intro = true;
       [ ConfigAttribute( "System", "Skip 'Press Spacebar to continue'.  True or false.  Default true." ) ]
@@ -34,6 +35,9 @@ namespace Automodchef {
       public bool efficiency_log = true;
       [ ConfigAttribute( "User Interface", "Breakdown efficiency quotas by dishes.  True or false.  Default true." ) ]
       public bool efficiency_log_breakdown = true;
+
+      [ ConfigAttribute( "Tools", "Export ingrediants to ingredients.csv on game launch.  True or false.  Default false." ) ]
+      public bool export_ingrediants = false;
    }
 
    internal static class Patches {
@@ -60,6 +64,8 @@ namespace Automodchef {
                Modder.TryPatch( typeof( KitchenEventsLog ), "ToString", postfix: nameof( KitchenLog_ToString_Append ) );
             }
          }
+         if ( config.export_ingrediants )
+            Modder.TryPatch( typeof( SplashScreen ), "Awake", nameof( SplashScreen_Awake_DumpCsv ) );
       }
 
       #region Efficiency Log
@@ -99,15 +105,18 @@ namespace Automodchef {
       private static void KitchenLog_ToString_Append ( ref string __result ) { try {
          if ( ! ShowEfficiencyLog || efficiencyLog.Count <= 0 ) return;
          __result += "\n\n";
+         if ( orderedDish.Count > 0 ) __result += "Delivered / Ordered Dish ... Quota Contribution";
          foreach ( var key in orderedDish.Keys ) {
             var dish = key as Dish;
             cookedDish.TryGetValue( dish, out int delivered );
             int eI = dish.expectedIngredients, eP = dish.expectedPower, ordered = orderedDish[ dish ], missed = ordered - delivered;
             int missedPowerPenalty = ( dish.expectedPower - dish.expectedPower / 3 ) * missed;
-            __result += $"Quota\\{dish.friendlyName} = {eI} mats & {eP}Wh each\n";
-            __result += $"  {ordered-missed}/{ordered} done = {eI*ordered-missed} mats & {eP*ordered-missedPowerPenalty}Wh\n";
+            //__result += $"Quota\\{dish.friendlyName} = {eI} mats & {eP}Wh each\n";
+            //__result += $"  {ordered-missed}/{ordered} done = {eI*ordered-missed} mats & {eP*ordered-missedPowerPenalty}Wh\n";
+            __result += $"{ordered-missed}/{ordered} {dish.friendlyName} ... {eI*ordered-missed} mats & {eP*ordered-missedPowerPenalty}Wh\n";
          }
          __result += "\n" + string.Join( "\n", efficiencyLog.ToArray() );
+         __result = __result.Trim();
       } catch ( Exception ex ) { Log.Error( ex ); } }
       #endregion
 
@@ -130,6 +139,43 @@ namespace Automodchef {
          Log.Error( ex );
          ___m_bProcessedCloseRequest = false;
       } }
+      #endregion
+
+      #region Tools (CSV)
+      private static readonly StringBuilder line = new StringBuilder();
+
+      private static void SplashScreen_Awake_DumpCsv () { try {
+         string file = Path.Combine( ZySimpleMod.AppDataDir, "ingredients.csv" );
+         Log.Info( $"Exporting ingredient list to {file}" );
+         using ( TextWriter f = File.CreateText( file ) ) {
+            f.Csv( "Id", "Name", "Translated", "Process", "Seconds", "Recipe", "Liquids",
+                   "Processed", "Grilled", "Fried", "Steamed", "Baked", "Wet", "Baterias",
+                   "Spoil", "Ingredients Quota", "Power Quota" );
+            foreach ( var mat in Ingredient.GetAll().Union( Dish.GetAll() ) ) {
+               float spoil = 0, iQ = 0, pQ = 0;
+               if ( mat is Dish dish ) { spoil = dish.timeToBeSpoiled;  iQ = dish.expectedIngredients;  pQ = dish.expectedPower; }
+               f.Csv( mat.internalName, mat.friendlyName, mat.GetFriendlyNameTranslated(), mat.technique.ToString(), mat.timeToBeAssembled + "",
+                  mat.recipe == null ? "" : string.Join( " + ", mat.recipe ),
+                  mat.recipeLiquidIngredients == null ? "" : string.Join( " + ", mat.recipeLiquidIngredients ),
+                  mat.resultProcess, mat.resultGrill, mat.resultFry, mat.resultSteam, mat.resultBake, mat.resultWet,
+                  mat.bacteria == null ? "" : string.Join( " & ", mat.bacteria.Select( e => e.friendlyName ) ),
+                  spoil == 0 ? "" : spoil.ToString(), iQ == 0 ? "" : iQ.ToString(), pQ == 0 ? "" : pQ.ToString()
+                  );
+            }
+            f.Flush();
+         }
+         Log.Info( "Export done" );
+      } catch ( Exception ex ) { Log.Warn( ex ); } }
+
+      private static void Csv ( this TextWriter f, params string[] values ) {
+         foreach ( var v in values ) {
+            if ( v.Contains( "," ) || v.Contains( "\"" ) || v.Contains( "\n" ) ) line.Append( '"' ).Append( v.Replace( "\"", "\"\"" ) ).Append( "\"," );
+            else line.Append( v ).Append( ',' );
+         }
+         --line.Length;
+         f.Write( line.Append( "\r\n" ) );
+         line.Length = 0;
+      }
       #endregion
 
       private static bool Analytics_Disable () { return false; }
