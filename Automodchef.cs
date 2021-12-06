@@ -20,20 +20,19 @@ namespace Automodchef {
    }
 
    public class Config : IniConfig {
+      [ ConfigAttribute( "System", "Version of this file.  Don't touch!" ) ]
       public int config_version = 20211205;
+      [ ConfigAttribute( "System", "Skip Unity, Hermes, Team 17, and Autosave screens.  True or false.  Default true." ) ]
       public bool skip_intro = true;
+      [ ConfigAttribute( "System", "Skip 'Press Spacebar to continue'.  True or false.  Default true." ) ]
       public bool skip_spacebar = true;
-      public bool efficiency_log = true;
-      public bool efficiency_log_breakdown = true;
+      [ ConfigAttribute( "System", "Disable mission stats analytics.  True or false.  Default true." ) ]
       public bool disable_analytics = true;
 
-      public virtual void Create ( string ini ) { try {
-         Log.Info( "Not found, creating " + ini );
-         using ( TextWriter tw = File.CreateText( ini ) ) {
-            tw.Write( "[System]\nconfig_version = 20211205\r\nskip_intro = yes\r\nskip_spacebar = yes\r\ndisable_analytics\r\n\r\n" );
-            tw.Write( "[User Interface]\nefficiency_log = yes\r\nefficiency_log_breakdown = yes\r\n\r\n" );
-         }
-      } catch ( Exception ) { } }
+      [ ConfigAttribute( "User Interface", "Add effiency calculation to kitchen log.  True or false.  Default true." ) ]
+      public bool efficiency_log = true;
+      [ ConfigAttribute( "User Interface", "Breakdown efficiency quotas by dishes.  True or false.  Default true." ) ]
+      public bool efficiency_log_breakdown = true;
    }
 
    internal static class Patches {

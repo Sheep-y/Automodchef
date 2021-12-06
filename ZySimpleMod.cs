@@ -62,6 +62,15 @@ namespace ZyMod {
       protected virtual string GetModName () => GetType().Name;
    }
 
+   [ AttributeUsage( AttributeTargets.Field | AttributeTargets.Property ) ]
+   public class ConfigAttribute : Attribute {
+      public ConfigAttribute () {}
+      public ConfigAttribute ( string comment ) { Comment = comment; }
+      public ConfigAttribute ( string section, string comment ) { Section = section; Comment = comment; }
+      public string Section;
+      public string Comment;
+   }
+
    public class IniConfig {
 
       public void Load () => Load( Path.Combine( ZySimpleMod.AppDataDir, ZySimpleMod.ModName + ".ini" ) );
@@ -96,12 +105,26 @@ namespace ZyMod {
             Log.Info( prop.Name + " = " + prop.GetValue( this ) );
       } catch ( Exception ex ) { Log.Warn( ex ); } }
 
+      private string lastSection = "";
+
       public virtual void Create ( string ini ) { try {
          Log.Info( "Not found, creating " + ini );
          using ( TextWriter tw = File.CreateText( ini ) ) {
-            foreach ( var f in GetType().GetFields() )
-               if ( f.IsPublic && ! f.IsStatic )
-                  tw.WriteLine( f.Name + " = " + f.GetValue( this ) );
+            var fields = GetType().GetFields();
+            if ( fields.Any( e => e.GetCustomAttribute<ConfigAttribute>() != null ) )
+               fields = fields.Where( e => e.GetCustomAttribute<ConfigAttribute>() != null ).ToArray();
+            foreach ( var f in fields )
+               if ( f.IsPublic && ! f.IsStatic ) {
+                  var attr = f.GetCustomAttribute<ConfigAttribute>();
+                  if ( attr != null ) {
+                     if ( ! string.IsNullOrWhiteSpace( attr.Section ) && attr.Section != lastSection ) {
+                        lastSection = attr.Section;
+                        tw.Write( $"\r\n[{attr.Section}]\r\n" );
+                     }
+                     if ( ! string.IsNullOrWhiteSpace( attr.Comment ) ) tw.Write( $"; {attr.Comment}\r\n" );
+                  }
+                  tw.Write( f.Name + " = " + f.GetValue( this ) + "\r\n" );
+               }
          }
       } catch ( Exception ) { } }
    }
