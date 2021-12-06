@@ -31,6 +31,10 @@ namespace Automodchef {
       [ ConfigAttribute( "System", "Disable mission stats analytics.  True or false.  Default true." ) ]
       public bool disable_analytics = true;
 
+      [ ConfigAttribute( "User Interface", "Speed of double time (two arrows).  0-100 integer.  Game default 3.  Mod default 5." ) ]
+      public byte speed2 = 5;
+      [ ConfigAttribute( "User Interface", "Speed of triple time (three arrows).  0-100 integer.  Game default 5.  Mod default 20." ) ]
+      public byte speed3 = 20;
       [ ConfigAttribute( "User Interface", "Add effiency calculation to kitchen log.  True or false.  Default true." ) ]
       public bool efficiency_log = true;
       [ ConfigAttribute( "User Interface", "Breakdown efficiency quotas by dishes.  True or false.  Default true." ) ]
@@ -52,6 +56,8 @@ namespace Automodchef {
             Modder.TryPatch( typeof( SplashScreen ), "Update", postfix: nameof( SplashScreen_Update_SkipSplash ) );
          if ( config.disable_analytics )
             Modder.TryPatch( typeof( AutomachefAnalytics ), "Track", nameof( Analytics_Disable ) );
+         if ( config.speed2 != 3 || config.speed3 != 5 )
+            Modder.TryPatch( typeof( Initializer ), "Start", nameof( Initializer_Start_AdjustSpeed ) );
          if ( config.efficiency_log ) {
             if ( config.efficiency_log_breakdown )
                if ( Modder.TryPatch( typeof( EfficiencyMeter ), "Reset", nameof( EfficiencyMeter_Reset_ClearLog ) ) ) {
@@ -66,6 +72,19 @@ namespace Automodchef {
          }
          if ( config.export_ingrediants )
             Modder.TryPatch( typeof( SplashScreen ), "Awake", nameof( SplashScreen_Awake_DumpCsv ) );
+      }
+
+      private static float lastSpeed = 0;
+      private static void LogS () {
+         if ( Time.timeScale == lastSpeed ) return;
+         lastSpeed = Time.timeScale;
+         Log.Info( $"Time = {lastSpeed}" );
+      }
+
+      private static void Initializer_Start_AdjustSpeed ( Initializer __instance ) {
+         if ( __instance == null || __instance.speeds == null || __instance.speeds.Count < 4 ) return;
+         __instance.speeds[2] = config.speed2;
+         __instance.speeds[3] = config.speed3;
       }
 
       #region Efficiency Log
