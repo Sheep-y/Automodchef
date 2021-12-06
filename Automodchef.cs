@@ -8,6 +8,7 @@ using ZyMod;
 using System.Text;
 using MaterialUI;
 using System.Runtime.CompilerServices;
+using static System.Reflection.BindingFlags;
 
 namespace Automodchef {
 
@@ -46,8 +47,8 @@ namespace Automodchef {
       [ ConfigAttribute( "User Interface", "Breakdown efficiency quotas by dishes.  True or false.  Default true." ) ]
       public bool efficiency_log_breakdown = true;
 
-      [ ConfigAttribute( "Tools", "Export ingrediants to ingredients.csv on game launch.  True or false.  Default false." ) ]
-      public bool export_ingrediants = false;
+      [ ConfigAttribute( "Tools", "Export foods to foods.csv on game launch.  True or false.  Default false." ) ]
+      public bool export_food_csv = false;
 
       public override void Load ( string path ) {
          base.Load( path );
@@ -61,8 +62,23 @@ namespace Automodchef {
 
       internal static Config config = new Config();
 
+      private static void ClassLog ( object __instance, MethodBase __originalMethod ) { Log.Info( __originalMethod.DeclaringType.Name + "." + __originalMethod.Name ); }
+
       internal static void Apply ( Assembly game ) {
          config.Load();
+         
+         /*
+         foreach ( var cls in game.GetTypes() ) {
+            //if ( ! cls.IsSubclassOf( typeof( MonoBehaviour ) ) ) continue;
+            if ( cls.IsNotPublic || cls.IsGenericType ) continue;
+            if ( cls.Namespace == null || cls.Namespace.StartsWith( "UnityEngine." ) || cls.Namespace.StartsWith( "Mono." ) ) continue;
+            Log.Info( "> " + cls.FullName );
+            foreach ( var m in cls.GetMethods( Public | Instance ) )
+               if ( ! m.IsGenericMethod && ! m.IsAbstract && m.DeclaringType != typeof( object ) && m.Name != "GetTypeCode" )
+                  Modder.Patch( m, nameof( ClassLog ) );
+         }
+         */
+
          if ( config.skip_intro )
             Modder.TryPatch( typeof( FaderUIController ), "Awake", nameof( FaderUIController_Awake_SkipSplash ) );
          if ( config.skip_spacebar )
@@ -96,13 +112,13 @@ namespace Automodchef {
                Modder.TryPatch( typeof( KitchenEventsLog ), "ToString", postfix: nameof( KitchenLog_ToString_Append ) );
             }
          }
-         if ( config.export_ingrediants )
+         if ( config.export_food_csv )
             Modder.TryPatch( typeof( SplashScreen ), "Awake", nameof( SplashScreen_Awake_DumpCsv ) );
       }
 
       #region Skip Splash
       private static void FaderUIController_Awake_SkipSplash ( ref FaderUIController.SplashStateInfo[] ___m_SplashStates ) { try {
-         if ( ___m_SplashStates == null || ___m_SplashStates.Length < 1 || ___m_SplashStates[0].m_AnimToPlay != "Unity" ) return;
+         if ( ___m_SplashStates == null || ___m_SplashStates.Length <= 1 || ___m_SplashStates[0].m_AnimToPlay != "Unity" ) return;
          if ( ! ___m_SplashStates.Any( e => e.m_AnimToPlay == "LoadStartScreen" ) ) return;
          ___m_SplashStates = ___m_SplashStates.Where( e => e.m_AnimToPlay == "LoadStartScreen" ).ToArray();
          ___m_SplashStates[0].m_TimeInState = 0.01f;
@@ -223,8 +239,8 @@ namespace Automodchef {
       private static readonly StringBuilder line = new StringBuilder();
 
       private static void SplashScreen_Awake_DumpCsv () { try {
-         string file = Path.Combine( ZySimpleMod.AppDataDir, "ingredients.csv" );
-         Log.Info( $"Exporting ingredient list to {file}" );
+         string file = Path.Combine( ZySimpleMod.AppDataDir, "foods.csv" );
+         Log.Info( $"Exporting food list to {file}" );
          using ( TextWriter f = File.CreateText( file ) ) {
             f.Csv( "Id", "Name", "Translated", "Process", "Seconds", "Recipe", "Liquids",
                    "Processed", "Grilled", "Fried", "Steamed", "Baked", "Wet", "Baterias",
