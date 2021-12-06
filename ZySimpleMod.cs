@@ -62,7 +62,7 @@ namespace ZyMod {
       protected virtual string GetModName () => GetType().Name;
    }
 
-   [ AttributeUsage( AttributeTargets.Field | AttributeTargets.Property ) ]
+   [ AttributeUsage( AttributeTargets.Class | AttributeTargets.Field | AttributeTargets.Property ) ]
    public class ConfigAttribute : Attribute {
       public ConfigAttribute () {}
       public ConfigAttribute ( string comment ) { Comment = comment; }
@@ -110,12 +110,14 @@ namespace ZyMod {
       public virtual void Create ( string ini ) { try {
          Log.Info( "Not found, creating " + ini );
          using ( TextWriter tw = File.CreateText( ini ) ) {
+            var attr = GetType().GetCustomAttribute<ConfigAttribute>();
+            if ( ! string.IsNullOrWhiteSpace( attr?.Comment ) ) tw.Write( $"{attr.Comment}\r\n" );
             var fields = GetType().GetFields();
             if ( fields.Any( e => e.GetCustomAttribute<ConfigAttribute>() != null ) )
                fields = fields.Where( e => e.GetCustomAttribute<ConfigAttribute>() != null ).ToArray();
             foreach ( var f in fields )
                if ( f.IsPublic && ! f.IsStatic ) {
-                  var attr = f.GetCustomAttribute<ConfigAttribute>();
+                  attr = f.GetCustomAttribute<ConfigAttribute>();
                   if ( attr != null ) {
                      if ( ! string.IsNullOrWhiteSpace( attr.Section ) && attr.Section != lastSection ) {
                         lastSection = attr.Section;

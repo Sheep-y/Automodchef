@@ -19,6 +19,7 @@ namespace Automodchef {
       protected override void OnGameAssemblyLoaded ( Assembly game ) => Patches.Apply( game );
    }
 
+   [ ConfigAttribute(  "Automodchef config file.  True/false values are case insensitive." ) ]
    public class Config : IniConfig {
       [ ConfigAttribute( "System", "Version of this file.  Don't touch!" ) ]
       public int config_version = 20211205;
