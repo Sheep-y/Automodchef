@@ -42,6 +42,13 @@ namespace Automodchef {
 
       [ ConfigAttribute( "Tools", "Export ingrediants to ingredients.csv on game launch.  True or false.  Default false." ) ]
       public bool export_ingrediants = false;
+
+      public override void Load ( string path ) {
+         base.Load( path );
+         if ( config_version >= 20211206 ) return;
+         config_version = 20211206;
+         Create( path );
+      }
    }
 
    internal static class Patches {
@@ -73,7 +80,6 @@ namespace Automodchef {
          if ( config.export_ingrediants )
             Modder.TryPatch( typeof( SplashScreen ), "Awake", nameof( SplashScreen_Awake_DumpCsv ) );
       }
-
 
       #region Skip Splash
       private static void FaderUIController_Awake_SkipSplash ( ref FaderUIController.SplashStateInfo[] ___m_SplashStates ) { try {

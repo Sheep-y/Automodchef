@@ -112,7 +112,7 @@ namespace ZyMod {
       private string lastSection = "";
 
       public virtual void Create ( string ini ) { try {
-         Log.Info( "Not found, creating " + ini );
+         Log.Info( "Creating " + ini );
          using ( TextWriter tw = File.CreateText( ini ) ) {
             var attr = GetType().GetCustomAttribute<ConfigAttribute>();
             if ( ! string.IsNullOrWhiteSpace( attr?.Comment ) ) tw.Write( $"{attr.Comment}\r\n" );
