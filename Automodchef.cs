@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using ZyMod;
 using System.Text;
-using I2.Loc;
 using MaterialUI;
 using System.Runtime.CompilerServices;
 
@@ -34,6 +33,8 @@ namespace Automodchef {
       [ ConfigAttribute( "System", "Disable mission stats analytics.  True or false.  Default true." ) ]
       public bool disable_analytics = true;
 
+      [ ConfigAttribute( "User Interface", "Show load game prompt when entering a level (if any saves).  Loading a game will bypass level goal popup and roboto speech.  True or false.  Default true." ) ]
+      public bool load_prompt_on_enter = true;
       [ ConfigAttribute( "User Interface", "Speed of double time (two arrows).  0-100 integer.  Game default 3.  Mod default 5." ) ]
       public byte speed2 = 5;
       [ ConfigAttribute( "User Interface", "Speed of triple time (three arrows).  0-100 integer.  Game default 5.  Mod default 20." ) ]
@@ -67,7 +68,11 @@ namespace Automodchef {
          if ( config.skip_spacebar )
             Modder.TryPatch( typeof( SplashScreen ), "Update", postfix: nameof( SplashScreen_Update_SkipSplash ) );
          if ( config.disable_analytics )
-            Modder.TryPatch( typeof( AutomachefAnalytics ), "Track", nameof( Analytics_Disable ) );
+            if ( Modder.TryPatch( typeof( AutomachefAnalytics ), "Track", nameof( Analytics_Disable ) ) )
+               Log.Info( "Mission Analytics Disabled" );
+         if ( config.load_prompt_on_enter ) {
+            Modder.TryPatch( typeof( LevelStatus ), "InitUI", nameof( OfferToLoadGameOnEnter ) );
+         }
          if ( config.speed2 != 3 || config.speed3 != 5 )
             Modder.TryPatch( typeof( Initializer ), "Start", nameof( Initializer_Start_AdjustSpeed ) );
          if ( config.dropdown_toogle_threshold > 0 ) {
@@ -99,9 +104,9 @@ namespace Automodchef {
       private static void FaderUIController_Awake_SkipSplash ( ref FaderUIController.SplashStateInfo[] ___m_SplashStates ) { try {
          if ( ___m_SplashStates == null || ___m_SplashStates.Length < 1 || ___m_SplashStates[0].m_AnimToPlay != "Unity" ) return;
          if ( ! ___m_SplashStates.Any( e => e.m_AnimToPlay == "LoadStartScreen" ) ) return;
-         Log.Info( "Skipping Splash Screens" );
          ___m_SplashStates = ___m_SplashStates.Where( e => e.m_AnimToPlay == "LoadStartScreen" ).ToArray();
          ___m_SplashStates[0].m_TimeInState = 0.01f;
+         Log.Info( $"Skipping Splash Screens ({___m_SplashStates.Length} scene left)" );
          // [ { "Unity, 1, False }, { "HermesInteractive, 2, False }, { "Team 17, 4, True }, { "Legal, 3, False }, { "LoadStartScreen", 2, False } ]
       } catch ( Exception ex ) { Log.Error( ex ); } }
 
@@ -116,8 +121,26 @@ namespace Automodchef {
       } }
       #endregion
 
+      private static bool Analytics_Disable () => false;
+
+      private static bool isInitialLoad = false;
+
+      private static void OfferToLoadGameOnEnter ( LevelStatus __instance ) { try {
+         isInitialLoad = false;
+         var data = SaveLoadManager.GetInstance().getSavedKitchenData();
+         if ( data == null ) return;
+		 for ( var i = 0; i < 5; i++ )
+			if ( data.Get( i ) != null ) {
+               __instance.preLevelScreen.gameObject.SetActive( false );
+               isInitialLoad = true;
+               Initializer.GetInstance().saveLoadPanel.Open( false );
+               return;
+            }
+      } catch ( Exception ex ) { Log.Error( ex ); } }
+
       private static void Initializer_Start_AdjustSpeed ( Initializer __instance ) {
          if ( __instance == null || __instance.speeds == null || __instance.speeds.Count < 4 ) return;
+         Log.Info( $"Setting game speeds to [ 0x, 1x, {config.speed2}x, {config.speed3}x ]" );
          __instance.speeds[2] = config.speed2;
          __instance.speeds[3] = config.speed3;
       }
@@ -179,6 +202,7 @@ namespace Automodchef {
 
       private static void KitchenLog_ToString_Append ( ref string __result ) { try {
          if ( ! ShowEfficiencyLog || efficiencyLog.Count <= 0 ) return;
+         Log.Info( $"Appending efficiency log ({efficiencyLog.Count+orderedDish.Count} lines) to kitchen log." );
          __result += "\n\n";
          if ( orderedDish.Count > 0 ) __result += "Delivered / Ordered Dish ... Quota Contribution";
          foreach ( var key in orderedDish.Keys ) {
@@ -231,8 +255,5 @@ namespace Automodchef {
          line.Length = 0;
       }
       #endregion
-
-      private static bool Analytics_Disable () { return false; }
-
    }
 }

@@ -19,6 +19,7 @@ namespace ZyMod {
          }
          try {
             Log.CreateNew();
+            //foreach ( var asm in AppDomain.CurrentDomain.GetAssemblies() ) Log.Info( $"Already loaded: {asm.FullName}, {asm.CodeBase}" );
             AppDomain.CurrentDomain.AssemblyLoad += AsmLoaded;
             AppDomain.CurrentDomain.UnhandledException += ( sender, e ) => Log.Error( e.ExceptionObject );
             Log.Info( "Mod Initiated" );
@@ -28,9 +29,9 @@ namespace ZyMod {
       }
 
       private void AsmLoaded ( object sender, AssemblyLoadEventArgs args ) {
-         //Log.Info( args.LoadedAssembly.FullName );
+         //Log.Info( $"{args.LoadedAssembly.FullName}, {args.LoadedAssembly.CodeBase}" );
          if ( args?.LoadedAssembly?.FullName?.StartsWith( "Assembly-CSharp," ) != true ) return;
-         Log.Info( args.LoadedAssembly.GetName() + " Loaded" );
+         Log.Info( "Target assembly loaded." );
          AppDomain.CurrentDomain.AssemblyLoad -= AsmLoaded;
          try {
             OnGameAssemblyLoaded( args.LoadedAssembly );
@@ -75,34 +76,37 @@ namespace ZyMod {
 
       public void Load () => Load( Path.Combine( ZySimpleMod.AppDataDir, ZySimpleMod.ModName + ".ini" ) );
       public virtual void Load ( string path ) { try {
-         if ( ! File.Exists( path ) ) { Create( path ); return; }
-         Log.Info( "Loading " + path );
-         foreach ( var line in File.ReadAllLines( path ) ) {
-            var split = line.Split( new char[]{ '=' }, 2 );
-            if ( split.Length != 2 || line.StartsWith( ";" ) ) continue;
-            var prop = GetType().GetField( split[ 0 ].Trim() );
-            if ( prop == null ) { Log.Warn( "Unknown field: " + split[ 0 ] ); continue; }
-            var val = split[1].Trim();
-            if ( val.Length > 1 && val.StartsWith( "\"" ) && val.EndsWith( "\"" ) ) val = val.Substring( 1, val.Length - 2 );
-            switch ( prop.FieldType.FullName ) {
-               case "System.SByte"  : if ( SByte .TryParse( val, out sbyte  bval ) ) prop.SetValue( this, bval ); break;
-               case "System.Int16"  : if ( Int16 .TryParse( val, out short  sval ) ) prop.SetValue( this, sval ); break;
-               case "System.Int32"  : if ( Int32 .TryParse( val, out int    ival ) ) prop.SetValue( this, ival ); break;
-               case "System.Int64"  : if ( Int64 .TryParse( val, out long   lval ) ) prop.SetValue( this, lval ); break;
-               case "System.Byte"   : if ( Byte  .TryParse( val, out byte   Bval ) ) prop.SetValue( this, Bval ); break;
-               case "System.UInt16" : if ( UInt16.TryParse( val, out ushort Sval ) ) prop.SetValue( this, Sval ); break;
-               case "System.UInt32" : if ( UInt32.TryParse( val, out uint   Ival ) ) prop.SetValue( this, Ival ); break;
-               case "System.UInt64" : if ( UInt64.TryParse( val, out ulong  Lval ) ) prop.SetValue( this, Lval ); break;
-               case "System.Single" : if ( Single.TryParse( val, out float  fval ) ) prop.SetValue( this, fval ); break;
-               case "System.Double" : if ( Double.TryParse( val, out double dval ) ) prop.SetValue( this, dval ); break;
-               case "System.String" : prop.SetValue( this, val ); break;
-               case "System.Boolean" :
-                  val = val.ToLowerInvariant();
-                  prop.SetValue( this, val == "yes" || val == "1" || val == "true" );
-                  break;
-               default :
-                  Log.Warn( $"Unexpected field type {prop.FieldType} of {split[0]}" );
-                  break;
+         if ( ! File.Exists( path ) ) {
+            Create( path );
+         } else {
+            Log.Info( "Loading " + path );
+            foreach ( var line in File.ReadAllLines( path ) ) {
+               var split = line.Split( new char[]{ '=' }, 2 );
+               if ( split.Length != 2 || line.StartsWith( ";" ) ) continue;
+               var prop = GetType().GetField( split[ 0 ].Trim() );
+               if ( prop == null ) { Log.Warn( "Unknown field: " + split[ 0 ] ); continue; }
+               var val = split[1].Trim();
+               if ( val.Length > 1 && val.StartsWith( "\"" ) && val.EndsWith( "\"" ) ) val = val.Substring( 1, val.Length - 2 );
+               switch ( prop.FieldType.FullName ) {
+                  case "System.SByte"  : if ( SByte .TryParse( val, out sbyte  bval ) ) prop.SetValue( this, bval ); break;
+                  case "System.Int16"  : if ( Int16 .TryParse( val, out short  sval ) ) prop.SetValue( this, sval ); break;
+                  case "System.Int32"  : if ( Int32 .TryParse( val, out int    ival ) ) prop.SetValue( this, ival ); break;
+                  case "System.Int64"  : if ( Int64 .TryParse( val, out long   lval ) ) prop.SetValue( this, lval ); break;
+                  case "System.Byte"   : if ( Byte  .TryParse( val, out byte   Bval ) ) prop.SetValue( this, Bval ); break;
+                  case "System.UInt16" : if ( UInt16.TryParse( val, out ushort Sval ) ) prop.SetValue( this, Sval ); break;
+                  case "System.UInt32" : if ( UInt32.TryParse( val, out uint   Ival ) ) prop.SetValue( this, Ival ); break;
+                  case "System.UInt64" : if ( UInt64.TryParse( val, out ulong  Lval ) ) prop.SetValue( this, Lval ); break;
+                  case "System.Single" : if ( Single.TryParse( val, out float  fval ) ) prop.SetValue( this, fval ); break;
+                  case "System.Double" : if ( Double.TryParse( val, out double dval ) ) prop.SetValue( this, dval ); break;
+                  case "System.String" : prop.SetValue( this, val ); break;
+                  case "System.Boolean" :
+                     val = val.ToLowerInvariant();
+                     prop.SetValue( this, val == "yes" || val == "1" || val == "true" );
+                     break;
+                  default :
+                     Log.Warn( $"Unexpected field type {prop.FieldType} of {split[0]}" );
+                     break;
+               }
             }
          }
          foreach ( var prop in GetType().GetFields() )
@@ -131,8 +135,11 @@ namespace ZyMod {
                   }
                   tw.Write( f.Name + " = " + f.GetValue( this ) + "\r\n" );
                }
+            tw.Flush();
          }
-      } catch ( Exception ) { } }
+         if ( File.Exists( ini ) ) Log.Info( $"{new FileInfo(ini).Length} bytes written" );
+         else Log.Warn( "Config file not written." );
+      } catch ( Exception ex ) { Log.Warn( "Cannot create config file: " + ex ); } }
    }
 
    public static class Modder {
