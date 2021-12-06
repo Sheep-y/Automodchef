@@ -30,9 +30,10 @@ namespace ZyMod {
       }
 
       private void AsmLoaded ( object sender, AssemblyLoadEventArgs args ) {
-         if ( args.LoadedAssembly.IsDynamic || args.LoadedAssembly.FullName.StartsWith( "DMDASM." ) ) return;
-         Log.Info( $"{args.LoadedAssembly.FullName}, {args.LoadedAssembly.CodeBase}" );
-         if ( args.LoadedAssembly.FullName.StartsWith( "Assembly-CSharp," ) ) {
+         string name = args.LoadedAssembly.FullName;
+         if ( args.LoadedAssembly.IsDynamic || name.StartsWith( "DMDASM." ) || name.StartsWith( "HarmonyDTFAssembly" ) ) return;
+         Log.Info( $"{name}, {args.LoadedAssembly.CodeBase}" );
+         if ( name.StartsWith( "Assembly-CSharp," ) ) {
             Log.Info( "Target assembly loaded." );
             //AppDomain.CurrentDomain.AssemblyLoad -= AsmLoaded;
             try {

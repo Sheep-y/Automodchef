@@ -9,6 +9,7 @@ using System.Text;
 using MaterialUI;
 using System.Runtime.CompilerServices;
 using static System.Reflection.BindingFlags;
+using UnityEngine.Analytics;
 
 namespace Automodchef {
 
@@ -83,9 +84,11 @@ namespace Automodchef {
             Modder.TryPatch( typeof( FaderUIController ), "Awake", nameof( FaderUIController_Awake_SkipSplash ) );
          if ( config.skip_spacebar )
             Modder.TryPatch( typeof( SplashScreen ), "Update", postfix: nameof( SplashScreen_Update_SkipSplash ) );
-         if ( config.disable_analytics )
-            if ( Modder.TryPatch( typeof( AutomachefAnalytics ), "Track", nameof( Analytics_Disable ) ) )
-               Log.Info( "Mission Analytics Disabled" );
+         if ( config.disable_analytics ) {
+            foreach ( var m in typeof( Analytics ).GetMethods( Public | NonPublic | Static | Instance ).Where( e => e.Name == "CustomEvent" || e.Name == "Transaction" || e.Name.StartsWith( "Send" ) ) )
+               Modder.TryPatch( m, nameof( DisableAnalytics ) );
+            Modder.TryPatch( typeof( AutomachefAnalytics ), "Track", nameof( DisableAnalytics ) );
+         }
          if ( config.load_prompt_on_enter ) {
             Modder.TryPatch( typeof( LevelStatus ), "InitUI", nameof( OfferToLoadGameOnEnter ) );
          }
@@ -137,7 +140,7 @@ namespace Automodchef {
       } }
       #endregion
 
-      private static bool Analytics_Disable () => false;
+      private static bool DisableAnalytics () { Log.Info( "Analytics Blocked" ); return false; }
 
       private static bool isInitialLoad = false;
 
