@@ -22,7 +22,7 @@ namespace ZyMod {
             //foreach ( var asm in AppDomain.CurrentDomain.GetAssemblies() ) Log.Info( $"Already loaded: {asm.FullName}, {asm.CodeBase}" );
             AppDomain.CurrentDomain.AssemblyLoad += AsmLoaded;
             AppDomain.CurrentDomain.UnhandledException += ( sender, evt ) => Log.Error( evt.ExceptionObject );
-            AppDomain.CurrentDomain.AssemblyResolve += ( sender, evt ) => { Log.Warn( $"Searching for {evt.Name}" ); return null; };
+            //AppDomain.CurrentDomain.AssemblyResolve += ( sender, evt ) => { Log.Warn( $"Searching for {evt.Name}" ); return null; };
             Log.Info( "Mod Initiated" );
          } catch ( Exception ex ) {
             Log.Error( ex.ToString() );
@@ -30,15 +30,17 @@ namespace ZyMod {
       }
 
       private void AsmLoaded ( object sender, AssemblyLoadEventArgs args ) {
-         //Log.Info( $"{args.LoadedAssembly.FullName}, {args.LoadedAssembly.CodeBase}" );
-         if ( args?.LoadedAssembly?.FullName?.StartsWith( "Assembly-CSharp," ) != true ) return;
-         Log.Info( "Target assembly loaded." );
-         AppDomain.CurrentDomain.AssemblyLoad -= AsmLoaded;
-         try {
-            OnGameAssemblyLoaded( args.LoadedAssembly );
-            Log.Info( "Bootstrap complete." );
-         } catch ( Exception ex ) {
-            Log.Error( ex.ToString() );
+         if ( args.LoadedAssembly.IsDynamic || args.LoadedAssembly.FullName.StartsWith( "DMDASM." ) ) return;
+         Log.Info( $"{args.LoadedAssembly.FullName}, {args.LoadedAssembly.CodeBase}" );
+         if ( args.LoadedAssembly.FullName.StartsWith( "Assembly-CSharp," ) ) {
+            Log.Info( "Target assembly loaded." );
+            //AppDomain.CurrentDomain.AssemblyLoad -= AsmLoaded;
+            try {
+               OnGameAssemblyLoaded( args.LoadedAssembly );
+               Log.Info( "Bootstrap complete." );
+            } catch ( Exception ex ) {
+               Log.Error( ex.ToString() );
+            }
          }
       }
 
