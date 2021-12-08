@@ -1,8 +1,9 @@
-﻿using System;
-using System.Linq;
+﻿using HarmonyLib;
+using System;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
-using HarmonyLib;
 using static System.Reflection.BindingFlags;
 
 namespace ZyMod {
@@ -14,15 +15,15 @@ namespace ZyMod {
 
       public void Initialize () {
          lock ( sync ) {
-            if ( instance != null ) throw new ApplicationException( "Mod already initialized" );
+            if ( instance != null ) { Log.Warn( "Mod already initialized" ); return; }
             instance = this;
          }
          try {
             Log.CreateNew();
-            //foreach ( var asm in AppDomain.CurrentDomain.GetAssemblies() ) Log.Info( $"Already loaded: {asm.FullName}, {asm.CodeBase}" );
+            foreach ( var asm in AppDomain.CurrentDomain.GetAssemblies() ) Log.Fine( $"Already loaded: {asm.FullName}, {asm.CodeBase}" );
             AppDomain.CurrentDomain.AssemblyLoad += AsmLoaded;
-            AppDomain.CurrentDomain.UnhandledException += ( sender, evt ) => Log.Error( evt.ExceptionObject );
-            //AppDomain.CurrentDomain.AssemblyResolve += ( sender, evt ) => { Log.Warn( $"Searching for {evt.Name}" ); return null; };
+            AppDomain.CurrentDomain.UnhandledException += ( _, evt ) => Log.Error( evt.ExceptionObject );
+            AppDomain.CurrentDomain.AssemblyResolve += ( _, evt ) => { Log.Fine( $"Resolving {evt.Name}" ); return null; };
             Log.Info( "Mod Initiated" );
          } catch ( Exception ex ) {
             Log.Error( ex.ToString() );
@@ -32,7 +33,7 @@ namespace ZyMod {
       private void AsmLoaded ( object sender, AssemblyLoadEventArgs args ) {
          string name = args.LoadedAssembly.FullName;
          if ( args.LoadedAssembly.IsDynamic || name.StartsWith( "DMDASM." ) || name.StartsWith( "HarmonyDTFAssembly" ) ) return;
-         Log.Info( $"{name}, {args.LoadedAssembly.CodeBase}" );
+         Log.Fine( $"{name}, {args.LoadedAssembly.CodeBase}" );
          if ( name.StartsWith( "Assembly-CSharp," ) ) {
             Log.Info( "Target assembly loaded." );
             //AppDomain.CurrentDomain.AssemblyLoad -= AsmLoaded;
@@ -140,9 +141,9 @@ namespace ZyMod {
                   tw.Write( f.Name + " = " + f.GetValue( this ) + "\r\n" );
                }
             tw.Flush();
-         }
-         if ( File.Exists( ini ) ) Log.Info( $"{new FileInfo(ini).Length} bytes written" );
-         else Log.Warn( "Config file not written." );
+            }
+            if ( File.Exists( ini ) ) Log.Fine( $"{new FileInfo( ini ).Length} bytes written" );
+            else Log.Warn( "Config file not written." );
       } catch ( Exception ex ) { Log.Warn( "Cannot create config file: " + ex ); } }
    }
 
@@ -186,18 +187,21 @@ namespace ZyMod {
       }
    }
 
-   // TODO: Replace with HarmonyX logger
-   internal static class Log {
+   public static class Log {
+      public static TraceLevel LogLevel = TraceLevel.Info;
       internal static string LogPath = Path.Combine( ZySimpleMod.AppDataDir, ZySimpleMod.ModName + ".log" );
       internal static void CreateNew () { try {
-         using ( TextWriter f = File.CreateText( LogPath ) )
+         if ( LogLevel == TraceLevel.Off ) File.Delete( LogPath );
+         else using ( TextWriter f = File.CreateText( LogPath ) )
              f.WriteLine( $"{DateTime.Now:u} {ZySimpleMod.ModName} initiated" );
       } catch ( Exception ) { } }
-      internal static void Error ( object msg ) => Write( Timestamp( "ERROR " + msg ) );
-      internal static void Warn ( object msg ) => Write( Timestamp( "WARN " + msg ) );
-      //internal static void Info ( object msg ) { msg = Timestamp( msg ); Task.Run( () => Write( msg ) ); }
-      internal static void Info ( object msg ) => Write( Timestamp( msg ) );
-      internal static void Write ( object msg ) { try { using ( TextWriter f = File.AppendText( LogPath ) ) f.WriteLine( msg ); } catch ( Exception ) { } }
-      private static string Timestamp ( object msg ) => DateTime.Now.ToString( "HH:mm:ss.fff " ) + ( msg ?? "null" );
+      public static void Error ( object msg ) => Write( LogLevel >= TraceLevel.Error   ? Timestamp( "ERROR ", msg ) : null );
+      public static void Warn  ( object msg ) => Write( LogLevel >= TraceLevel.Warning ? Timestamp( "WARN ", msg ) : null );
+      public static void Info  ( object msg ) => Write( LogLevel >= TraceLevel.Info    ? Timestamp( "INFO ", msg ) : null );
+      public static void Fine  ( object msg ) => Write( LogLevel >= TraceLevel.Verbose ? Timestamp( "FINE ", msg ) : null );
+      public static void Write ( object msg ) { if ( msg != null ) try {
+         using ( TextWriter f = File.AppendText( LogPath ) ) f.WriteLine( msg );
+      } catch ( Exception ) { } }
+      private static string Timestamp ( string level, object msg ) => DateTime.Now.ToString( "HH:mm:ss.fff " ) + level + ( msg ?? "null" );
    }
 }

@@ -1,15 +1,15 @@
-﻿using System;
+﻿using MaterialUI;
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Collections.Generic;
-using UnityEngine;
-using ZyMod;
-using System.Text;
-using MaterialUI;
 using System.Runtime.CompilerServices;
-using static System.Reflection.BindingFlags;
+using System.Text;
+using UnityEngine;
 using UnityEngine.Analytics;
+using ZyMod;
+using static System.Reflection.BindingFlags;
 
 namespace Automodchef {
 
@@ -67,7 +67,6 @@ namespace Automodchef {
 
       internal static void Apply ( Assembly game ) {
          config.Load();
-         
          /*
          foreach ( var cls in game.GetTypes() ) {
             //if ( ! cls.IsSubclassOf( typeof( MonoBehaviour ) ) ) continue;
@@ -125,7 +124,7 @@ namespace Automodchef {
          if ( ! ___m_SplashStates.Any( e => e.m_AnimToPlay == "LoadStartScreen" ) ) return;
          ___m_SplashStates = ___m_SplashStates.Where( e => e.m_AnimToPlay == "LoadStartScreen" ).ToArray();
          ___m_SplashStates[0].m_TimeInState = 0.01f;
-         Log.Info( $"Skipping Splash Screens ({___m_SplashStates.Length} scene left)" );
+         Log.Info( $"Skipping Splash Screens" );
          // [ { "Unity, 1, False }, { "HermesInteractive, 2, False }, { "Team 17, 4, True }, { "Legal, 3, False }, { "LoadStartScreen", 2, False } ]
       } catch ( Exception ex ) { Log.Error( ex ); } }
 
@@ -145,21 +144,24 @@ namespace Automodchef {
       private static bool isInitialLoad = false;
 
       private static void OfferToLoadGameOnEnter ( LevelStatus __instance ) { try {
+         Log.Fine( "New Level detected." );
          isInitialLoad = false;
          var data = SaveLoadManager.GetInstance().getSavedKitchenData();
-         if ( data == null ) return;
+         if ( data == null ) { Log.Info( "Save data not found, aborting." ); return; }
 		 for ( var i = 0; i < 5; i++ )
 			if ( data.Get( i ) != null ) {
+               Log.Info( $"Found saved level at slot {i+1}, offering load dialog." );
                __instance.preLevelScreen.gameObject.SetActive( false );
                isInitialLoad = true;
                Initializer.GetInstance().saveLoadPanel.Open( false );
                return;
             }
+         Log.Info( "No saved level found.  Skipping load dialog." );
       } catch ( Exception ex ) { Log.Error( ex ); } }
 
       private static void Initializer_Start_AdjustSpeed ( Initializer __instance ) {
          if ( __instance == null || __instance.speeds == null || __instance.speeds.Count < 4 ) return;
-         Log.Info( $"Setting game speeds to [ 0x, 1x, {config.speed2}x, {config.speed3}x ]" );
+         Log.Info( $"Setting game speeds to [ {__instance.speeds[0]}x, {__instance.speeds[1]}x, {config.speed2}x, {config.speed3}x ]" );
          __instance.speeds[2] = config.speed2;
          __instance.speeds[3] = config.speed3;
       }
@@ -169,10 +171,8 @@ namespace Automodchef {
       private static ConditionalWeakTable< MaterialDropdown, DropdownIcon > dropdownIcon;
 
       private static void TrackDropdown ( MaterialDropdown dropdown, KitchenPartProperty prop, DropdownIcon icon ) { try {
-         dropdownProp.Remove( dropdown );
-         dropdownProp.Add( dropdown, prop );
-         dropdownIcon.Remove( dropdown );
-         dropdownIcon.Add( dropdown, icon );
+         dropdownProp.Remove( dropdown ); dropdownProp.Add( dropdown, prop );
+         dropdownIcon.Remove( dropdown ); dropdownIcon.Add( dropdown, icon );
       } catch ( Exception ex ) { Log.Error( ex ); } }
 
       private static bool ToggleDropdown ( MaterialDropdown __instance, ref int ___m_CurrentlySelected ) { try {
@@ -235,6 +235,7 @@ namespace Automodchef {
          }
          __result += "\n" + string.Join( "\n", efficiencyLog.ToArray() );
          __result = __result.Trim();
+         Log.Fine( __result );
       } catch ( Exception ex ) { Log.Error( ex ); } }
       #endregion
 
@@ -249,6 +250,7 @@ namespace Automodchef {
                    "Processed", "Grilled", "Fried", "Steamed", "Baked", "Wet", "Baterias",
                    "Spoil", "Ingredients Quota", "Power Quota" );
             foreach ( var mat in Ingredient.GetAll().Union( Dish.GetAll() ) ) {
+               Log.Fine( $"#{mat.internalName} = {mat.friendlyName}" );
                float spoil = 0, iQ = 0, pQ = 0;
                if ( mat is Dish dish ) { spoil = dish.timeToBeSpoiled;  iQ = dish.expectedIngredients;  pQ = dish.expectedPower; }
                f.Csv( mat.internalName, mat.friendlyName, mat.GetFriendlyNameTranslated(), mat.technique.ToString(), mat.timeToBeAssembled + "",
@@ -261,7 +263,7 @@ namespace Automodchef {
             }
             f.Flush();
          }
-         Log.Info( "Export done" );
+         Log.Info( "Food list exported" );
       } catch ( Exception ex ) { Log.Warn( ex ); } }
 
       private static void Csv ( this TextWriter f, params string[] values ) {
