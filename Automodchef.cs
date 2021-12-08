@@ -39,6 +39,8 @@ namespace Automodchef {
       public bool ask_loadgame_on_level_start = true;
       [ ConfigAttribute( "User Interface", "Max number if options to convert dropdown to toggle button.  Default 3.  0 to disable." ) ]
       public byte dropdown_toogle_threshold = 3;
+      [ ConfigAttribute( "User Interface", "Show real-time power usage in mouseover tooltips." ) ]
+      public bool tooltip_power_usage = true;
       [ ConfigAttribute( "User Interface", "Add effiency calculation to kitchen log.  True or false.  Default true." ) ]
       public bool efficiency_log = true;
       [ ConfigAttribute( "User Interface", "Breakdown efficiency quotas by dishes.  True or false.  Default true." ) ]
@@ -88,6 +90,11 @@ namespace Automodchef {
             dropdownIcon = new ConditionalWeakTable< MaterialDropdown, DropdownIcon >();
             Modder.TryPatch( typeof( PartProperties ), "PopulateDropdownForProperty", nameof( TrackDropdown ) );
             Modder.TryPatch( typeof( MaterialDropdown ), "ShowDropdown", nameof( ToggleDropdown ) );
+         }
+         if ( config.tooltip_power_usage ) {
+            Modder.TryPatch( typeof( KitchenPart ).AllMethods( "ConsumePower" ).FirstOrDefault( e => e.GetParameters().Length > 0 ), nameof( LogPowerUsage ) );
+            Modder.TryPatch( typeof( PowerMeter ), "Reset", nameof( ClearPowerUsage ) );
+            Modder.TryPatch( typeof( KitchenPart ), "GetTooltipText", postfix: nameof( AppendPowerToTooltip ) );
          }
          if ( config.efficiency_log ) {
             efficiencyLog = new List<string>();
@@ -163,19 +170,21 @@ namespace Automodchef {
          Log.Info( "No saved level found.  Skipping load dialog." );
       } catch ( Exception ex ) { Log.Error( ex ); } }
 
-      private static void ClearPreLevelFlag () {
-         Log.Fine( "Save loaded or deleted.  Suppressing pre-level screen." );
-         lastPreLevelScreenState = false;
-         currentLevel?.levelStatusUI.preLevelScreen.gameObject.SetActive( false );
-      }
-
       private static void RestorePreLevelScreen () { try {
          if ( ! lastPreLevelScreenState ) return;
          Log.Fine( "Restoring level brief screen." );
          lastPreLevelScreenState = false;
          currentLevel.levelStatusUI.preLevelScreen.gameObject.SetActive( true );
       } catch ( Exception ex ) { Log.Error( ex ); } }
+
+      private static void ClearPreLevelFlag () {
+         Log.Fine( "Save loaded or deleted.  Suppressing pre-level screen." );
+         lastPreLevelScreenState = false;
+         currentLevel?.levelStatusUI.preLevelScreen.gameObject.SetActive( false );
+      }
       #endregion
+      
+      
 
       #region Dropdown Toggle
       private static ConditionalWeakTable< MaterialDropdown, KitchenPartProperty > dropdownProp;
@@ -197,6 +206,29 @@ namespace Automodchef {
          return false;
       } catch ( Exception ex ) { Log.Error( ex ); return true; } }
       #endregion
+
+      private class PowerLog { internal float consumption; }
+      private static ConditionalWeakTable< KitchenPart, PowerLog > powerLog;
+
+      private static void LogPowerUsage ( KitchenPart __instance, float multiplier ) { try {
+         if ( ! Initializer.GetInstance().IsSimRunning() || powerLog == null ) return;
+         powerLog.GetOrCreateValue( __instance ).consumption += __instance.powerInWatts * multiplier;
+      } catch ( Exception ex ) { Log.Error( ex ); } }
+
+      private static void ClearPowerUsage () {
+         Log.Fine( "Reset power log" );
+         powerLog = new ConditionalWeakTable<KitchenPart, PowerLog>();
+      }
+
+      private static void AppendPowerToTooltip ( KitchenPart __instance, ref string __result ) { try {
+         if ( ! Initializer.GetInstance().IsSimRunning() || __instance.powerInWatts <= 0 ) return;
+         powerLog.TryGetValue( __instance, out PowerLog log );
+         var power = CachedData.fixedDeltaTime * ( log?.consumption ?? 0 ) / 3600f;
+         var unit = "Wh";
+         if ( power >= 1000 ) { power /= 1000f; unit = "kWh"; }
+         if ( power >= 1000 ) { power /= 1000f; unit = "MWh"; }
+         __result += $"\n{PowerMeter.GetInstance().GetLastPowerUsage( __instance )}W >> {power:0.00}{unit}";
+      } catch ( Exception ex ) { Log.Error( ex ); } }
 
       #region Efficiency Log
       private static Dictionary< object, int > orderedDish, cookedDish;
