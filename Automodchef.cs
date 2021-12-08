@@ -69,9 +69,9 @@ namespace Automodchef {
       internal static void Apply ( Assembly game ) {
          config.Load();
          if ( config.skip_intro )
-            Modder.TryPatch( typeof( FaderUIController ), "Awake", nameof( FaderUIController_Awake_SkipSplash ) );
+            Modder.TryPatch( typeof( FaderUIController ), "Awake", nameof( SkipVideoSplashes ) );
          if ( config.skip_spacebar )
-            Modder.TryPatch( typeof( SplashScreen ), "Update", postfix: nameof( SplashScreen_Update_SkipSplash ) );
+            Modder.TryPatch( typeof( SplashScreen ), "Update", postfix: nameof( SkipSpacebarSplash ) );
          if ( config.disable_analytics ) {
             foreach ( var m in typeof( Analytics ).AllMethods().Where( e => e.Name == "CustomEvent" || e.Name == "Transaction" || e.Name.StartsWith( "Send" ) ) )
                Modder.TryPatch( m, nameof( DisableAnalytics ) );
@@ -92,16 +92,16 @@ namespace Automodchef {
          if ( config.efficiency_log ) {
             efficiencyLog = new List<string>();
             if ( config.efficiency_log_breakdown )
-               if ( Modder.TryPatch( typeof( EfficiencyMeter ), "Reset", nameof( EfficiencyMeter_Reset_ClearLog ) ) ) {
+               if ( Modder.TryPatch( typeof( EfficiencyMeter ), "Reset", nameof( ClearEfficiencyLog ) ) ) {
                   orderedDish = new Dictionary<object, int>();
                   cookedDish = new Dictionary<object, int>();
-                  Modder.TryPatch( typeof( EfficiencyMeter ), "AddOrder", nameof( EfficiencyMeter_AddOrder_Log ) );
-                  Modder.TryPatch( typeof( EfficiencyMeter ), "AddDeliveredDish", nameof( EfficiencyMeter_AddDeliveredDish_Log ) );
+                  Modder.TryPatch( typeof( EfficiencyMeter ), "AddOrder", nameof( TrackOrdersEfficiency ) );
+                  Modder.TryPatch( typeof( EfficiencyMeter ), "AddDeliveredDish", nameof( TrackDeliveryEfficiency ) );
                }
-            if ( Modder.TryPatch( typeof( EfficiencyMeter ), "GetEfficiency", postfix: nameof( EfficiencyMeter_Calc_Log ) ) ) {
-               Modder.TryPatch( typeof( LevelManager ), "DetermineLevelOutcome", nameof( LevelManger_Outcome_StopLog ), nameof( LevelManger_Outcome_ResumeLog ) );
-               Modder.TryPatch( typeof( LevelStatus ), "RenderEvents", postfix: nameof( LevelStatus_RenderEvents_ShowLog ) );
-               Modder.TryPatch( typeof( KitchenEventsLog ), "ToString", postfix: nameof( KitchenLog_ToString_Append ) );
+            if ( Modder.TryPatch( typeof( EfficiencyMeter ), "GetEfficiency", postfix: nameof( CalculateEfficiency ) ) ) {
+               Modder.TryPatch( typeof( LevelManager ), "DetermineLevelOutcome", nameof( SuppressEfficiencyLog ), nameof( ResumeEfficiencyLog ) );
+               Modder.TryPatch( typeof( LevelStatus ), "RenderEvents", postfix: nameof( ForceShowEfficiencyLog ) );
+               Modder.TryPatch( typeof( KitchenEventsLog ), "ToString", postfix: nameof( AppendEfficiencyLog ) );
             }
          }
          if ( config.suppress_confirmation ) {
@@ -109,13 +109,13 @@ namespace Automodchef {
             if ( orig != null ) Modder.TryPatch( orig, nameof( SuppressConfirmation ) );
          }
          if ( config.speed2 != 3 || config.speed3 != 5 )
-            Modder.TryPatch( typeof( Initializer ), "Start", nameof( Initializer_Start_AdjustSpeed ) );
+            Modder.TryPatch( typeof( Initializer ), "Start", nameof( AdjustGameSpeedPresets ) );
          if ( config.export_food_csv )
-            Modder.TryPatch( typeof( SplashScreen ), "Awake", nameof( SplashScreen_Awake_DumpCsv ) );
+            Modder.TryPatch( typeof( SplashScreen ), "Awake", nameof( DumpFoodCsv ) );
       }
 
       #region Skip Splash
-      private static void FaderUIController_Awake_SkipSplash ( ref FaderUIController.SplashStateInfo[] ___m_SplashStates ) { try {
+      private static void SkipVideoSplashes ( ref FaderUIController.SplashStateInfo[] ___m_SplashStates ) { try {
          if ( ___m_SplashStates == null || ___m_SplashStates.Length <= 1 || ___m_SplashStates[0].m_AnimToPlay != "Unity" ) return;
          if ( ! ___m_SplashStates.Any( e => e.m_AnimToPlay == "LoadStartScreen" ) ) return;
          ___m_SplashStates = ___m_SplashStates.Where( e => e.m_AnimToPlay == "LoadStartScreen" ).ToArray();
@@ -124,7 +124,7 @@ namespace Automodchef {
          // [ { "Unity, 1, False }, { "HermesInteractive, 2, False }, { "Team 17, 4, True }, { "Legal, 3, False }, { "LoadStartScreen", 2, False } ]
       } catch ( Exception ex ) { Log.Error( ex ); } }
 
-      private static void SplashScreen_Update_SkipSplash ( SplashScreen __instance, ref bool ___m_bProcessedCloseRequest ) { try {
+      private static void SkipSpacebarSplash ( SplashScreen __instance, ref bool ___m_bProcessedCloseRequest ) { try {
          if ( ___m_bProcessedCloseRequest || InputWrapper.GetController() == null ) return;
          ___m_bProcessedCloseRequest = true;
          Modder.TryMethod( typeof( SplashScreen ), "ProceedToMainMenu" ).Invoke( __instance, Array.Empty<object>() );
@@ -200,9 +200,9 @@ namespace Automodchef {
 
       #region Efficiency Log
       private static Dictionary< object, int > orderedDish, cookedDish;
-      private static void EfficiencyMeter_Reset_ClearLog () { orderedDish.Clear(); cookedDish.Clear(); }
-      private static void EfficiencyMeter_AddOrder_Log ( Dish dish ) => EfficiencyMeter_Dish_Log( orderedDish, dish );
-      private static void EfficiencyMeter_AddDeliveredDish_Log ( Dish dish ) => EfficiencyMeter_Dish_Log( cookedDish, dish );
+      private static void ClearEfficiencyLog () { orderedDish.Clear(); cookedDish.Clear(); }
+      private static void TrackOrdersEfficiency ( Dish dish ) => EfficiencyMeter_Dish_Log( orderedDish, dish );
+      private static void TrackDeliveryEfficiency ( Dish dish ) => EfficiencyMeter_Dish_Log( cookedDish, dish );
       private static void EfficiencyMeter_Dish_Log ( Dictionary< object, int > log, Dish dish ) {
          log.TryGetValue( dish, out int i );
          log[ dish ] = i + 1;
@@ -212,9 +212,9 @@ namespace Automodchef {
       private static List<string> efficiencyLog;
       private static bool ShowEfficiencyLog => outcome != (int) LevelOutcome.Failure && outcome != (int) LevelOutcome.InProgress;
 
-      private static void LevelManger_Outcome_StopLog () => outcome = (int) LevelOutcome.InProgress;
-      private static void LevelManger_Outcome_ResumeLog ( LevelOutcome __result ) => outcome = (int) __result;
-      private static void EfficiencyMeter_Calc_Log ( bool allGoalsFulfilled, int __result, int ___expectedIngredientsUsage, int ___expectedPowerUsage ) { try {
+      private static void SuppressEfficiencyLog () => outcome = (int) LevelOutcome.InProgress;
+      private static void ResumeEfficiencyLog ( LevelOutcome __result ) => outcome = (int) __result;
+      private static void CalculateEfficiency ( bool allGoalsFulfilled, int __result, int ___expectedIngredientsUsage, int ___expectedPowerUsage ) { try {
          if ( ! ShowEfficiencyLog ) return;
          float iUsed = IngredientsCounter.GetInstance().GetUsedIngredients(), pUsed = PowerMeter.GetInstance().GetWattsHour();
          float iMark = Mathf.Clamp01( ___expectedIngredientsUsage / iUsed ), pMark = Mathf.Clamp01( ___expectedPowerUsage / pUsed );
@@ -226,11 +226,11 @@ namespace Automodchef {
       } catch ( Exception ex ) { Log.Error( ex ); } }
 
       // Show modded logs even when kitchen has no events
-      private static void LevelStatus_RenderEvents_ShowLog ( LevelStatus __instance, KitchenEventsLog log ) { try {
+      private static void ForceShowEfficiencyLog ( LevelStatus __instance, KitchenEventsLog log ) { try {
          if ( ShowEfficiencyLog && log.GetEventsCount() <= 0 ) __instance.eventsLogTextField.text = log.ToString();
       } catch ( Exception ex ) { Log.Error( ex ); } }
 
-      private static void KitchenLog_ToString_Append ( ref string __result ) { try {
+      private static void AppendEfficiencyLog ( ref string __result ) { try {
          if ( ! ShowEfficiencyLog || efficiencyLog.Count <= 0 ) return;
          Log.Info( $"Appending efficiency log ({efficiencyLog.Count+orderedDish.Count} lines) to kitchen log." );
          __result += "\n\n";
@@ -266,7 +266,7 @@ namespace Automodchef {
          return true;
       } catch ( Exception ex ) { Log.Warn( ex ); return true; } }
 
-      private static void Initializer_Start_AdjustSpeed ( Initializer __instance ) { try {
+      private static void AdjustGameSpeedPresets ( Initializer __instance ) { try {
          if ( __instance == null || __instance.speeds == null || __instance.speeds.Count < 4 ) return;
          Log.Info( $"Setting game speeds to [ {__instance.speeds[0]}x, {__instance.speeds[1]}x, {config.speed2}x, {config.speed3}x ]" );
          __instance.speeds[2] = config.speed2;
@@ -276,7 +276,7 @@ namespace Automodchef {
       #region Tools (CSV)
       private static readonly StringBuilder line = new StringBuilder();
 
-      private static void SplashScreen_Awake_DumpCsv () { try {
+      private static void DumpFoodCsv () { try {
          string file = Path.Combine( ZySimpleMod.AppDataDir, "foods.csv" );
          Log.Info( $"Exporting food list to {file}" );
          using ( TextWriter f = File.CreateText( file ) ) {
