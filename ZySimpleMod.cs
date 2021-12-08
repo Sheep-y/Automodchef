@@ -168,7 +168,7 @@ namespace ZyMod {
       internal static void Patch ( MethodBase method, string prefix = null, string postfix = null, string transpiler = null ) {
          if ( harmony == null ) harmony = new Harmony( ZySimpleMod.ModName );
          harmony.Patch( method, ToHarmony( prefix ), ToHarmony( postfix ), ToHarmony( transpiler ) );
-         Log.Info( $"Patched {method.DeclaringType} {method} | Pre: {prefix} | Post: {postfix} | Trans: {transpiler}" );
+         Log.Fine( $"Patched {method.DeclaringType} {method} | Pre: {prefix} | Post: {postfix} | Trans: {transpiler}" );
       }
 
       internal static bool TryPatch ( Type type, string method, string prefix = null, string postfix = null, string transpiler = null ) =>

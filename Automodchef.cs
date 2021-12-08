@@ -120,7 +120,7 @@ namespace Automodchef {
          if ( ! ___m_SplashStates.Any( e => e.m_AnimToPlay == "LoadStartScreen" ) ) return;
          ___m_SplashStates = ___m_SplashStates.Where( e => e.m_AnimToPlay == "LoadStartScreen" ).ToArray();
          ___m_SplashStates[0].m_TimeInState = 0.01f;
-         Log.Info( $"Skipping Splash Screens" );
+         Log.Info( $"Skipping Logos and Warnings." );
          // [ { "Unity, 1, False }, { "HermesInteractive, 2, False }, { "Team 17, 4, True }, { "Legal, 3, False }, { "LoadStartScreen", 2, False } ]
       } catch ( Exception ex ) { Log.Error( ex ); } }
 
@@ -128,7 +128,7 @@ namespace Automodchef {
          if ( ___m_bProcessedCloseRequest || InputWrapper.GetController() == null ) return;
          ___m_bProcessedCloseRequest = true;
          Modder.TryMethod( typeof( SplashScreen ), "ProceedToMainMenu" ).Invoke( __instance, Array.Empty<object>() );
-         Log.Info( "Skipped Space Press Splash" );
+         Log.Info( "Skipped Press Space Splash." );
       } catch ( Exception ex ) {
          Log.Error( ex );
          ___m_bProcessedCloseRequest = false;
@@ -254,12 +254,12 @@ namespace Automodchef {
          foreach ( var msg in new string[] { About_To_Load_Game, Bonus_Level, Delete_Blueprint_Confirmation, Delete_Game,
                   Quit_Confirmation, Quit_Confirmation_In_Game, Reset_Kitchen } )
             if ( bodyText == msg ) {
-               Log.Info( $"Suppressing {bodyText} confirmation" );
+               Log.Info( $"Assuming yes for {bodyText}" );
                onAffirmativeButtonClicked();
                return false;
             }
          if ( bodyText == Save_Before_Quitting ) {
-            Log.Info( $"Suppressing {bodyText} confirmation" );
+            Log.Info( $"Assuming no for {bodyText}" );
             onDismissiveButtonClicked();
             return false;
          }
