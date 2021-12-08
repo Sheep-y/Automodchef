@@ -37,16 +37,17 @@ namespace Automodchef {
 
       [ ConfigAttribute( "User Interface", "Show load game prompt when entering a level (if any saves).  Loading a game will bypass level goal popup and roboto speech.  True or false.  Default true." ) ]
       public bool ask_loadgame_on_level_start = true;
-      [ ConfigAttribute( "User Interface", "Speed of double time (two arrows).  0-100 integer.  Game default 3.  Mod default 5." ) ]
-      public byte speed2 = 5;
-      [ ConfigAttribute( "User Interface", "Speed of triple time (three arrows).  0-100 integer.  Game default 5.  Mod default 20." ) ]
-      public byte speed3 = 20;
       [ ConfigAttribute( "User Interface", "Max number if options to convert dropdown to toggle button.  Default 3.  0 to disable." ) ]
       public byte dropdown_toogle_threshold = 3;
       [ ConfigAttribute( "User Interface", "Add effiency calculation to kitchen log.  True or false.  Default true." ) ]
       public bool efficiency_log = true;
       [ ConfigAttribute( "User Interface", "Breakdown efficiency quotas by dishes.  True or false.  Default true." ) ]
       public bool efficiency_log_breakdown = true;
+
+      [ ConfigAttribute( "Simulation", "Speed of double time (two arrows).  0-100 integer.  Game default 3.  Mod default 5." ) ]
+      public byte speed2 = 5;
+      [ ConfigAttribute( "Simulation", "Speed of triple time (three arrows).  0-100 integer.  Game default 5.  Mod default 20." ) ]
+      public byte speed3 = 20;
 
       [ ConfigAttribute( "Tools", "Export foods to foods.csv on game launch.  True or false.  Default false." ) ]
       public bool export_food_csv = false;
@@ -144,10 +145,10 @@ namespace Automodchef {
 
       private static bool DisableAnalytics () { Log.Info( "Analytics Blocked" ); return false; }
 
+      #region Pre-level load dialogue
       private static LevelManager currentLevel;
       private static bool lastPreLevelScreenState;
 
-      #region Pre-level load dialogue
       private static void SetNewLevelTrigger ( LevelManager __instance, SaveLoadManager ___m_saveLoadManager ) { try {
          if ( __instance.GetLevel().IsTutorial() ) return;
          Log.Fine( "Entering new non-tutorial level." );
@@ -175,7 +176,6 @@ namespace Automodchef {
          lastPreLevelScreenState = false;
          currentLevel?.levelStatusUI.preLevelScreen.gameObject.SetActive( false );
       }
-      #endregion
 
       private static void RestorePreLevelScreen () { try {
          if ( ! lastPreLevelScreenState ) return;
@@ -183,13 +183,7 @@ namespace Automodchef {
          lastPreLevelScreenState = false;
          currentLevel.levelStatusUI.preLevelScreen.gameObject.SetActive( true );
       } catch ( Exception ex ) { Log.Error( ex ); } }
-
-      private static void Initializer_Start_AdjustSpeed ( Initializer __instance ) {
-         if ( __instance == null || __instance.speeds == null || __instance.speeds.Count < 4 ) return;
-         Log.Info( $"Setting game speeds to [ {__instance.speeds[0]}x, {__instance.speeds[1]}x, {config.speed2}x, {config.speed3}x ]" );
-         __instance.speeds[2] = config.speed2;
-         __instance.speeds[3] = config.speed3;
-      }
+      #endregion
 
       #region Dropdown Toggle
       private static ConditionalWeakTable< MaterialDropdown, KitchenPartProperty > dropdownProp;
@@ -263,6 +257,13 @@ namespace Automodchef {
          Log.Fine( __result );
       } catch ( Exception ex ) { Log.Error( ex ); } }
       #endregion
+
+      private static void Initializer_Start_AdjustSpeed ( Initializer __instance ) {
+         if ( __instance == null || __instance.speeds == null || __instance.speeds.Count < 4 ) return;
+         Log.Info( $"Setting game speeds to [ {__instance.speeds[0]}x, {__instance.speeds[1]}x, {config.speed2}x, {config.speed3}x ]" );
+         __instance.speeds[2] = config.speed2;
+         __instance.speeds[3] = config.speed3;
+      }
 
       #region Tools (CSV)
       private static readonly StringBuilder line = new StringBuilder();
