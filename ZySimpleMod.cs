@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -152,13 +153,14 @@ namespace ZyMod {
       private static Type Code;
       private static Harmony harmony;
 
-      public static MethodInfo TryMethod ( this Type type, string method ) { try { return Method( type, method ); } catch ( ApplicationException ) { return null; } }
-
+      public static IEnumerable< MethodInfo > AllMethods ( this Type type ) => type.GetMethods( Public | NonPublic | Instance | Static ).Where( e => ! e.IsAbstract );
+      public static IEnumerable< MethodInfo > AllMethods ( this Type type, string name ) => type.AllMethods().Where( e => e.Name == name );
       public static MethodInfo Method ( this Type type, string method ) { try {
          var result = type?.GetMethod( method, Public | NonPublic | Instance | Static );
          if ( result == null ) throw new ApplicationException( $"Not found: {type}.{method}" );
          return result;
       } catch ( AmbiguousMatchException ex ) { throw new ApplicationException( $"Multiple: {type}.{method}", ex ); } }
+      public static MethodInfo TryMethod ( this Type type, string method ) { try { return Method( type, method ); } catch ( ApplicationException ) { return null; } }
 
       internal static void Patch ( Type type, string method, string prefix = null, string postfix = null, string transpiler = null ) =>
          Patch( Method( type, method ), prefix, postfix, transpiler );
@@ -201,7 +203,7 @@ namespace ZyMod {
          }
          if ( LogLevel == TraceLevel.Off ) File.Delete( LogPath );
          else using ( TextWriter f = File.CreateText( LogPath ) )
-             f.WriteLine( $"{DateTime.Now:u} {ZySimpleMod.ModName} initiated" );
+             f.WriteLine( $"{DateTime.Now:u} {ZySimpleMod.ModName} initiated, log level {LogLevel}" );
       } catch ( Exception ) { } }
       public static void Error ( object msg ) => Write( LogLevel >= TraceLevel.Error   ? Timestamp( "ERROR ", msg ) : null );
       public static void Warn  ( object msg ) => Write( LogLevel >= TraceLevel.Warning ? Timestamp( "WARN ", msg ) : null );

@@ -9,7 +9,7 @@ using System.Text;
 using UnityEngine;
 using UnityEngine.Analytics;
 using ZyMod;
-using static System.Reflection.BindingFlags;
+using static I2.Loc.ScriptLocalization.Warnings;
 
 namespace Automodchef {
 
@@ -43,6 +43,8 @@ namespace Automodchef {
       public bool efficiency_log = true;
       [ ConfigAttribute( "User Interface", "Breakdown efficiency quotas by dishes.  True or false.  Default true." ) ]
       public bool efficiency_log_breakdown = true;
+      [ ConfigAttribute( "User Interface", "Suppress yes/no confirmations - save before quit, load game, delete save / blueprint / scenario, quit level / game, reset layout" ) ]
+      public bool suppress_confirmation = true;
 
       [ ConfigAttribute( "Simulation", "Speed of double time (two arrows).  0-100 integer.  Game default 3.  Mod default 5." ) ]
       public byte speed2 = 5;
@@ -64,28 +66,14 @@ namespace Automodchef {
 
       internal static Config config = new Config();
 
-      private static void ClassLog ( object __instance, MethodBase __originalMethod ) { Log.Info( __originalMethod.DeclaringType.Name + "." + __originalMethod.Name ); }
-
       internal static void Apply ( Assembly game ) {
          config.Load();
-         /*
-         foreach ( var cls in game.GetTypes() ) {
-            //if ( ! cls.IsSubclassOf( typeof( MonoBehaviour ) ) ) continue;
-            if ( cls.IsNotPublic || cls.IsGenericType ) continue;
-            if ( cls.Namespace == null || cls.Namespace.StartsWith( "UnityEngine." ) || cls.Namespace.StartsWith( "Mono." ) ) continue;
-            Log.Info( "> " + cls.FullName );
-            foreach ( var m in cls.GetMethods( Public | Instance ) )
-               if ( ! m.IsGenericMethod && ! m.IsAbstract && m.DeclaringType != typeof( object ) && m.Name != "GetTypeCode" )
-                  Modder.Patch( m, nameof( ClassLog ) );
-         }
-         */
-
          if ( config.skip_intro )
             Modder.TryPatch( typeof( FaderUIController ), "Awake", nameof( FaderUIController_Awake_SkipSplash ) );
          if ( config.skip_spacebar )
             Modder.TryPatch( typeof( SplashScreen ), "Update", postfix: nameof( SplashScreen_Update_SkipSplash ) );
          if ( config.disable_analytics ) {
-            foreach ( var m in typeof( Analytics ).GetMethods( Public | NonPublic | Static | Instance ).Where( e => e.Name == "CustomEvent" || e.Name == "Transaction" || e.Name.StartsWith( "Send" ) ) )
+            foreach ( var m in typeof( Analytics ).AllMethods().Where( e => e.Name == "CustomEvent" || e.Name == "Transaction" || e.Name.StartsWith( "Send" ) ) )
                Modder.TryPatch( m, nameof( DisableAnalytics ) );
             Modder.TryPatch( typeof( AutomachefAnalytics ), "Track", nameof( DisableAnalytics ) );
          }
@@ -95,8 +83,6 @@ namespace Automodchef {
             Modder.TryPatch( typeof( SaveLoadManager ), "DeleteSave", nameof( ClearPreLevelFlag ) );
             Modder.TryPatch( typeof( SaveLoadManager ), "LoadAndBuildKitchen", nameof( ClearPreLevelFlag ) );
          }
-         if ( config.speed2 != 3 || config.speed3 != 5 )
-            Modder.TryPatch( typeof( Initializer ), "Start", nameof( Initializer_Start_AdjustSpeed ) );
          if ( config.dropdown_toogle_threshold > 0 ) {
             dropdownProp = new ConditionalWeakTable< MaterialDropdown, KitchenPartProperty >();
             dropdownIcon = new ConditionalWeakTable< MaterialDropdown, DropdownIcon >();
@@ -118,6 +104,12 @@ namespace Automodchef {
                Modder.TryPatch( typeof( KitchenEventsLog ), "ToString", postfix: nameof( KitchenLog_ToString_Append ) );
             }
          }
+         if ( config.suppress_confirmation ) {
+            var orig = typeof( DialogManager ).AllMethods( "ShowAlert" ).FirstOrDefault( e => e.GetParameters().Length == 7 );
+            if ( orig != null ) Modder.TryPatch( orig, nameof( SuppressConfirmation ) );
+         }
+         if ( config.speed2 != 3 || config.speed3 != 5 )
+            Modder.TryPatch( typeof( Initializer ), "Start", nameof( Initializer_Start_AdjustSpeed ) );
          if ( config.export_food_csv )
             Modder.TryPatch( typeof( SplashScreen ), "Awake", nameof( SplashScreen_Awake_DumpCsv ) );
       }
@@ -258,12 +250,28 @@ namespace Automodchef {
       } catch ( Exception ex ) { Log.Error( ex ); } }
       #endregion
 
-      private static void Initializer_Start_AdjustSpeed ( Initializer __instance ) {
+      private static bool SuppressConfirmation ( string bodyText, Action onAffirmativeButtonClicked, Action onDismissiveButtonClicked ) { try {
+         foreach ( var msg in new string[] { About_To_Load_Game, Bonus_Level, Delete_Blueprint_Confirmation, Delete_Game,
+                  Quit_Confirmation, Quit_Confirmation_In_Game, Reset_Kitchen } )
+            if ( bodyText == msg ) {
+               Log.Info( $"Suppressing {bodyText} confirmation" );
+               onAffirmativeButtonClicked();
+               return false;
+            }
+         if ( bodyText == Save_Before_Quitting ) {
+            Log.Info( $"Suppressing {bodyText} confirmation" );
+            onDismissiveButtonClicked();
+            return false;
+         }
+         return true;
+      } catch ( Exception ex ) { Log.Warn( ex ); return true; } }
+
+      private static void Initializer_Start_AdjustSpeed ( Initializer __instance ) { try {
          if ( __instance == null || __instance.speeds == null || __instance.speeds.Count < 4 ) return;
          Log.Info( $"Setting game speeds to [ {__instance.speeds[0]}x, {__instance.speeds[1]}x, {config.speed2}x, {config.speed3}x ]" );
          __instance.speeds[2] = config.speed2;
          __instance.speeds[3] = config.speed3;
-      }
+      } catch ( Exception ex ) { Log.Warn( ex ); } }
 
       #region Tools (CSV)
       private static readonly StringBuilder line = new StringBuilder();
