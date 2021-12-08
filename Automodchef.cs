@@ -36,7 +36,7 @@ namespace Automodchef {
       public bool disable_analytics = true;
 
       [ ConfigAttribute( "User Interface", "Show load game prompt when entering a level (if any saves).  Loading a game will bypass level goal popup and roboto speech.  True or false.  Default true." ) ]
-      public bool load_prompt_on_enter = true;
+      public bool ask_loadgame_on_level_start = true;
       [ ConfigAttribute( "User Interface", "Speed of double time (two arrows).  0-100 integer.  Game default 3.  Mod default 5." ) ]
       public byte speed2 = 5;
       [ ConfigAttribute( "User Interface", "Speed of triple time (three arrows).  0-100 integer.  Game default 5.  Mod default 20." ) ]
@@ -88,8 +88,11 @@ namespace Automodchef {
                Modder.TryPatch( m, nameof( DisableAnalytics ) );
             Modder.TryPatch( typeof( AutomachefAnalytics ), "Track", nameof( DisableAnalytics ) );
          }
-         if ( config.load_prompt_on_enter ) {
-            Modder.TryPatch( typeof( LevelStatus ), "InitUI", nameof( OfferToLoadGameOnEnter ) );
+         if ( config.ask_loadgame_on_level_start ) {
+            Modder.TryPatch( typeof( LevelManager ), "Start", postfix: nameof( SetNewLevelTrigger ) );
+            Modder.TryPatch( typeof( SaveLoad ), "Close", nameof( RestorePreLevelScreen ) );
+            Modder.TryPatch( typeof( SaveLoadManager ), "DeleteSave", nameof( ClearPreLevelFlag ) );
+            Modder.TryPatch( typeof( SaveLoadManager ), "LoadAndBuildKitchen", nameof( ClearPreLevelFlag ) );
          }
          if ( config.speed2 != 3 || config.speed3 != 5 )
             Modder.TryPatch( typeof( Initializer ), "Start", nameof( Initializer_Start_AdjustSpeed ) );
@@ -141,22 +144,44 @@ namespace Automodchef {
 
       private static bool DisableAnalytics () { Log.Info( "Analytics Blocked" ); return false; }
 
-      private static bool isInitialLoad = false;
+      private static LevelManager currentLevel;
+      private static bool lastPreLevelScreenState;
 
-      private static void OfferToLoadGameOnEnter ( LevelStatus __instance ) { try {
-         Log.Fine( "New Level detected." );
-         isInitialLoad = false;
+      #region Pre-level load dialogue
+      private static void SetNewLevelTrigger ( LevelManager __instance, SaveLoadManager ___m_saveLoadManager ) { try {
+         if ( __instance.GetLevel().IsTutorial() ) return;
+         Log.Fine( "Entering new non-tutorial level." );
+         currentLevel = __instance;
+         ___m_saveLoadManager.OnMetadataReady += OfferToLoadGameOnEnter;
+      } catch ( Exception ex ) { Log.Error( ex ); } }
+
+      private static void OfferToLoadGameOnEnter () { try {
+         Log.Fine( "New level data loaded." );
          var data = SaveLoadManager.GetInstance().getSavedKitchenData();
          if ( data == null ) { Log.Info( "Save data not found, aborting." ); return; }
 		 for ( var i = 0; i < 5; i++ )
 			if ( data.Get( i ) != null ) {
                Log.Info( $"Found saved level at slot {i+1}, offering load dialog." );
-               __instance.preLevelScreen.gameObject.SetActive( false );
-               isInitialLoad = true;
+               lastPreLevelScreenState = currentLevel.levelStatusUI.preLevelInfoRoot.gameObject.activeSelf;
+               currentLevel.levelStatusUI.preLevelScreen.gameObject.SetActive( false );
                Initializer.GetInstance().saveLoadPanel.Open( false );
                return;
             }
          Log.Info( "No saved level found.  Skipping load dialog." );
+      } catch ( Exception ex ) { Log.Error( ex ); } }
+
+      private static void ClearPreLevelFlag () {
+         Log.Fine( "Save loaded or deleted.  Suppressing pre-level screen." );
+         lastPreLevelScreenState = false;
+         currentLevel?.levelStatusUI.preLevelScreen.gameObject.SetActive( false );
+      }
+      #endregion
+
+      private static void RestorePreLevelScreen () { try {
+         if ( ! lastPreLevelScreenState ) return;
+         Log.Fine( "Restoring level brief screen." );
+         lastPreLevelScreenState = false;
+         currentLevel.levelStatusUI.preLevelScreen.gameObject.SetActive( true );
       } catch ( Exception ex ) { Log.Error( ex ); } }
 
       private static void Initializer_Start_AdjustSpeed ( Initializer __instance ) {
