@@ -19,7 +19,7 @@ namespace ZyMod {
             instance = this;
          }
          try {
-            Log.CreateNew();
+            Log.Initialize();
             foreach ( var asm in AppDomain.CurrentDomain.GetAssemblies() ) Log.Fine( $"Already loaded: {asm.FullName}, {asm.CodeBase}" );
             AppDomain.CurrentDomain.AssemblyLoad += AsmLoaded;
             AppDomain.CurrentDomain.UnhandledException += ( _, evt ) => Log.Error( evt.ExceptionObject );
@@ -190,7 +190,15 @@ namespace ZyMod {
    public static class Log {
       public static TraceLevel LogLevel = TraceLevel.Info;
       internal static string LogPath = Path.Combine( ZySimpleMod.AppDataDir, ZySimpleMod.ModName + ".log" );
-      internal static void CreateNew () { try {
+      internal static void Initialize () { try {
+         var level = System.Environment.GetEnvironmentVariable( $"{ZySimpleMod.ModName}_LOG_LEVEL".Replace( ' ', '_' ).ToUpperInvariant() ) ?? "";
+         switch ( ( level.Trim().ToUpperInvariant() + " " )[0] ) {
+            case 'O' : LogLevel = TraceLevel.Off; break;
+            case 'E' : LogLevel = TraceLevel.Verbose; break;
+            case 'W' : LogLevel = TraceLevel.Warning; break;
+            case 'V' : LogLevel = TraceLevel.Verbose; break;
+            default  : LogLevel = TraceLevel.Info; break;
+         }
          if ( LogLevel == TraceLevel.Off ) File.Delete( LogPath );
          else using ( TextWriter f = File.CreateText( LogPath ) )
              f.WriteLine( $"{DateTime.Now:u} {ZySimpleMod.ModName} initiated" );

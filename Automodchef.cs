@@ -25,7 +25,7 @@ namespace Automodchef {
    }
 
    public class Config : IniConfig {
-      [ ConfigAttribute( "Version of this Automodchef config file.  Don't touch!" ) ]
+      [ ConfigAttribute( "To change log level, set environment variable AUTOMODCHEF_LOG_LEVEL to Off, Error, Warning, Info, or Verbose.\r\nVersion of this Automodchef config file.  Don't touch!" ) ]
       public int config_version = 20211206;
 
       [ ConfigAttribute( "System", "Skip Unity, Hermes, Team 17, and Autosave screens.  True or false.  Default true." ) ]
