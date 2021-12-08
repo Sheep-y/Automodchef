@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="HarmonyX" Version="2.6.0" />
+    <PackageReference Include="HarmonyX" Version="2.6.1" />
     <Reference Include="Assembly-CSharp">
       <HintPath>C:\Program Files\Epic Games\Automachef\Automachef_Data\Managed\Assembly-CSharp.dll</HintPath>
       <Private>false</Private>
