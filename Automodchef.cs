@@ -36,6 +36,9 @@ namespace Automodchef {
       [ ConfigAttribute( "System", "Disable mission stats analytics.  True or false.  Default true." ) ]
       public bool disable_analytics = true;
 
+      [ ConfigAttribute( "Bug Fix", "Fix food mouseover hints not showing when game is paused." ) ]
+      public bool fix_food_hint_when_paused = true;
+
       [ ConfigAttribute( "User Interface", "Show load game prompt when entering a level (if any saves).  Loading a game will bypass level goal popup and roboto speech.  True or false.  Default true." ) ]
       public bool ask_loadgame_on_level_start = true;
       [ ConfigAttribute( "User Interface", "Max number if options to convert dropdown to toggle button.  Default 3.  0 to disable." ) ]
@@ -82,6 +85,8 @@ namespace Automodchef {
                Modder.TryPatch( m, nameof( DisableAnalytics ) );
             Modder.TryPatch( typeof( AutomachefAnalytics ), "Track", nameof( DisableAnalytics ) );
          }
+         if ( config.fix_food_hint_when_paused )
+            Modder.TryPatch( typeof( IngredientTooltip ), "Update", postfix: nameof( FixIngredientHintOnPause ) );
          if ( config.ask_loadgame_on_level_start ) {
             Modder.TryPatch( typeof( LevelManager ), "Start", postfix: nameof( SetNewLevelTrigger ) );
             Modder.TryPatch( typeof( SaveLoad ), "Close", nameof( RestorePreLevelScreen ) );
@@ -148,6 +153,18 @@ namespace Automodchef {
       #endregion
 
       private static bool DisableAnalytics () { Log.Info( "Analytics Blocked" ); return false; }
+
+      private static void FixIngredientHintOnPause ( IngredientTooltip __instance, RectTransform ___ourRectTransform ) { try {
+         if ( __instance.canvasGroup.alpha != 0 || ! Initializer.GetInstance().IsSimRunning() ) return;
+         if ( __instance.kitchenBuilder.IsSomethingBeingPlaced() || InputWrapper.IsPointerOverUI( -1 ) ) return;
+         var ray = Camera.main.ScreenPointToRay( InputWrapper.mousePosition );
+         if ( ! Physics.Raycast( ray, out RaycastHit raycastHit, 50 ) ) return;
+         var food = raycastHit.transform.gameObject.GetComponent<Ingredient>();
+         if ( food == null ) return;
+         ___ourRectTransform.anchoredPosition = Camera.main.WorldToScreenPoint( raycastHit.transform.position ) / __instance.GetComponentInParent<Canvas>().scaleFactor;
+         __instance.tooltipText.text = typeof( IngredientTooltip ).Method( "FormatText" ).Invoke( __instance, new object[]{ food.GetTooltipText() } ).ToString();
+         __instance.canvasGroup.alpha = 1f;
+      } catch ( Exception ex ) { Err( ex ); } }
 
       #region Pre-level load dialogue
       private static LevelManager currentLevel;
@@ -225,7 +242,7 @@ namespace Automodchef {
       }
 
       private static void AppendPowerToTooltip ( KitchenPart __instance, ref string __result ) { try {
-         if ( ! Initializer.GetInstance().IsSimRunning() || __instance.powerInWatts <= 0 ) return;
+         if ( ! Initializer.GetInstance().IsSimRunning() || __instance.powerInWatts <= 0 || powerLog == null ) return;
          powerLog.TryGetValue( __instance, out PowerLog log );
          var power = CachedData.fixedDeltaTime * ( log?.consumption ?? 0 ) / 3600f;
          var unit = "Wh";
@@ -243,14 +260,14 @@ namespace Automodchef {
             if ( part != null ) {
                if ( ! init.levelManager.PartsWithInsects.Contains( part ) ) {
                   float timer = __instance.GetInsectTime(), spawn = part.GetComponent< InsectsSpawner >()?.stationaryTimeBeforeSpawning ?? 0;
-                  if ( timer != 0 && spawn != 0 ) __result += $"\nInfested in {spawn-timer:0.0}s";
+                  if ( timer != 0 && spawn != 0 ) __result += $"\nFresh for {spawn-timer:0.0}s";
                } else
-                  __result += $"\n(Insects nearby)";
+                  __result += "\n(Insects nearby)";
             }
          }
          if ( __instance is Dish dish ) {
             float spoil = dish.timeToBeSpoiled - __instance.GetAge();
-            if ( spoil > 0 ) __result += $"\nExpire in {spoil:0.0s}s";
+            if ( spoil > 0 ) __result += $"\nServe in {spoil:0.0}s";
          }
       } catch ( Exception ex ) { Err( ex ); } }
 
