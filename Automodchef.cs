@@ -139,7 +139,7 @@ namespace Automodchef {
          ___m_SplashStates[0].m_TimeInState = 0.01f;
          Log.Info( $"Skipping Logos and Warnings." );
          // [ { "Unity, 1, False }, { "HermesInteractive, 2, False }, { "Team 17, 4, True }, { "Legal, 3, False }, { "LoadStartScreen", 2, False } ]
-      } catch ( Exception ex ) { Log.Error( ex ); } }
+      } catch ( Exception ex ) { Err( ex ); } }
 
       private static void SkipSpacebarSplash ( SplashScreen __instance, ref bool ___m_bProcessedCloseRequest ) { try {
          if ( ___m_bProcessedCloseRequest || InputWrapper.GetController() == null ) return;
@@ -175,7 +175,7 @@ namespace Automodchef {
          Log.Fine( "Entering new non-tutorial level." );
          currentLevel = __instance;
          ___m_saveLoadManager.OnMetadataReady += OfferToLoadGameOnEnter;
-      } catch ( Exception ex ) { Log.Error( ex ); } }
+      } catch ( Exception ex ) { Err( ex ); } }
 
       private static void OfferToLoadGameOnEnter () { try {
          Log.Fine( "New level data loaded." );
@@ -190,7 +190,7 @@ namespace Automodchef {
                return;
             }
          Log.Info( "No saved level found.  Skipping load dialog." );
-      } catch ( Exception ex ) { Log.Error( ex ); } }
+      } catch ( Exception ex ) { Err( ex ); } }
 
       private static void RestorePreLevelScreen () { try {
          if ( ! lastPreLevelScreenState ) return;
@@ -213,7 +213,7 @@ namespace Automodchef {
       private static void TrackDropdown ( MaterialDropdown dropdown, KitchenPartProperty prop, DropdownIcon icon ) { try {
          dropdownProp.Remove( dropdown ); dropdownProp.Add( dropdown, prop );
          dropdownIcon.Remove( dropdown ); dropdownIcon.Add( dropdown, icon );
-      } catch ( Exception ex ) { Log.Error( ex ); } }
+      } catch ( Exception ex ) { Err( ex ); } }
 
       private static bool ToggleDropdown ( MaterialDropdown __instance, ref int ___m_CurrentlySelected ) { try {
          if ( ! dropdownProp.TryGetValue( __instance, out KitchenPartProperty prop ) ) return true;
@@ -224,7 +224,7 @@ namespace Automodchef {
          __instance.Select( new_selection );
          if ( dropdownIcon.TryGetValue( __instance, out DropdownIcon icon ) ) icon.UpdateIcon();
          return false;
-      } catch ( Exception ex ) { Log.Error( ex ); return true; } }
+      } catch ( Exception ex ) { Err( ex ); return true; } }
       #endregion
 
       #region Power
@@ -234,7 +234,7 @@ namespace Automodchef {
       private static void LogPowerUsage ( KitchenPart __instance, float multiplier ) { try {
          if ( ! Initializer.GetInstance().IsSimRunning() || powerLog == null ) return;
          powerLog.GetOrCreateValue( __instance ).consumption += __instance.powerInWatts * multiplier;
-      } catch ( Exception ex ) { Log.Error( ex ); } }
+      } catch ( Exception ex ) { Err( ex ); } }
 
       private static void ClearPowerUsage () {
          Log.Fine( "Reset power log" );
@@ -249,7 +249,7 @@ namespace Automodchef {
          if ( power >= 1000 ) { power /= 1000f; unit = "kWh"; }
          if ( power >= 1000 ) { power /= 1000f; unit = "MWh"; }
          __result += $"\n{PowerMeter.GetInstance().GetLastPowerUsage( __instance )}W >> {power:0.00}{unit}";
-      } catch ( Exception ex ) { Log.Error( ex ); } }
+      } catch ( Exception ex ) { Err( ex ); } }
       #endregion
 
       private static void AppendFreshnessToTooltip ( Ingredient __instance, ref string __result ) { try {
@@ -296,12 +296,12 @@ namespace Automodchef {
          efficiencyLog.Add( $"Ingredients Quota {___expectedIngredientsUsage} / {iUsed} Spent = {iMark:0.00}" );
          efficiencyLog.Add( $"Power Quota {___expectedPowerUsage}Wh / {pUsed}Wh Spent = {pMark:0.00}" );
          efficiencyLog.Add( $"( Average {mark:0.00}" + ( allGoalsFulfilled ? "" : " - 0.1 goal failed" ) + $" )² = Final {__result/100f:0.00}" );
-      } catch ( Exception ex ) { Log.Error( ex ); } }
+      } catch ( Exception ex ) { Err( ex ); } }
 
       // Show modded logs even when kitchen has no events
       private static void ForceShowEfficiencyLog ( LevelStatus __instance, KitchenEventsLog log ) { try {
          if ( ShowEfficiencyLog && log.GetEventsCount() <= 0 ) __instance.eventsLogTextField.text = log.ToString();
-      } catch ( Exception ex ) { Log.Error( ex ); } }
+      } catch ( Exception ex ) { Err( ex ); } }
 
       private static void AppendEfficiencyLog ( ref string __result ) { try {
          if ( ! ShowEfficiencyLog || efficiencyLog.Count <= 0 ) return;
@@ -320,7 +320,7 @@ namespace Automodchef {
          __result += "\n" + string.Join( "\n", efficiencyLog.ToArray() );
          __result = __result.Trim();
          Log.Fine( __result );
-      } catch ( Exception ex ) { Log.Error( ex ); } }
+      } catch ( Exception ex ) { Err( ex ); } }
       #endregion
 
       private static bool SuppressConfirmation ( string bodyText, Action onAffirmativeButtonClicked, Action onDismissiveButtonClicked ) { try {
@@ -337,14 +337,14 @@ namespace Automodchef {
             return false;
          }
          return true;
-      } catch ( Exception ex ) { Log.Warn( ex ); return true; } }
+      } catch ( Exception ex ) { return Err( ex, true ); } }
 
       private static void AdjustGameSpeedPresets ( Initializer __instance ) { try {
          if ( __instance == null || __instance.speeds == null || __instance.speeds.Count < 4 ) return;
          Log.Info( $"Setting game speeds to [ {__instance.speeds[0]}x, {__instance.speeds[1]}x, {config.speed2}x, {config.speed3}x ]" );
          __instance.speeds[2] = config.speed2;
          __instance.speeds[3] = config.speed3;
-      } catch ( Exception ex ) { Log.Warn( ex ); } }
+      } catch ( Exception ex ) { Err( ex ); } }
 
       #region Tools (CSV)
       private static readonly StringBuilder line = new StringBuilder();
@@ -371,7 +371,7 @@ namespace Automodchef {
             f.Flush();
          }
          Log.Info( "Food list exported" );
-      } catch ( Exception ex ) { Log.Warn( ex ); } }
+      } catch ( Exception ex ) { Err( ex ); } }
 
       private static void Csv ( this TextWriter f, params string[] values ) {
          foreach ( var v in values ) {
