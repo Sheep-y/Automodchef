@@ -178,7 +178,7 @@ namespace ZyMod {
          Patch( method, prefix, postfix, transpiler );
          return true;
       } catch ( Exception ex ) {
-         Log.Warn( ex );
+         Log.Warn( $"Could not patch {method?.DeclaringType} {method?.Name} | {prefix} | {postfix} | {transpiler} :\n" + ex );
          return false;
       } }
 
