@@ -54,6 +54,8 @@ namespace Automodchef {
       [ ConfigAttribute( "User Interface", "Suppress yes/no confirmations - save before quit, load game, delete save / blueprint / scenario, quit level / game, reset layout" ) ]
       public bool suppress_confirmation = true;
 
+      [ ConfigAttribute( "Simulation", "Change game speed instantiously." ) ]
+      public bool instant_speed_change = true;
       [ ConfigAttribute( "Simulation", "Speed of double time (two arrows).  0-100 integer.  Game default 3.  Mod default 5." ) ]
       public byte speed2 = 5;
       [ ConfigAttribute( "Simulation", "Speed of triple time (three arrows).  0-100 integer.  Game default 5.  Mod default 20." ) ]
@@ -125,6 +127,8 @@ namespace Automodchef {
             var orig = typeof( DialogManager ).AllMethods( "ShowAlert" ).FirstOrDefault( e => e.GetParameters().Length == 7 );
             if ( orig != null ) Modder.TryPatch( orig, nameof( SuppressConfirmation ) );
          }
+         if ( config.instant_speed_change )
+            Modder.TryPatch( typeof( Initializer ), "Update", postfix: nameof( InstantGameSpeedUpdate ) );
          if ( config.speed2 != 3 || config.speed3 != 5 )
             Modder.TryPatch( typeof( Initializer ), "Start", nameof( AdjustGameSpeedPresets ) );
          if ( config.export_food_csv )
@@ -338,6 +342,10 @@ namespace Automodchef {
          }
          return true;
       } catch ( Exception ex ) { return Err( ex, true ); } }
+
+      private static void InstantGameSpeedUpdate ( float ___targetTimeScale ) { try {
+         if ( Time.timeScale != ___targetTimeScale ) Time.timeScale = ___targetTimeScale;
+      } catch ( Exception ex ) { Err( ex ); } }
 
       private static void AdjustGameSpeedPresets ( Initializer __instance ) { try {
          if ( __instance == null || __instance.speeds == null || __instance.speeds.Count < 4 ) return;
