@@ -193,17 +193,19 @@ namespace ZyMod {
       public static TraceLevel LogLevel = TraceLevel.Info;
       internal static string LogPath = Path.Combine( ZySimpleMod.AppDataDir, ZySimpleMod.ModName + ".log" );
       internal static void Initialize () { try {
-         var level = System.Environment.GetEnvironmentVariable( $"{ZySimpleMod.ModName}_LOG_LEVEL".Replace( ' ', '_' ).ToUpperInvariant() ) ?? "";
-         switch ( ( level.Trim().ToUpperInvariant() + " " )[0] ) {
-            case 'O' : LogLevel = TraceLevel.Off; break;
-            case 'E' : LogLevel = TraceLevel.Verbose; break;
-            case 'W' : LogLevel = TraceLevel.Warning; break;
-            case 'V' : LogLevel = TraceLevel.Verbose; break;
-            default  : LogLevel = TraceLevel.Info; break;
-         }
+         var conf = Path.Combine( Path.GetDirectoryName( LogPath ), $"{ZySimpleMod.ModName}-log.conf" );
+         if ( File.Exists( conf ) )
+            switch ( ( ( File.ReadLines( conf ).FirstOrDefault()?.ToUpperInvariant() ?? "" ) + "?" )[0] ) {
+               case 'O' : LogLevel = TraceLevel.Off; break;
+               case 'E' : LogLevel = TraceLevel.Verbose; break;
+               case 'W' : LogLevel = TraceLevel.Warning; break;
+               case 'V' : LogLevel = TraceLevel.Verbose; break;
+               default  : LogLevel = TraceLevel.Info; break;
+            }
          if ( LogLevel == TraceLevel.Off ) File.Delete( LogPath );
          else using ( TextWriter f = File.CreateText( LogPath ) )
              f.WriteLine( $"{DateTime.Now:u} {ZySimpleMod.ModName} initiated, log level {LogLevel}" );
+         Write(  $"{ZySimpleMod.ModName}_LOG_LEVEL".Replace( ' ', '_' ).ToUpperInvariant() );
       } catch ( Exception ) { } }
       public static void Error ( object msg ) => Write( LogLevel >= TraceLevel.Error   ? Timestamp( "ERROR ", msg ) : null );
       public static void Warn  ( object msg ) => Write( LogLevel >= TraceLevel.Warning ? Timestamp( "WARN ", msg ) : null );
@@ -212,6 +214,14 @@ namespace ZyMod {
       public static void Write ( object msg ) { if ( msg != null ) try {
          using ( TextWriter f = File.AppendText( LogPath ) ) f.WriteLine( msg );
       } catch ( Exception ) { } }
-      private static string Timestamp ( string level, object msg ) => DateTime.Now.ToString( "HH:mm:ss.fff " ) + level + ( msg ?? "null" );
+      private static string lastException;
+      private static string Timestamp ( string level, object msg ) {
+         if ( msg is Exception ) {
+            msg = msg.ToString();
+            if ( msg.ToString() == lastException ) return null;
+            lastException = msg.ToString();
+         }
+         return DateTime.Now.ToString( "HH:mm:ss.fff " ) + level + ( msg ?? "null" );
+      }
    }
 }
