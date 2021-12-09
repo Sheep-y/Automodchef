@@ -26,7 +26,7 @@ namespace Automodchef {
    }
 
    public class Config : IniConfig {
-      [ ConfigAttribute( "To change log level, create new file Automochef-log.conf with the first line saying Off, Error, Warning, Info, or Verbose.\r\nVersion of this Automodchef config file.  Don't touch!" ) ]
+      [ ConfigAttribute( "To change log level, create new file Automochef-log.conf with the first line saying Off, Error, Warning, Info, or Verbose.\r\n; Version of this Automodchef config file.  Don't touch!" ) ]
       public int config_version = 20211206;
 
       [ ConfigAttribute( "System", "Skip Unity, Hermes, Team 17, and Autosave screens.  True or false.  Default true." ) ]
@@ -60,6 +60,11 @@ namespace Automodchef {
       public byte speed2 = 5;
       [ ConfigAttribute( "Simulation", "Speed of triple time (three arrows).  0-100 integer.  Game default 5.  Mod default 20." ) ]
       public byte speed3 = 20;
+
+      [ ConfigAttribute( "Mechanic", "Packaging machine spend less power when not packaging.  Game default 800.  Mod default 60." ) ]
+      public float packaging_machine_idle_power = 60;
+      [ ConfigAttribute( "Mechanic", "Packaging machine's sub-recipes have lowest priority (Loaded Cheese Fries > Bacon Fries > Fries), and last processed recipe have lower priority)." ) ]
+      public bool smart_packaging_machine = true;
 
       [ ConfigAttribute( "Tools", "Export foods to foods.csv on game launch.  True or false.  Default false." ) ]
       public bool export_food_csv = false;
@@ -131,6 +136,8 @@ namespace Automodchef {
             Modder.TryPatch( typeof( Initializer ), "Update", postfix: nameof( InstantGameSpeedUpdate ) );
          if ( config.speed2 != 3 || config.speed3 != 5 )
             Modder.TryPatch( typeof( Initializer ), "Start", nameof( AdjustGameSpeedPresets ) );
+         if ( config.packaging_machine_idle_power != 800 )
+            Modder.TryPatch( typeof( PackagingMachine ), "FixedUpdate", nameof( SetPackagingMachinePower ) );
          if ( config.export_food_csv )
             Modder.TryPatch( typeof( SplashScreen ), "Awake", nameof( DumpFoodCsv ) );
       }
@@ -356,6 +363,15 @@ namespace Automodchef {
 
       #region Tools (CSV)
       private static readonly StringBuilder line = new StringBuilder();
+
+      private static float fullPMpower;
+      private static void SetPackagingMachinePower ( PackagingMachine __instance, bool ___packaging ) { try {
+         if ( fullPMpower == 0 ) {
+            fullPMpower = __instance.powerInWatts;
+            Log.Info( $"Packaging machine power: {config.packaging_machine_idle_power}W when idle, {fullPMpower}W when packaging." );
+         }
+         __instance.powerInWatts = ___packaging ? fullPMpower : config.packaging_machine_idle_power;
+      } catch ( Exception ex ) { Err( ex ); } }
 
       private static void DumpFoodCsv () { try {
          string file = Path.Combine( ZySimpleMod.AppDataDir, "foods.csv" );
