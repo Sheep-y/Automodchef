@@ -1,4 +1,5 @@
-﻿using MaterialUI;
+﻿using I2.Loc;
+using MaterialUI;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -25,7 +26,7 @@ namespace Automodchef {
    }
 
    public class Config : IniConfig {
-      [ ConfigAttribute( "To change log level, set environment variable AUTOMODCHEF_LOG_LEVEL to Off, Error, Warning, Info, or Verbose.\r\nVersion of this Automodchef config file.  Don't touch!" ) ]
+      [ ConfigAttribute( "To change log level, create new file Automochef-log.conf with the first line saying Off, Error, Warning, Info, or Verbose.\r\nVersion of this Automodchef config file.  Don't touch!" ) ]
       public int config_version = 20211206;
 
       [ ConfigAttribute( "System", "Skip Unity, Hermes, Team 17, and Autosave screens.  True or false.  Default true." ) ]
@@ -41,6 +42,8 @@ namespace Automodchef {
       public byte dropdown_toogle_threshold = 3;
       [ ConfigAttribute( "User Interface", "Show real-time power usage in mouseover tooltips." ) ]
       public bool tooltip_power_usage = true;
+      [ ConfigAttribute( "User Interface", "Show food freshness in mouseover tooltips." ) ]
+      public bool tooltip_freshness = true;
       [ ConfigAttribute( "User Interface", "Add effiency calculation to kitchen log.  True or false.  Default true." ) ]
       public bool efficiency_log = true;
       [ ConfigAttribute( "User Interface", "Breakdown efficiency quotas by dishes.  True or false.  Default true." ) ]
@@ -96,6 +99,8 @@ namespace Automodchef {
             Modder.TryPatch( typeof( PowerMeter ), "Reset", nameof( ClearPowerUsage ) );
             Modder.TryPatch( typeof( KitchenPart ), "GetTooltipText", postfix: nameof( AppendPowerToTooltip ) );
          }
+         if ( config.tooltip_freshness )
+            Modder.TryPatch( typeof( Ingredient ), "GetTooltipText", postfix: nameof( AppendFreshnessToTooltip ) );
          if ( config.efficiency_log ) {
             efficiencyLog = new List<string>();
             if ( config.efficiency_log_breakdown )
@@ -183,8 +188,6 @@ namespace Automodchef {
          currentLevel?.levelStatusUI.preLevelScreen.gameObject.SetActive( false );
       }
       #endregion
-      
-      
 
       #region Dropdown Toggle
       private static ConditionalWeakTable< MaterialDropdown, KitchenPartProperty > dropdownProp;
@@ -207,6 +210,7 @@ namespace Automodchef {
       } catch ( Exception ex ) { Log.Error( ex ); return true; } }
       #endregion
 
+      #region Power
       private class PowerLog { internal float consumption; }
       private static ConditionalWeakTable< KitchenPart, PowerLog > powerLog;
 
@@ -229,6 +233,26 @@ namespace Automodchef {
          if ( power >= 1000 ) { power /= 1000f; unit = "MWh"; }
          __result += $"\n{PowerMeter.GetInstance().GetLastPowerUsage( __instance )}W >> {power:0.00}{unit}";
       } catch ( Exception ex ) { Log.Error( ex ); } }
+      #endregion
+
+      private static void AppendFreshnessToTooltip ( Ingredient __instance, ref string __result ) { try {
+            Initializer init = Initializer.GetInstance();
+            if ( !init.IsSimRunning() || __instance.HasGoneBad() || __instance.name.StartsWith( "Insects" ) ) return;
+         if ( init.levelManager.GetLevel().hasInsectsDisaster && __instance.GetInsectTime() > 0 ) {
+            var part = __instance.currentNode?.kitchenPart;
+            if ( part != null ) {
+               if ( ! init.levelManager.PartsWithInsects.Contains( part ) ) {
+                  float timer = __instance.GetInsectTime(), spawn = part.GetComponent< InsectsSpawner >()?.stationaryTimeBeforeSpawning ?? 0;
+                  if ( timer != 0 && spawn != 0 ) __result += $"\nInfested in {spawn-timer:0.0}s";
+               } else
+                  __result += $"\n(Insects nearby)";
+            }
+         }
+         if ( __instance is Dish dish ) {
+            float spoil = dish.timeToBeSpoiled - __instance.GetAge();
+            if ( spoil > 0 ) __result += $"\nExpire in {spoil:0.0s}s";
+         }
+      } catch ( Exception ex ) { Err( ex ); } }
 
       #region Efficiency Log
       private static Dictionary< object, int > orderedDish, cookedDish;
@@ -342,5 +366,8 @@ namespace Automodchef {
          line.Length = 0;
       }
       #endregion
+
+      private static void Err ( object msg ) => Log.Error( msg );
+      private static T Err < T > ( object msg, T val ) { Log.Error( msg ); return val; }
    }
 }
