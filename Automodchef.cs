@@ -126,6 +126,7 @@ namespace Automodchef {
             dropdownProp = new ConditionalWeakTable< MaterialDropdown, KitchenPartProperty >();
             dropdownIcon = new ConditionalWeakTable< MaterialDropdown, DropdownIcon >();
             Modder.TryPatch( typeof( PartProperties ), "PopulateDropdownForProperty", nameof( TrackDropdown ) );
+            Modder.TryPatch( typeof( PartProperties ), "RenderDropdownWithButton", postfix: nameof( TrackComputerropdown ) );
             Modder.TryPatch( typeof( MaterialDropdown ), "ShowDropdown", nameof( ToggleDropdown ) );
          }
          if ( config.tooltip_power_usage || config.power_log_rows > 0 ) {
@@ -149,10 +150,8 @@ namespace Automodchef {
                      Modder.TryPatch( typeof( EfficiencyMeter ), "AddOrder", nameof( TrackOrdersEfficiency ) );
                      Modder.TryPatch( typeof( EfficiencyMeter ), "AddDeliveredDish", nameof( TrackDeliveryEfficiency ) );
                   }
-               if ( Modder.TryPatch( typeof( EfficiencyMeter ), "GetEfficiency", postfix: nameof( CalculateEfficiency ) ) ) {
-                  Modder.TryPatch( typeof( LevelManager ), "DetermineLevelOutcome", nameof( SuppressEfficiencyLog ), nameof( ResumeEfficiencyLog ) );
+               if ( Modder.TryPatch( typeof( EfficiencyMeter ), "GetEfficiency", postfix: nameof( CalculateEfficiency ) ) )
                   Modder.TryPatch( typeof( KitchenEventsLog ), "ToString", postfix: nameof( AppendEfficiencyLog ) );
-               }
             }
             if ( config.power_log_rows > 0 )
                Modder.TryPatch( typeof( KitchenEventsLog ), "ToString", postfix: nameof( AppendPowerLog ) );
@@ -283,17 +282,22 @@ namespace Automodchef {
       private static ConditionalWeakTable< MaterialDropdown, DropdownIcon > dropdownIcon;
 
       private static void TrackDropdown ( MaterialDropdown dropdown, KitchenPartProperty prop, DropdownIcon icon ) { try {
-         dropdownProp.Remove( dropdown ); dropdownProp.Add( dropdown, prop );
-         dropdownIcon.Remove( dropdown ); dropdownIcon.Add( dropdown, icon );
+         dropdownProp.Remove( dropdown ); if ( prop != null ) dropdownProp.Add( dropdown, prop );
+         dropdownIcon.Remove( dropdown ); if ( icon != null ) dropdownIcon.Add( dropdown, icon );
+      } catch ( Exception ex ) { Err( ex ); } }
+
+      private static void TrackComputerropdown ( KitchenPartProperty prop, bool forProgramableComputer, DropdownPartPropertyObject __result ) { try {
+         if ( ! forProgramableComputer || __result?.Dropdown == null ) return;
+         dropdownProp.Remove( __result.Dropdown ); if ( prop != null ) dropdownProp.Add( __result.Dropdown, prop );
+         dropdownIcon.Remove( __result.Dropdown );
       } catch ( Exception ex ) { Err( ex ); } }
 
       private static bool ToggleDropdown ( MaterialDropdown __instance, ref int ___m_CurrentlySelected ) { try {
+         if ( Initializer.GetInstance().levelManager?.GetLevel()?.IsTutorial() != false ) return true;
          if ( ! dropdownProp.TryGetValue( __instance, out KitchenPartProperty prop ) ) return true;
-         if ( ( prop.friendlyValues?.Count ?? 0 ) > 3 ) return true;
-         if ( Initializer.GetInstance().levelManager.GetLevel().IsTutorial() ) return true;
-         var new_selection = ___m_CurrentlySelected + 1;
-         if ( new_selection >= prop.friendlyValues.Count ) new_selection = 0;
-         __instance.Select( new_selection );
+         int max_options = prop.friendlyValues?.Count ?? 0, new_selection = ___m_CurrentlySelected + 1;
+         if ( max_options > config.dropdown_toogle_threshold ) return true;
+         __instance.Select( new_selection >= max_options ? 0 : new_selection );
          if ( dropdownIcon.TryGetValue( __instance, out DropdownIcon icon ) ) icon.UpdateIcon();
          return false;
       } catch ( Exception ex ) { Err( ex ); return true; } }
@@ -388,14 +392,9 @@ namespace Automodchef {
          log[ dish ] = i + 1;
       }
 
-      private static int outcome;
       private static List<string> extraLog;
-      private static bool ShowEfficiencyLog => outcome != (int) LevelOutcome.Failure && outcome != (int) LevelOutcome.InProgress;
 
-      private static void SuppressEfficiencyLog () => outcome = (int) LevelOutcome.InProgress;
-      private static void ResumeEfficiencyLog ( LevelOutcome __result ) => outcome = (int) __result;
       private static void CalculateEfficiency ( bool allGoalsFulfilled, int __result, int ___expectedIngredientsUsage, int ___expectedPowerUsage ) { try {
-         if ( ! ShowEfficiencyLog ) return;
          float iUsed = IngredientsCounter.GetInstance().GetUsedIngredients(), pUsed = PowerMeter.GetInstance().GetWattsHour();
          float iMark = Mathf.Clamp01( ___expectedIngredientsUsage / iUsed ), pMark = Mathf.Clamp01( ___expectedPowerUsage / pUsed );
          float mark = ( iMark + pMark ) / 2f;
@@ -407,11 +406,11 @@ namespace Automodchef {
 
       // Show modded logs even when kitchen has no events
       private static void ForceShowEfficiencyLog ( LevelStatus __instance, KitchenEventsLog log ) { try {
-         if ( ( ShowEfficiencyLog && log.GetEventsCount() <= 0 )  || config.power_log_rows > 0 ) __instance.eventsLogTextField.text = log.ToString();
+         if ( log.GetEventsCount() <= 0 ) __instance.eventsLogTextField.text = log.ToString();
       } catch ( Exception ex ) { Err( ex ); } }
 
       private static void AppendEfficiencyLog ( ref string __result ) { try {
-         if ( ! ShowEfficiencyLog || extraLog.Count == 0 ) return;
+         if ( extraLog.Count == 0 ) return;
          Log.Info( $"Appending efficiency log ({extraLog.Count+orderedDish.Count} lines) to kitchen log." );
          __result += "\n\n";
          if ( orderedDish.Count > 0 ) __result += "Delivered / Ordered Dish ... Quota Contribution\n";
