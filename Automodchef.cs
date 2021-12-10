@@ -250,12 +250,12 @@ namespace Automodchef {
       #endregion
 
       #region Power
-      private class PowerLog { internal float consumption; }
+      private class PowerLog { internal float power; }
       private static ConditionalWeakTable< KitchenPart, PowerLog > powerLog;
 
       private static void LogPowerUsage ( KitchenPart __instance, float multiplier ) { try {
          if ( ! Initializer.GetInstance().IsSimRunning() || powerLog == null ) return;
-         powerLog.GetOrCreateValue( __instance ).consumption += __instance.powerInWatts * multiplier;
+         powerLog.GetOrCreateValue( __instance ).power += __instance.powerInWatts * multiplier;
       } catch ( Exception ex ) { Err( ex ); } }
 
       private static void ClearPowerUsage () {
@@ -266,14 +266,39 @@ namespace Automodchef {
       private static void AppendPowerToTooltip ( KitchenPart __instance, ref string __result ) { try {
          if ( ! Initializer.GetInstance().IsSimRunning() || __instance.powerInWatts <= 0 || powerLog == null ) return;
          powerLog.TryGetValue( __instance, out PowerLog log );
-         var power = CachedData.fixedDeltaTime * ( log?.consumption ?? 0 ) / 3600f;
-         var unit = "Wh";
-         if ( power >= 1000 ) { power /= 1000f; unit = "kWh"; }
-         if ( power >= 1000 ) { power /= 1000f; unit = "MWh"; }
-         __result += $"\n{PowerMeter.GetInstance().GetLastPowerUsage( __instance )}W >> {power:0.00}{unit}";
+         __result += $"\n{PowerMeter.GetInstance().GetLastPowerUsage( __instance )}W >> {Wh(log?.power??0)}";
       } catch ( Exception ex ) { Err( ex ); } }
 
       private static void AppendPowerLog ( ref string __result ) { try {
+         if ( powerLog == null ) return;
+         Log.Info( $"Appending power log (up to {config.power_log_rows} lines) to kitchen log." );
+         float total = 0;
+         Dictionary< string, PowerLog > byType = new Dictionary<string, PowerLog>();
+         HashSet<KitchenPart> allParts = Initializer.GetInstance().kitchen.GetAllKitchenParts();
+         foreach ( var part in allParts ) {
+            if ( ! powerLog.TryGetValue( part, out PowerLog partPower ) || partPower.power <= 0 ) continue;
+            var key = part.internalName;
+            switch ( key ) {
+               case "AdvancedAssembler"   : key = "Assembler"; break;
+               case "AdvancedComputer"    : key = "Computer"; break;
+               case "AdvancedOrderReader" : key = "OrderReader"; break;
+               case "BeltBridge" : case "HighSpeedBelt" : case "Gate" : key = "Belt"; break;
+               case "ConvectionFryer"     : key = "Fryer"; break;
+               case "ConveyorGrill"       : key = "Grill"; break;
+               case "HighSpeedDispenser"  : key = "Dispenser"; break;
+               case "LargeStorageUnit"    : key = "StackingRobotArm"; break;
+               case "LongRobotArm" : case "RobotArm" : case "StackingRobotArm" : key = "DumbRobotArm"; break;
+            }
+            if ( byType.TryGetValue( key, out PowerLog log ) ) log.power += partPower.power;
+            else byType.Add( key, new PowerLog { power = partPower.power } );
+            total += partPower.power;
+         }
+         Log.Info( $"Found {allParts.Count} parts in {byType.Count} groups totaling {Wh(total)}" );
+         __result += $"\n\nTop {Math.Min(allParts.Count,config.power_log_rows)} power using equipments:";
+         __result += "\n" + string.Join( "\n", byType.OrderBy( e => e.Value.power ).Reverse().Take( config.power_log_rows ).Select( e =>
+            $"{e.Key} >> {Wh(e.Value.power,false)} ({e.Value.power*100/total:0.0}%)" ) );
+         __result = __result.Trim();
+         Log.Fine( __result );
       } catch ( Exception ex ) { Err( ex ); } }
       #endregion
 
@@ -332,7 +357,7 @@ namespace Automodchef {
          if ( ! ShowEfficiencyLog || extraLog.Count <= 0 ) return;
          Log.Info( $"Appending efficiency log ({extraLog.Count+orderedDish.Count} lines) to kitchen log." );
          __result += "\n\n";
-         if ( orderedDish.Count > 0 ) __result += "Delivered / Ordered Dish ... Quota Contribution";
+         if ( orderedDish.Count > 0 ) __result += "Delivered / Ordered Dish ... Quota Contribution\n";
          foreach ( var key in orderedDish.Keys ) {
             var dish = key as Dish;
             cookedDish.TryGetValue( dish, out int delivered );
@@ -375,7 +400,8 @@ namespace Automodchef {
          __instance.speeds[3] = config.speed3;
       } catch ( Exception ex ) { Err( ex ); } }
 
-      #region Tools (CSV)
+      #region Csv dump
+      private static bool foodDumped, hardwareDumped;
       private static readonly StringBuilder line = new StringBuilder();
 
       private static float fullPMpower;
@@ -388,6 +414,7 @@ namespace Automodchef {
       } catch ( Exception ex ) { Err( ex ); } }
 
       private static void DumpFoodCsv () { try {
+         if ( foodDumped ) return;
          string file = Path.Combine( ZySimpleMod.AppDataDir, "foods.csv" );
          Log.Info( $"Exporting food list to {file}" );
          using ( TextWriter f = File.CreateText( file ) ) {
@@ -408,10 +435,12 @@ namespace Automodchef {
             }
             f.Flush();
          }
+         foodDumped = true;
          Log.Info( "Food list exported" );
       } catch ( Exception ex ) { Err( ex ); } }
 
       private static void DumpHardwareCsv () { try {
+         if ( hardwareDumped ) return;
          string file = Path.Combine( ZySimpleMod.AppDataDir, "hardwares.csv" );
          Log.Info( $"Exporting hardware list to {file}" );
          using ( TextWriter f = File.CreateText( file ) ) {
@@ -423,6 +452,7 @@ namespace Automodchef {
             }
             f.Flush();
          }
+         hardwareDumped = true;
          Log.Info( "Hardware list exported" );
       } catch ( Exception ex ) { Err( ex ); } }
 
@@ -438,7 +468,16 @@ namespace Automodchef {
       }
       #endregion
 
+
       private static void Err ( object msg ) => Log.Error( msg );
       private static T Err < T > ( object msg, T val ) { Log.Error( msg ); return val; }
+
+      private static string Wh ( float wh, bool prefix = true ) {
+         var power = CachedData.fixedDeltaTime * wh / 3600f;
+         var unit = "Wh";
+         if ( prefix && power >= 1000 ) { power /= 1000f; unit = "kWh"; }
+         if ( prefix && power >= 1000 ) { power /= 1000f; unit = "MWh"; }
+         return prefix ? $"{power:0.00}{unit}" : $"{power:0}Wh";
+      }
    }
 }
