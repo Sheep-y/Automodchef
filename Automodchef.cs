@@ -159,6 +159,16 @@ namespace Automodchef {
             Modder.TryPatch( typeof( Initializer ), "Start", nameof( AdjustGameSpeedPresets ) );
          if ( config.packaging_machine_idle_power != 800 && config.packaging_machine_idle_power >= 0 )
             Modder.TryPatch( typeof( PackagingMachine ), "FixedUpdate", nameof( SetPackagingMachinePower ) );
+         if ( config.smart_packaging_machine ) {
+            packMachineCanMake = typeof( PackagingMachine ).Method( "AllIngredientsReady" );
+            packMachineConsume = typeof( PackagingMachine ).Method( "ConsumeIngredients" );
+            packMachinePackage = typeof( PackagingMachine ).Method( "StartPackaging" );
+            packMachineRandom  = new System.Random();
+            packMachineLastDish = new ConditionalWeakTable<PackagingMachine, Dish>();
+            Modder.TryPatch( typeof( KitchenPart ), "Reset", postfix: nameof( ClearPackagingMachineLastDish ) );
+            Modder.TryPatch( typeof( PackagingMachine ), "StartPackaging", nameof( LogPackagingMachineLastDish ) );
+            Modder.TryPatch( typeof( PackagingMachine ), "SeeIfSomethingCanBePackaged", nameof( OverridePackagingMachineLogic ) );
+         }
          if ( config.export_food_csv )
             Modder.TryPatch( typeof( SplashScreen ), "Awake", nameof( DumpFoodCsv ) );
          if ( config.export_hardware_csv )
@@ -412,10 +422,7 @@ namespace Automodchef {
          __instance.speeds[3] = config.speed3;
       } catch ( Exception ex ) { Err( ex ); } }
 
-      #region Csv dump
-      private static bool foodDumped, hardwareDumped;
-      private static readonly StringBuilder line = new StringBuilder();
-
+      #region Packaging Machine mechanics
       private static float fullPMpower;
       private static void SetPackagingMachinePower ( PackagingMachine __instance, bool ___packaging ) { try {
          if ( fullPMpower == 0 ) {
@@ -424,6 +431,40 @@ namespace Automodchef {
          }
          __instance.powerInWatts = ___packaging ? fullPMpower : config.packaging_machine_idle_power;
       } catch ( Exception ex ) { Err( ex ); } }
+
+      private static MethodInfo packMachineCanMake, packMachineConsume, packMachinePackage;
+      private static System.Random packMachineRandom;
+      private static ConditionalWeakTable< PackagingMachine, Dish > packMachineLastDish;
+
+      private static void ClearPackagingMachineLastDish ( PackagingMachine __instance ) => packMachineLastDish?.Remove( __instance );
+      private static void LogPackagingMachineLastDish ( PackagingMachine __instance, Dish dishToPrepare ) { try {
+         packMachineLastDish.Remove( __instance );
+         packMachineLastDish.Add( __instance, dishToPrepare );
+      } catch ( Exception ex ) { Err( ex ); } }
+
+      private static bool OverridePackagingMachineLogic ( PackagingMachine __instance, List<Ingredient> ___ingredientsInside ) { try {
+         if ( ___ingredientsInside.Count == 0 ) return false;
+         HashSet<Dish> canMake = new HashSet<Dish>( __instance.dishesToAssemble.Select( e => Dish.GetByInternalNameHash( e.GetStableHashCode() ) ).Where( e =>
+            (bool) packMachineCanMake.Invoke( __instance, new object[]{ e } ) ) );
+         if ( canMake.Count == 0 ) return false;
+         if ( canMake.Count > 1 ) Log.Info( "Packaging options: " + string.Join( ", ", canMake.Select( e => e.GetFriendlyNameTranslated() ) ) );
+         if ( canMake.Count > 1 && packMachineLastDish.TryGetValue( __instance, out Dish lastDish ) && canMake.Contains( lastDish ) ) {
+            Log.Fine( $"Removed last dish {lastDish.GetFriendlyNameTranslated()}" );
+            canMake.Remove( lastDish );
+         }
+         if ( canMake.Count > 1 ) Log.Fine( "Randomly pick one" );
+         var dish = canMake.ElementAt( canMake.Count == 1 ? 9 : packMachineRandom.Next( canMake.Count ) );
+         if ( (bool) packMachineConsume.Invoke( __instance, new object[] { dish } ) ) {
+            packMachinePackage.Invoke( __instance, new object[] { dish } );
+            Log.Info( $"Winner: {dish.GetFriendlyNameTranslated()}" );
+         }
+         return false;
+      } catch ( Exception ex ) { return Err( ex, true ); } }
+      #endregion
+
+      #region Csv dump
+      private static bool foodDumped, hardwareDumped;
+      private static readonly StringBuilder line = new StringBuilder();
 
       private static void DumpFoodCsv () { try {
          if ( foodDumped ) return;
