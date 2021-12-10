@@ -39,7 +39,7 @@ namespace Automodchef {
       [ ConfigAttribute( "Bug Fix", "Fix food mouseover hints not showing when game is paused." ) ]
       public bool fix_food_hint_when_paused = true;
 
-      [ ConfigAttribute( "User Interface", "Suppress yes/no confirmations - save before quit, load game, delete save / blueprint / scenario, quit level / game, reset layout" ) ]
+      [ ConfigAttribute( "User Interface", "Suppress yes/no confirmations - save before quit, load game, delete or overwrite save / blueprint / scenario, quit level / game, reset layout" ) ]
       public bool suppress_confirmation = true;
       [ ConfigAttribute( "User Interface", "Show load game prompt when entering a level (if any saves).  Loading a game will bypass level goal popup and roboto speech.  True or false.  Default true." ) ]
       public bool ask_loadgame_on_level_start = true;
@@ -372,11 +372,11 @@ namespace Automodchef {
 
       // Show modded logs even when kitchen has no events
       private static void ForceShowEfficiencyLog ( LevelStatus __instance, KitchenEventsLog log ) { try {
-         if ( ShowEfficiencyLog && log.GetEventsCount() <= 0 ) __instance.eventsLogTextField.text = log.ToString();
+         if ( ( ShowEfficiencyLog && log.GetEventsCount() <= 0 )  || config.power_log_rows > 0 ) __instance.eventsLogTextField.text = log.ToString();
       } catch ( Exception ex ) { Err( ex ); } }
 
       private static void AppendEfficiencyLog ( ref string __result ) { try {
-         if ( ! ShowEfficiencyLog || extraLog.Count <= 0 ) return;
+         if ( ! ShowEfficiencyLog || extraLog.Count == 0 ) return;
          Log.Info( $"Appending efficiency log ({extraLog.Count+orderedDish.Count} lines) to kitchen log." );
          __result += "\n\n";
          if ( orderedDish.Count > 0 ) __result += "Delivered / Ordered Dish ... Quota Contribution\n";
@@ -397,7 +397,7 @@ namespace Automodchef {
 
       private static bool SuppressConfirmation ( string bodyText, Action onAffirmativeButtonClicked, Action onDismissiveButtonClicked ) { try {
          foreach ( var msg in new string[] { About_To_Load_Game, Bonus_Level, Delete_Blueprint_Confirmation, Delete_Game,
-                  Quit_Confirmation, Quit_Confirmation_In_Game, Reset_Kitchen } )
+                  Overwrite_Game, Overwrite_Blueprint, Quit_Confirmation, Quit_Confirmation_In_Game, Reset_Kitchen } )
             if ( bodyText == msg ) {
                Log.Info( $"Assuming yes for {bodyText}" );
                onAffirmativeButtonClicked();
@@ -448,8 +448,15 @@ namespace Automodchef {
             (bool) packMachineCanMake.Invoke( __instance, new object[]{ e } ) ) );
          if ( canMake.Count == 0 ) return false;
          if ( canMake.Count > 1 ) Log.Info( "Packaging options: " + string.Join( ", ", canMake.Select( e => e.GetFriendlyNameTranslated() ) ) );
+         foreach ( var dishA in canMake.ToArray() ) foreach ( var dishB in canMake ) {
+            if ( dishA == dishB || dishA.recipe.Count >= dishB.recipe.Count ) continue;
+            if ( dishA.recipe.Any( i => ! dishB.recipe.Contains( i ) ) ) continue;
+            Log.Fine( $"Delisting {dishA.GetFriendlyNameTranslated()} as a sub-recipe of {dishB.GetFriendlyNameTranslated()}" );
+            canMake.Remove( dishA );
+            break;
+         }
          if ( canMake.Count > 1 && packMachineLastDish.TryGetValue( __instance, out Dish lastDish ) && canMake.Contains( lastDish ) ) {
-            Log.Fine( $"Removed last dish {lastDish.GetFriendlyNameTranslated()}" );
+            Log.Fine( $"Delisting last dish {lastDish.GetFriendlyNameTranslated()}" );
             canMake.Remove( lastDish );
          }
          if ( canMake.Count > 1 ) Log.Fine( "Randomly pick one" );
