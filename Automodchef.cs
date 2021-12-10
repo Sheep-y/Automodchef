@@ -68,6 +68,8 @@ namespace Automodchef {
       public float packaging_machine_idle_power = 60;
       [ ConfigAttribute( "Mechanic", "Packaging machine's sub-recipes have lowest priority (Fries < Bacon Fries < Loaded Cheese Fries), last processed recipe have lower priority, and random for remaining ties." ) ]
       public bool smart_packaging_machine = true;
+      [ ConfigAttribute( "Mechanic", "Packaging machine will pass-through foods that it is not interested in, like assemblers.  You still need to assign at least one recipe to the machine." ) ]
+      public bool packaging_machine_passthrough = true;
 
       [ ConfigAttribute( "Tools", "Export foods to foods.csv on game launch.  True or false.  Default false.  Neglectable impact, disabled only because most won't need these." ) ]
       public bool export_food_csv = false;
@@ -174,6 +176,8 @@ namespace Automodchef {
             Modder.TryPatch( typeof( PackagingMachine ), "StartPackaging", nameof( LogPackagingMachineLastDish ) );
             Modder.TryPatch( typeof( PackagingMachine ), "SeeIfSomethingCanBePackaged", nameof( OverridePackagingMachineLogic ) );
          }
+         if ( config.packaging_machine_passthrough )
+            Modder.TryPatch( typeof( PackagingMachine ), "FixedUpdate", nameof( PackagingMachinePassThrough ) );
          if ( config.export_food_csv )
             Modder.TryPatch( typeof( SplashScreen ), "Awake", nameof( DumpFoodCsv ) );
          if ( config.export_hardware_csv )
@@ -497,6 +501,23 @@ namespace Automodchef {
          if ( (bool) packMachineConsume.Invoke( __instance, new object[] { dish } ) ) packMachinePackage.Invoke( __instance, new object[] { dish } );
          return false;
       } catch ( Exception ex ) { return Err( ex, true ); } }
+
+      private static void PackagingMachinePassThrough ( PackagingMachine __instance, List<Ingredient> ___ingredientsInside, KitchenPart.NodeData[] ___ourIngredientNodes ) { try {
+         KitchenPart.NodeData exitNode = ___ourIngredientNodes[ 3 ];
+         if ( exitNode.ingredientExists ) return;
+         PartStatus status = __instance.GetPartStatus();
+         if ( status == PartStatus.Off || status == PartStatus.Working ) return;
+         foreach ( var i in ___ingredientsInside ) {
+            var id = i.internalName;
+            foreach ( var d in __instance.dishesToAssemble )
+               if ( Dish.GetByInternalName( d ).recipe.Contains( id ) ) return;
+            Log.Fine( $"Packaging Machine is passing through {i.GetFriendlyNameTranslated()}" );
+            ___ingredientsInside.Remove( i );
+            i.SetPosition( exitNode.position );
+            __instance.TransferToNode( i, exitNode );
+            return;
+         }
+      } catch ( Exception ex ) { Err( ex ); } }
       #endregion
 
       #region Csv dump
