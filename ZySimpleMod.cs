@@ -34,16 +34,15 @@ namespace ZyMod {
       private void AsmLoaded ( object sender, AssemblyLoadEventArgs args ) {
          string name = args.LoadedAssembly.FullName;
          if ( args.LoadedAssembly.IsDynamic || name.StartsWith( "DMDASM." ) || name.StartsWith( "HarmonyDTFAssembly" ) ) return;
-         Log.Fine( $"{name}, {args.LoadedAssembly.CodeBase}" );
-         if ( name.StartsWith( "Assembly-CSharp," ) ) {
-            Log.Info( "Target assembly loaded." );
-            //AppDomain.CurrentDomain.AssemblyLoad -= AsmLoaded;
-            try {
-               OnGameAssemblyLoaded( args.LoadedAssembly );
-               Log.Info( "Bootstrap complete." );
-            } catch ( Exception ex ) {
-               Log.Error( ex.ToString() );
-            }
+         Log.Fine( $"DLL {name}, {args.LoadedAssembly.CodeBase}" );
+         if ( ! name.StartsWith( "Assembly-CSharp," ) ) return;
+         Log.Info( "Target assembly loaded." );
+         if ( Log.LogLevel >= TraceLevel.Info ) AppDomain.CurrentDomain.AssemblyLoad -= AsmLoaded;
+         try {
+            OnGameAssemblyLoaded( args.LoadedAssembly );
+            Log.Info( "Bootstrap complete." );
+         } catch ( Exception ex ) {
+            Log.Error( ex.ToString() );
          }
       }
 
@@ -116,7 +115,7 @@ namespace ZyMod {
             }
          }
          foreach ( var prop in GetType().GetFields() )
-            Log.Info( prop.Name + " = " + prop.GetValue( this ) );
+            Log.Info( $"Config {prop.Name} = {prop.GetValue( this )}" );
       } catch ( Exception ex ) { Log.Warn( ex ); } }
 
       private string lastSection = "";
