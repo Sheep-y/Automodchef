@@ -51,6 +51,8 @@ namespace Automodchef {
       public bool efficiency_log = true;
       [ ConfigAttribute( "User Interface", "Breakdown efficiency quotas by dishes.  True or false.  Default true." ) ]
       public bool efficiency_log_breakdown = true;
+      [ ConfigAttribute( "User Interface", "Show top X power consuming part types in kitchen log." ) ]
+      public byte power_log_rows = 5;
       [ ConfigAttribute( "User Interface", "Suppress yes/no confirmations - save before quit, load game, delete save / blueprint / scenario, quit level / game, reset layout" ) ]
       public bool suppress_confirmation = true;
 
@@ -61,13 +63,15 @@ namespace Automodchef {
       [ ConfigAttribute( "Simulation", "Speed of triple time (three arrows).  0-100 integer.  Game default 5.  Mod default 20." ) ]
       public byte speed3 = 20;
 
-      [ ConfigAttribute( "Mechanic", "Packaging machine spend less power when not packaging.  Game default 800.  Mod default 60." ) ]
+      [ ConfigAttribute( "Mechanic", "Packaging machine spend less power when not packaging.  Game default 800.  Mod default 60 (2x slowest belts)." ) ]
       public float packaging_machine_idle_power = 60;
       [ ConfigAttribute( "Mechanic", "Packaging machine's sub-recipes have lowest priority (Loaded Cheese Fries > Bacon Fries > Fries), and last processed recipe have lower priority)." ) ]
       public bool smart_packaging_machine = true;
 
-      [ ConfigAttribute( "Tools", "Export foods to foods.csv on game launch.  True or false.  Default false." ) ]
+      [ ConfigAttribute( "Tools", "Export foods to foods.csv on game launch.  True or false.  Default false.  Neglectable impact, disabled only because most won't need these." ) ]
       public bool export_food_csv = false;
+      [ ConfigAttribute( "Tools", "Export hardwares to hardwares.csv on game launch.  True or false.  Default false.  Ditto." ) ]
+      public bool export_hardware_csv = false;
 
       public override void Load ( string path ) {
          base.Load( path );
@@ -106,27 +110,32 @@ namespace Automodchef {
             Modder.TryPatch( typeof( PartProperties ), "PopulateDropdownForProperty", nameof( TrackDropdown ) );
             Modder.TryPatch( typeof( MaterialDropdown ), "ShowDropdown", nameof( ToggleDropdown ) );
          }
-         if ( config.tooltip_power_usage ) {
+         if ( config.tooltip_power_usage || config.power_log_rows > 0 ) {
             Modder.TryPatch( typeof( KitchenPart ).AllMethods( "ConsumePower" ).FirstOrDefault( e => e.GetParameters().Length > 0 ), nameof( LogPowerUsage ) );
             Modder.TryPatch( typeof( PowerMeter ), "Reset", nameof( ClearPowerUsage ) );
-            Modder.TryPatch( typeof( KitchenPart ), "GetTooltipText", postfix: nameof( AppendPowerToTooltip ) );
+            if ( config.tooltip_power_usage )
+               Modder.TryPatch( typeof( KitchenPart ), "GetTooltipText", postfix: nameof( AppendPowerToTooltip ) );
          }
          if ( config.tooltip_freshness )
             Modder.TryPatch( typeof( Ingredient ), "GetTooltipText", postfix: nameof( AppendFreshnessToTooltip ) );
-         if ( config.efficiency_log ) {
-            efficiencyLog = new List<string>();
-            if ( config.efficiency_log_breakdown )
-               if ( Modder.TryPatch( typeof( EfficiencyMeter ), "Reset", nameof( ClearEfficiencyLog ) ) ) {
-                  orderedDish = new Dictionary<object, int>();
-                  cookedDish = new Dictionary<object, int>();
-                  Modder.TryPatch( typeof( EfficiencyMeter ), "AddOrder", nameof( TrackOrdersEfficiency ) );
-                  Modder.TryPatch( typeof( EfficiencyMeter ), "AddDeliveredDish", nameof( TrackDeliveryEfficiency ) );
+         if ( config.efficiency_log || config.power_log_rows > 0 ) {
+            Modder.TryPatch( typeof( LevelStatus ), "RenderEvents", postfix: nameof( ForceShowEfficiencyLog ) );
+            if ( config.efficiency_log ) {
+               extraLog = new List<string>();
+               if ( config.efficiency_log_breakdown )
+                  if ( Modder.TryPatch( typeof( EfficiencyMeter ), "Reset", nameof( ClearEfficiencyLog ) ) ) {
+                     orderedDish = new Dictionary<object, int>();
+                     cookedDish = new Dictionary<object, int>();
+                     Modder.TryPatch( typeof( EfficiencyMeter ), "AddOrder", nameof( TrackOrdersEfficiency ) );
+                     Modder.TryPatch( typeof( EfficiencyMeter ), "AddDeliveredDish", nameof( TrackDeliveryEfficiency ) );
+                  }
+               if ( Modder.TryPatch( typeof( EfficiencyMeter ), "GetEfficiency", postfix: nameof( CalculateEfficiency ) ) ) {
+                  Modder.TryPatch( typeof( LevelManager ), "DetermineLevelOutcome", nameof( SuppressEfficiencyLog ), nameof( ResumeEfficiencyLog ) );
+                  Modder.TryPatch( typeof( KitchenEventsLog ), "ToString", postfix: nameof( AppendEfficiencyLog ) );
                }
-            if ( Modder.TryPatch( typeof( EfficiencyMeter ), "GetEfficiency", postfix: nameof( CalculateEfficiency ) ) ) {
-               Modder.TryPatch( typeof( LevelManager ), "DetermineLevelOutcome", nameof( SuppressEfficiencyLog ), nameof( ResumeEfficiencyLog ) );
-               Modder.TryPatch( typeof( LevelStatus ), "RenderEvents", postfix: nameof( ForceShowEfficiencyLog ) );
-               Modder.TryPatch( typeof( KitchenEventsLog ), "ToString", postfix: nameof( AppendEfficiencyLog ) );
             }
+            if ( config.power_log_rows > 0 )
+               Modder.TryPatch( typeof( KitchenEventsLog ), "ToString", postfix: nameof( AppendPowerLog ) );
          }
          if ( config.suppress_confirmation ) {
             var orig = typeof( DialogManager ).AllMethods( "ShowAlert" ).FirstOrDefault( e => e.GetParameters().Length == 7 );
@@ -136,10 +145,12 @@ namespace Automodchef {
             Modder.TryPatch( typeof( Initializer ), "Update", postfix: nameof( InstantGameSpeedUpdate ) );
          if ( config.speed2 != 3 || config.speed3 != 5 )
             Modder.TryPatch( typeof( Initializer ), "Start", nameof( AdjustGameSpeedPresets ) );
-         if ( config.packaging_machine_idle_power != 800 )
+         if ( config.packaging_machine_idle_power != 800 && config.packaging_machine_idle_power >= 0 )
             Modder.TryPatch( typeof( PackagingMachine ), "FixedUpdate", nameof( SetPackagingMachinePower ) );
          if ( config.export_food_csv )
             Modder.TryPatch( typeof( SplashScreen ), "Awake", nameof( DumpFoodCsv ) );
+         if ( config.export_hardware_csv )
+            Modder.TryPatch( typeof( SplashScreen ), "Awake", nameof( DumpHardwareCsv ) );
       }
 
       #region Skip Splash
@@ -261,6 +272,9 @@ namespace Automodchef {
          if ( power >= 1000 ) { power /= 1000f; unit = "MWh"; }
          __result += $"\n{PowerMeter.GetInstance().GetLastPowerUsage( __instance )}W >> {power:0.00}{unit}";
       } catch ( Exception ex ) { Err( ex ); } }
+
+      private static void AppendPowerLog ( ref string __result ) { try {
+      } catch ( Exception ex ) { Err( ex ); } }
       #endregion
 
       private static void AppendFreshnessToTooltip ( Ingredient __instance, ref string __result ) { try {
@@ -293,7 +307,7 @@ namespace Automodchef {
       }
 
       private static int outcome;
-      private static List<string> efficiencyLog;
+      private static List<string> extraLog;
       private static bool ShowEfficiencyLog => outcome != (int) LevelOutcome.Failure && outcome != (int) LevelOutcome.InProgress;
 
       private static void SuppressEfficiencyLog () => outcome = (int) LevelOutcome.InProgress;
@@ -303,10 +317,10 @@ namespace Automodchef {
          float iUsed = IngredientsCounter.GetInstance().GetUsedIngredients(), pUsed = PowerMeter.GetInstance().GetWattsHour();
          float iMark = Mathf.Clamp01( ___expectedIngredientsUsage / iUsed ), pMark = Mathf.Clamp01( ___expectedPowerUsage / pUsed );
          float mark = ( iMark + pMark ) / 2f;
-         efficiencyLog.Clear();
-         efficiencyLog.Add( $"Ingredients Quota {___expectedIngredientsUsage} / {iUsed} Spent = {iMark:0.00}" );
-         efficiencyLog.Add( $"Power Quota {___expectedPowerUsage}Wh / {pUsed}Wh Spent = {pMark:0.00}" );
-         efficiencyLog.Add( $"( Average {mark:0.00}" + ( allGoalsFulfilled ? "" : " - 0.1 goal failed" ) + $" )² = Final {__result/100f:0.00}" );
+         extraLog.Clear();
+         extraLog.Add( $"Ingredients Quota {___expectedIngredientsUsage} / {iUsed} Spent = {iMark:0.00}" );
+         extraLog.Add( $"Power Quota {___expectedPowerUsage}Wh / {pUsed}Wh Spent = {pMark:0.00}" );
+         extraLog.Add( $"( Average {mark:0.00}" + ( allGoalsFulfilled ? "" : " - 0.1 goal failed" ) + $" )² = Final {__result/100f:0.00}" );
       } catch ( Exception ex ) { Err( ex ); } }
 
       // Show modded logs even when kitchen has no events
@@ -315,8 +329,8 @@ namespace Automodchef {
       } catch ( Exception ex ) { Err( ex ); } }
 
       private static void AppendEfficiencyLog ( ref string __result ) { try {
-         if ( ! ShowEfficiencyLog || efficiencyLog.Count <= 0 ) return;
-         Log.Info( $"Appending efficiency log ({efficiencyLog.Count+orderedDish.Count} lines) to kitchen log." );
+         if ( ! ShowEfficiencyLog || extraLog.Count <= 0 ) return;
+         Log.Info( $"Appending efficiency log ({extraLog.Count+orderedDish.Count} lines) to kitchen log." );
          __result += "\n\n";
          if ( orderedDish.Count > 0 ) __result += "Delivered / Ordered Dish ... Quota Contribution";
          foreach ( var key in orderedDish.Keys ) {
@@ -328,7 +342,7 @@ namespace Automodchef {
             //__result += $"  {ordered-missed}/{ordered} done = {eI*ordered-missed} mats & {eP*ordered-missedPowerPenalty}Wh\n";
             __result += $"{ordered-missed}/{ordered} {dish.friendlyName} ... {eI*ordered-missed} mats & {eP*ordered-missedPowerPenalty}Wh\n";
          }
-         __result += "\n" + string.Join( "\n", efficiencyLog.ToArray() );
+         __result += "\n" + string.Join( "\n", extraLog.ToArray() );
          __result = __result.Trim();
          Log.Fine( __result );
       } catch ( Exception ex ) { Err( ex ); } }
@@ -397,8 +411,24 @@ namespace Automodchef {
          Log.Info( "Food list exported" );
       } catch ( Exception ex ) { Err( ex ); } }
 
-      private static void Csv ( this TextWriter f, params string[] values ) {
-         foreach ( var v in values ) {
+      private static void DumpHardwareCsv () { try {
+         string file = Path.Combine( ZySimpleMod.AppDataDir, "hardwares.csv" );
+         Log.Info( $"Exporting hardware list to {file}" );
+         using ( TextWriter f = File.CreateText( file ) ) {
+            f.Csv( "Id", "Name", "Description", "Category", "Price", "Power", "Reliability", "Variant", "Code Class" );
+            foreach ( var part in AutomachefResources.KitchenParts.GetList_ReadOnly() ) {
+               Log.Fine( $"#{part.internalName} = {part.partName}" );
+               f.Csv( part.internalName, part.partName, part.description, part.category, part.cost, part.powerInWatts, part.reliabilityPercentage,
+                  part.nextVariantInternalName, part.GetType().FullName );
+            }
+            f.Flush();
+         }
+         Log.Info( "Hardware list exported" );
+      } catch ( Exception ex ) { Err( ex ); } }
+
+      private static void Csv ( this TextWriter f, params object[] values ) {
+         foreach ( var val in values ) {
+            string v = val?.ToString() ?? "null";
             if ( v.Contains( "," ) || v.Contains( "\"" ) || v.Contains( "\n" ) ) line.Append( '"' ).Append( v.Replace( "\"", "\"\"" ) ).Append( "\"," );
             else line.Append( v ).Append( ',' );
          }
