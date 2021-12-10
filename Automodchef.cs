@@ -129,8 +129,10 @@ namespace Automodchef {
             if ( config.tooltip_power_usage )
                Modder.TryPatch( typeof( KitchenPart ), "GetTooltipText", postfix: nameof( AppendPowerToTooltip ) );
          }
-         if ( config.tooltip_freshness )
-            Modder.TryPatch( typeof( Ingredient ), "GetTooltipText", postfix: nameof( AppendFreshnessToTooltip ) );
+         if ( config.tooltip_freshness ) {
+            Modder.TryPatch( typeof( PackagingMachine ), "GetTooltipTextDetails", nameof( SuppressFreshnessTooltip ), nameof( RestoreFreshnessTooltip ) );
+            Modder.TryPatch( typeof( Ingredient ), "GetTooltipText", postfix: nameof( AppendFreshnessTooltip ) );
+         }
          if ( config.efficiency_log || config.power_log_rows > 0 ) {
             Modder.TryPatch( typeof( LevelStatus ), "RenderEvents", postfix: nameof( ForceShowEfficiencyLog ) );
             if ( config.efficiency_log ) {
@@ -324,9 +326,15 @@ namespace Automodchef {
       } catch ( Exception ex ) { Err( ex ); } }
       #endregion
 
-      private static void AppendFreshnessToTooltip ( Ingredient __instance, ref string __result ) { try {
+      #region Freshness
+      private static bool simpleTooltip;
+      private static void SuppressFreshnessTooltip () => simpleTooltip = true;
+      private static void RestoreFreshnessTooltip () => simpleTooltip = false;
+
+      private static void AppendFreshnessTooltip ( Ingredient __instance, ref string __result ) { try {
             Initializer init = Initializer.GetInstance();
-            if ( !init.IsSimRunning() || __instance.HasGoneBad() || __instance.name.StartsWith( "Insects" ) ) return;
+         if ( simpleTooltip ) { __result = __instance.GetFriendlyNameTranslated(); }
+         if ( ! init.IsSimRunning() || __instance.HasGoneBad() || __instance.name.StartsWith( "Insects" ) ) return;
          if ( init.levelManager.GetLevel().hasInsectsDisaster && __instance.GetInsectTime() > 0 ) {
             var part = __instance.currentNode?.kitchenPart;
             if ( part != null ) {
@@ -342,6 +350,7 @@ namespace Automodchef {
             if ( spoil > 0 ) __result += $"\nFresh for {spoil:0.0}s";
          }
       } catch ( Exception ex ) { Err( ex ); } }
+      #endregion
 
       #region Efficiency Log
       private static Dictionary< object, int > orderedDish, cookedDish;
