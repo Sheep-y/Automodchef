@@ -1,5 +1,4 @@
-﻿using I2.Loc;
-using MaterialUI;
+﻿using MaterialUI;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -38,6 +37,8 @@ namespace Automodchef {
 
       [ ConfigAttribute( "Bug Fix", "Fix food mouseover hints not showing when game is paused." ) ]
       public bool fix_food_hint_when_paused = true;
+      [ ConfigAttribute( "Bug Fix", "Check and fix dishes that have less efficiency quota than the ingredients required to make them." ) ]
+      public bool fix_dish_ingredient_quota = true;
 
       [ ConfigAttribute( "User Interface", "Suppress yes/no confirmations - save before quit, load game, delete or overwrite save / blueprint / scenario, quit level / game, reset layout" ) ]
       public bool suppress_confirmation = true;
@@ -65,7 +66,7 @@ namespace Automodchef {
 
       [ ConfigAttribute( "Mechanic", "This section changes game mechanics. They do not break or brick saves, but may allow non-vanilla solutions.\r\n; Packaging machine spend less power when not packaging.  Game default 800.  Mod default 60 (2x slowest belts)." ) ]
       public float packaging_machine_idle_power = 60;
-      [ ConfigAttribute( "Mechanic", "Packaging machine's sub-recipes have lowest priority (Fries < Bacon Fries < Loaded Cheese Fries), last processed recipe have lower priority, and random for top ties." ) ]
+      [ ConfigAttribute( "Mechanic", "Packaging machine's sub-recipes have lowest priority (Fries < Bacon Fries < Loaded Cheese Fries), last processed recipe have lower priority, and random for remaining ties." ) ]
       public bool smart_packaging_machine = true;
 
       [ ConfigAttribute( "Tools", "Export foods to foods.csv on game launch.  True or false.  Default false.  Neglectable impact, disabled only because most won't need these." ) ]
@@ -104,6 +105,8 @@ namespace Automodchef {
          }
          if ( config.fix_food_hint_when_paused )
             Modder.TryPatch( typeof( IngredientTooltip ), "Update", postfix: nameof( FixIngredientHintOnPause ) );
+         if ( config.fix_dish_ingredient_quota )
+            Modder.TryPatch( typeof( SplashScreen ), "Awake", postfix: nameof( FixDishIngredientQuota ) );
       } catch ( Exception ex ) { Err( ex ); } }
 
       private static void ApplyUserInterfacePatches () { try {
@@ -210,6 +213,25 @@ namespace Automodchef {
          ___ourRectTransform.anchoredPosition = Camera.main.WorldToScreenPoint( raycastHit.transform.position ) / __instance.GetComponentInParent<Canvas>().scaleFactor;
          __instance.tooltipText.text = typeof( IngredientTooltip ).Method( "FormatText" ).Invoke( __instance, new object[]{ food.GetTooltipText() } ).ToString();
          __instance.canvasGroup.alpha = 1f;
+      } catch ( Exception ex ) { Err( ex ); } }
+
+      private static int FindDishMinIngredient ( Dish dish ) { try {
+         int result = 0;
+         foreach ( var id in dish.recipe ) {
+            var i = Ingredient.GetByInternalName( id ) ?? Dish.GetByInternalName( id );
+            result += i is Dish d ? FindDishMinIngredient( d ) : 1;
+         }
+         return result;
+      } catch ( Exception ex ) { return Err( ex, 0 ); } }
+
+      private static void FixDishIngredientQuota () { try {
+         foreach ( var dish in Dish.GetAll() ) {
+            var i = FindDishMinIngredient( dish );
+            if ( i > dish.expectedIngredients ) {
+               Log.Info( $"Bumping {dish.GetFriendlyNameTranslated()} ingredient qouta from {dish.expectedIngredients} to {i}.");
+               dish.expectedIngredients = i;
+            }
+         }
       } catch ( Exception ex ) { Err( ex ); } }
 
       #region Pre-level load dialogue
@@ -453,7 +475,7 @@ namespace Automodchef {
 
       private static bool OverridePackagingMachineLogic ( PackagingMachine __instance, List<Ingredient> ___ingredientsInside ) { try {
          if ( ___ingredientsInside.Count == 0 ) return false;
-         HashSet<Dish> canMake = new HashSet<Dish>( __instance.dishesToAssemble.Select( e => Dish.GetByInternalNameHash( e.GetStableHashCode() ) ).Where( e =>
+         HashSet<Dish> canMake = new HashSet<Dish>( __instance.dishesToAssemble.Select( Dish.GetByInternalName ).Where( e =>
             (bool) packMachineCanMake.Invoke( __instance, new object[]{ e } ) ) );
          if ( canMake.Count == 0 ) return false;
          if ( canMake.Count > 1 ) {
