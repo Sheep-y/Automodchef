@@ -39,6 +39,8 @@ namespace Automodchef {
       [ ConfigAttribute( "Bug Fix", "Fix food mouseover hints not showing when game is paused." ) ]
       public bool fix_food_hint_when_paused = true;
 
+      [ ConfigAttribute( "User Interface", "Suppress yes/no confirmations - save before quit, load game, delete save / blueprint / scenario, quit level / game, reset layout" ) ]
+      public bool suppress_confirmation = true;
       [ ConfigAttribute( "User Interface", "Show load game prompt when entering a level (if any saves).  Loading a game will bypass level goal popup and roboto speech.  True or false.  Default true." ) ]
       public bool ask_loadgame_on_level_start = true;
       [ ConfigAttribute( "User Interface", "Max number if options to convert dropdown to toggle button.  Default 3.  0 to disable." ) ]
@@ -53,19 +55,17 @@ namespace Automodchef {
       public bool efficiency_log_breakdown = true;
       [ ConfigAttribute( "User Interface", "Show top X power consuming part types in kitchen log." ) ]
       public byte power_log_rows = 5;
-      [ ConfigAttribute( "User Interface", "Suppress yes/no confirmations - save before quit, load game, delete save / blueprint / scenario, quit level / game, reset layout" ) ]
-      public bool suppress_confirmation = true;
 
       [ ConfigAttribute( "Simulation", "Change game speed instantiously." ) ]
       public bool instant_speed_change = true;
       [ ConfigAttribute( "Simulation", "Speed of double time (two arrows).  0-100 integer.  Game default 3.  Mod default 5." ) ]
       public byte speed2 = 5;
-      [ ConfigAttribute( "Simulation", "Speed of triple time (three arrows).  0-100 integer.  Game default 5.  Mod default 20." ) ]
+      [ ConfigAttribute( "Simulation", "Speed of triple time (three arrows).  0-100 integer.  Game default 5.  Mod default 20.  High speed may cause some orders to expire when they would not on slower speeds." ) ]
       public byte speed3 = 20;
 
       [ ConfigAttribute( "Mechanic", "Packaging machine spend less power when not packaging.  Game default 800.  Mod default 60 (2x slowest belts)." ) ]
       public float packaging_machine_idle_power = 60;
-      [ ConfigAttribute( "Mechanic", "Packaging machine's sub-recipes have lowest priority (Loaded Cheese Fries > Bacon Fries > Fries), and last processed recipe have lower priority)." ) ]
+      [ ConfigAttribute( "Mechanic", "Packaging machine's sub-recipes have lowest priority (Fries < Bacon Fries < Loaded Cheese Fries), last processed recipe have lower priority, and random for top ties." ) ]
       public bool smart_packaging_machine = true;
 
       [ ConfigAttribute( "Tools", "Export foods to foods.csv on game launch.  True or false.  Default false.  Neglectable impact, disabled only because most won't need these." ) ]
@@ -87,6 +87,12 @@ namespace Automodchef {
 
       internal static void Apply ( Assembly game ) {
          config.Load();
+         ApplySystemPatches();
+         ApplyUserInterfacePatches();
+         ApplyMechanicPatches();
+      }
+
+      private static void ApplySystemPatches () { try {
          if ( config.skip_intro )
             Modder.TryPatch( typeof( FaderUIController ), "Awake", nameof( SkipVideoSplashes ) );
          if ( config.skip_spacebar )
@@ -98,6 +104,13 @@ namespace Automodchef {
          }
          if ( config.fix_food_hint_when_paused )
             Modder.TryPatch( typeof( IngredientTooltip ), "Update", postfix: nameof( FixIngredientHintOnPause ) );
+      } catch ( Exception ex ) { Err( ex ); } }
+
+      private static void ApplyUserInterfacePatches () { try {
+         if ( config.suppress_confirmation ) {
+            var orig = typeof( DialogManager ).AllMethods( "ShowAlert" ).FirstOrDefault( e => e.GetParameters().Length == 7 );
+            if ( orig != null ) Modder.TryPatch( orig, nameof( SuppressConfirmation ) );
+         }
          if ( config.ask_loadgame_on_level_start ) {
             Modder.TryPatch( typeof( LevelManager ), "Start", postfix: nameof( SetNewLevelTrigger ) );
             Modder.TryPatch( typeof( SaveLoad ), "Close", nameof( RestorePreLevelScreen ) );
@@ -137,10 +150,9 @@ namespace Automodchef {
             if ( config.power_log_rows > 0 )
                Modder.TryPatch( typeof( KitchenEventsLog ), "ToString", postfix: nameof( AppendPowerLog ) );
          }
-         if ( config.suppress_confirmation ) {
-            var orig = typeof( DialogManager ).AllMethods( "ShowAlert" ).FirstOrDefault( e => e.GetParameters().Length == 7 );
-            if ( orig != null ) Modder.TryPatch( orig, nameof( SuppressConfirmation ) );
-         }
+      } catch ( Exception ex ) { Err( ex ); } }
+
+      private static void ApplyMechanicPatches () { try {
          if ( config.instant_speed_change )
             Modder.TryPatch( typeof( Initializer ), "Update", postfix: nameof( InstantGameSpeedUpdate ) );
          if ( config.speed2 != 3 || config.speed3 != 5 )
@@ -151,7 +163,7 @@ namespace Automodchef {
             Modder.TryPatch( typeof( SplashScreen ), "Awake", nameof( DumpFoodCsv ) );
          if ( config.export_hardware_csv )
             Modder.TryPatch( typeof( SplashScreen ), "Awake", nameof( DumpHardwareCsv ) );
-      }
+      } catch ( Exception ex ) { Err( ex ); } }
 
       #region Skip Splash
       private static void SkipVideoSplashes ( ref FaderUIController.SplashStateInfo[] ___m_SplashStates ) { try {
@@ -294,9 +306,9 @@ namespace Automodchef {
             total += partPower.power;
          }
          Log.Info( $"Found {allParts.Count} parts in {byType.Count} groups totaling {Wh(total)}" );
-         __result += $"\n\nTop {Math.Min(allParts.Count,config.power_log_rows)} power using equipments:";
+         __result += $"\n\nTop {Math.Min(allParts.Count,config.power_log_rows)} power using equipment groups:";
          __result += "\n" + string.Join( "\n", byType.OrderBy( e => e.Value.power ).Reverse().Take( config.power_log_rows ).Select( e =>
-            $"{e.Key} >> {Wh(e.Value.power,false)} ({e.Value.power*100/total:0.0}%)" ) );
+            $"{AutomachefResources.KitchenParts.CreateNewInstance(e.Key).partName} ... {Wh(e.Value.power,false)} ({e.Value.power*100/total:0.0}%)" ) );
          __result = __result.Trim();
          Log.Fine( __result );
       } catch ( Exception ex ) { Err( ex ); } }
@@ -310,14 +322,14 @@ namespace Automodchef {
             if ( part != null ) {
                if ( ! init.levelManager.PartsWithInsects.Contains( part ) ) {
                   float timer = __instance.GetInsectTime(), spawn = part.GetComponent< InsectsSpawner >()?.stationaryTimeBeforeSpawning ?? 0;
-                  if ( timer != 0 && spawn != 0 ) __result += $"\nFresh for {spawn-timer:0.0}s";
+                  if ( timer != 0 && spawn != 0 ) __result += $"\nGreen for {spawn-timer:0.0}s";
                } else
                   __result += "\n(Insects nearby)";
             }
          }
          if ( __instance is Dish dish ) {
             float spoil = dish.timeToBeSpoiled - __instance.GetAge();
-            if ( spoil > 0 ) __result += $"\nServe in {spoil:0.0}s";
+            if ( spoil > 0 ) __result += $"\nFresh for {spoil:0.0}s";
          }
       } catch ( Exception ex ) { Err( ex ); } }
 
