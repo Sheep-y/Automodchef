@@ -14,6 +14,9 @@ namespace ZyMod {
       internal static string ModName { get { lock ( sync ) return instance?.GetModName() ?? "ZyMod"; } }
       internal static Type PatchClass { get { lock ( sync ) return instance?.GetPatchClass() ?? typeof( ZySimpleMod ); } }
 
+      private static bool ignoreAssembly ( Assembly asm ) => asm.IsDynamic || asm.FullName.StartsWith( "DMDASM." ) || asm.FullName.StartsWith( "HarmonyDTFAssembly" );
+      private static bool isTargetAssembly ( Assembly asm ) => asm.FullName.StartsWith( "Assembly-CSharp," );
+
       public void Initialize () {
          lock ( sync ) {
             if ( instance != null ) { Log.Warn( "Mod already initialized" ); return; }
@@ -21,10 +24,14 @@ namespace ZyMod {
          }
          try {
             Log.Initialize();
-            foreach ( var asm in AppDomain.CurrentDomain.GetAssemblies() ) Log.Fine( $"Already loaded: {asm.FullName}, {asm.CodeBase}" );
-            AppDomain.CurrentDomain.AssemblyLoad += AsmLoaded;
             AppDomain.CurrentDomain.UnhandledException += ( _, evt ) => Log.Error( evt.ExceptionObject );
             AppDomain.CurrentDomain.AssemblyResolve += ( _, evt ) => { Log.Fine( $"Resolving {evt.Name}" ); return null; };
+            foreach ( var asm in AppDomain.CurrentDomain.GetAssemblies() ) {
+               if ( ignoreAssembly( asm ) ) continue;
+               Log.Fine( $"DLL {asm.FullName}, {asm.CodeBase}" );
+               if ( isTargetAssembly( asm ) ) { GameLoaded( asm ); return; }
+            }
+            AppDomain.CurrentDomain.AssemblyLoad += AsmLoaded;
             Log.Info( "Mod Initiated" );
          } catch ( Exception ex ) {
             Log.Error( ex.ToString() );
@@ -32,19 +39,19 @@ namespace ZyMod {
       }
 
       private void AsmLoaded ( object sender, AssemblyLoadEventArgs args ) {
-         string name = args.LoadedAssembly.FullName;
-         if ( args.LoadedAssembly.IsDynamic || name.StartsWith( "DMDASM." ) || name.StartsWith( "HarmonyDTFAssembly" ) ) return;
-         Log.Fine( $"DLL {name}, {args.LoadedAssembly.CodeBase}" );
-         if ( ! name.StartsWith( "Assembly-CSharp," ) ) return;
-         Log.Info( "Target assembly loaded." );
+         Assembly asm = args.LoadedAssembly;
+         if ( ignoreAssembly( asm ) ) return;
+         Log.Fine( $"DLL {asm.FullName}, {asm.CodeBase}" );
+         if ( ! isTargetAssembly( asm ) ) return;
          if ( Log.LogLevel >= TraceLevel.Info ) AppDomain.CurrentDomain.AssemblyLoad -= AsmLoaded;
-         try {
-            OnGameAssemblyLoaded( args.LoadedAssembly );
-            Log.Info( "Bootstrap complete." );
-         } catch ( Exception ex ) {
-            Log.Error( ex.ToString() );
-         }
+         GameLoaded( asm );
       }
+
+      private void GameLoaded ( Assembly asm ) { try {
+         Log.Info( "Target assembly loaded." );
+         OnGameAssemblyLoaded( asm );
+         Log.Info( "Bootstrap complete." );
+      } catch ( Exception ex ) { Log.Error( ex ); } }
 
       private static string _AppDataDir;
       public static string AppDataDir { get {
