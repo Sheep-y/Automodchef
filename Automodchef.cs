@@ -456,20 +456,22 @@ namespace Automodchef {
          HashSet<Dish> canMake = new HashSet<Dish>( __instance.dishesToAssemble.Select( e => Dish.GetByInternalNameHash( e.GetStableHashCode() ) ).Where( e =>
             (bool) packMachineCanMake.Invoke( __instance, new object[]{ e } ) ) );
          if ( canMake.Count == 0 ) return false;
-         if ( canMake.Count > 1 ) Log.Info( "Packaging options: " + string.Join( ", ", canMake.Select( e => e.GetFriendlyNameTranslated() ) ) );
-         foreach ( var dishA in canMake.ToArray() ) foreach ( var dishB in canMake ) {
-            if ( dishA == dishB || dishA.recipe.Count >= dishB.recipe.Count ) continue;
-            if ( dishA.recipe.Any( i => ! dishB.recipe.Contains( i ) ) ) continue;
-            Log.Fine( $"Delisting {dishA.GetFriendlyNameTranslated()} as a sub-recipe of {dishB.GetFriendlyNameTranslated()}" );
-            canMake.Remove( dishA );
-            break;
+         if ( canMake.Count > 1 ) {
+            Log.Info( "Packaging options: " + string.Join( ", ", canMake.Select( e => e.GetFriendlyNameTranslated() ) ) );
+            foreach ( var dishA in canMake.ToArray() ) foreach ( var dishB in canMake ) {
+               if ( dishA == dishB || dishA.recipe.Count >= dishB.recipe.Count ) continue;
+               if ( dishA.recipe.Any( i => ! dishB.recipe.Contains( i ) ) ) continue;
+               Log.Fine( $"Delisting {dishA.GetFriendlyNameTranslated()} as a sub-recipe of {dishB.GetFriendlyNameTranslated()}" );
+               canMake.Remove( dishA );
+               break;
+            }
+            if ( canMake.Count > 1 && packMachineLastDish.TryGetValue( __instance, out Dish lastDish ) && canMake.Contains( lastDish ) ) {
+               Log.Fine( $"Delisting last dish {lastDish.GetFriendlyNameTranslated()}" );
+               canMake.Remove( lastDish );
+            }
+            if ( canMake.Count > 1 ) Log.Fine( "Randomly pick one" );
          }
-         if ( canMake.Count > 1 && packMachineLastDish.TryGetValue( __instance, out Dish lastDish ) && canMake.Contains( lastDish ) ) {
-            Log.Fine( $"Delisting last dish {lastDish.GetFriendlyNameTranslated()}" );
-            canMake.Remove( lastDish );
-         }
-         if ( canMake.Count > 1 ) Log.Fine( "Randomly pick one" );
-         var dish = canMake.ElementAt( canMake.Count == 1 ? 9 : packMachineRandom.Next( canMake.Count ) );
+         var dish = canMake.ElementAt( canMake.Count == 1 ? 0 : packMachineRandom.Next( canMake.Count ) );
          if ( (bool) packMachineConsume.Invoke( __instance, new object[] { dish } ) ) {
             packMachinePackage.Invoke( __instance, new object[] { dish } );
             Log.Info( $"Winner: {dish.GetFriendlyNameTranslated()}" );
