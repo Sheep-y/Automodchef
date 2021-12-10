@@ -63,7 +63,7 @@ namespace Automodchef {
       [ ConfigAttribute( "Simulation", "Speed of triple time (three arrows).  0-100 integer.  Game default 5.  Mod default 20.  High speed may cause some orders to expire when they would not on slower speeds." ) ]
       public byte speed3 = 20;
 
-      [ ConfigAttribute( "Mechanic", "Packaging machine spend less power when not packaging.  Game default 800.  Mod default 60 (2x slowest belts)." ) ]
+      [ ConfigAttribute( "Mechanic", "This section changes game mechanics. They do not break or brick saves, but may allow non-vanilla solutions.\r\n; Packaging machine spend less power when not packaging.  Game default 800.  Mod default 60 (2x slowest belts)." ) ]
       public float packaging_machine_idle_power = 60;
       [ ConfigAttribute( "Mechanic", "Packaging machine's sub-recipes have lowest priority (Fries < Bacon Fries < Loaded Cheese Fries), last processed recipe have lower priority, and random for top ties." ) ]
       public bool smart_packaging_machine = true;
@@ -469,13 +469,10 @@ namespace Automodchef {
                Log.Fine( $"Delisting last dish {lastDish.GetFriendlyNameTranslated()}" );
                canMake.Remove( lastDish );
             }
-            if ( canMake.Count > 1 ) Log.Fine( "Randomly pick one" );
+            Log.Info( canMake.Count > 1 ? "Randomly pick from reminders" : $"Winner: {canMake.ElementAt(0).GetFriendlyNameTranslated()}" );
          }
          var dish = canMake.ElementAt( canMake.Count == 1 ? 0 : packMachineRandom.Next( canMake.Count ) );
-         if ( (bool) packMachineConsume.Invoke( __instance, new object[] { dish } ) ) {
-            packMachinePackage.Invoke( __instance, new object[] { dish } );
-            Log.Info( $"Winner: {dish.GetFriendlyNameTranslated()}" );
-         }
+         if ( (bool) packMachineConsume.Invoke( __instance, new object[] { dish } ) ) packMachinePackage.Invoke( __instance, new object[] { dish } );
          return false;
       } catch ( Exception ex ) { return Err( ex, true ); } }
       #endregion
