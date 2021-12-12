@@ -55,20 +55,23 @@ namespace Automodchef {
       public bool suppress_confirmation = true;
       [ ConfigAttribute( "User Interface", "Show load game prompt when entering a level (if any saves).  Loading a game will bypass level goal popup and roboto speech.  Default true." ) ]
       public bool ask_loadgame_on_level_start = true;
+      [ ConfigAttribute( "User Interface", "Keep save dialog open after deleting a save.  Default true." ) ]
+      public bool stay_open_after_delete_save = true;
       [ ConfigAttribute( "User Interface", "Max number if options to convert dropdown to toggle button.  Default 3.  0 to disable." ) ]
       public byte dropdown_toogle_threshold = 3;
-      [ ConfigAttribute( "User Interface", "Show real-time power usage in mouseover tooltips.  Default true." ) ]
-      public bool tooltip_power_usage = true;
-      [ ConfigAttribute( "User Interface", "Show food freshness in mouseover tooltips.  Default true." ) ]
-      public bool tooltip_freshness = true;
-      [ ConfigAttribute( "User Interface", "Add efficiency calculation to kitchen log.  Default true." ) ]
-      public bool efficiency_log = true;
-      [ ConfigAttribute( "User Interface", "Breakdown efficiency quotas by dishes.  Default true." ) ]
-      public bool efficiency_log_breakdown = true;
-      [ ConfigAttribute( "User Interface", "Show top X power consuming part types in kitchen log.  Default 5.  0 to disable." ) ]
-      public byte power_log_rows = 5;
       [ ConfigAttribute( "User Interface", "Hide efficiency of tutorial levels.  Default true." ) ]
       public bool hide_tutorial_efficiency = true;
+
+      [ ConfigAttribute( "Log", "Show real-time power usage in mouseover tooltips.  Default true." ) ]
+      public bool tooltip_power_usage = true;
+      [ ConfigAttribute( "Log", "Show food freshness in mouseover tooltips.  Default true." ) ]
+      public bool tooltip_freshness = true;
+      [ ConfigAttribute( "Log", "Add efficiency calculation to kitchen log.  Default true." ) ]
+      public bool efficiency_log = true;
+      [ ConfigAttribute( "Log", "Breakdown efficiency quotas by dishes.  Default true." ) ]
+      public bool efficiency_log_breakdown = true;
+      [ ConfigAttribute( "Log", "Show top X power consuming part types in kitchen log.  Default 5.  0 to disable." ) ]
+      public byte power_log_rows = 5;
 
       [ ConfigAttribute( "Simulation", "Change game speed instantaneously.  Default true." ) ]
       public bool instant_speed_change = true;
@@ -107,6 +110,7 @@ namespace Automodchef {
          config.Load();
          ApplySystemPatches();
          ApplyUserInterfacePatches();
+         ApplyLogPatches();
          ApplyMechanicPatches();
       }
 
@@ -140,11 +144,22 @@ namespace Automodchef {
             Modder.TryPatch( typeof( SaveLoadManager ), "DeleteSave", nameof( ClearPreLevelFlag ) );
             Modder.TryPatch( typeof( SaveLoadManager ), "LoadAndBuildKitchen", nameof( ClearPreLevelFlag ) );
          }
+         if ( config.stay_open_after_delete_save ) {
+            Modder.TryPatch( typeof( SaveLoadManager ), "DeleteSave", nameof( DisableNextSaveLoadClose ) );
+            Modder.TryPatch( typeof( SaveLoad ), "Close", nameof( CheckSaveLoadCloseDisabled ) );
+         }
+         if ( config.hide_tutorial_efficiency ) {
+            Modder.TryPatch( typeof( LevelSelection ), "InitializeLevelList", postfix: nameof( HideTutorialMaxEfficiency ) );
+            Modder.TryPatch( typeof( LevelStatus ), "RenderStats", postfix: nameof( HideTutorialEfficiencyStat ) );
+         }
          if ( config.dropdown_toogle_threshold > 1 ) {
             dropdownIcon = new ConditionalWeakTable< MaterialDropdown, DropdownIcon >();
             Modder.TryPatch( typeof( PartProperties ), "PopulateDropdownForProperty", nameof( TrackDropdown ) );
             Modder.TryPatch( typeof( MaterialDropdown ), "ShowDropdown", nameof( ToggleDropdown ) );
          }
+      } catch ( Exception ex ) { Err( ex ); } }
+
+      private static void ApplyLogPatches () { try {
          if ( config.tooltip_power_usage || config.power_log_rows > 0 ) {
             Modder.TryPatch( typeof( KitchenPart ).AllMethods( "ConsumePower" ).FirstOrDefault( e => e.GetParameters().Length > 0 ), nameof( LogPowerUsage ) );
             Modder.TryPatch( typeof( PowerMeter ), "Reset", nameof( ClearPowerUsage ) );
@@ -171,10 +186,6 @@ namespace Automodchef {
             }
             if ( config.power_log_rows > 0 )
                Modder.TryPatch( typeof( KitchenEventsLog ), "ToString", postfix: nameof( AppendPowerLog ) );
-         }
-         if ( config.hide_tutorial_efficiency ) {
-            Modder.TryPatch( typeof( LevelSelection ), "InitializeLevelList", postfix: nameof( HideTutorialMaxEfficiency ) );
-            Modder.TryPatch( typeof( LevelStatus ), "RenderStats", postfix: nameof( HideTutorialEfficiencyStat ) );
          }
       } catch ( Exception ex ) { Err( ex ); } }
 
@@ -339,6 +350,19 @@ namespace Automodchef {
          Log.Fine( "Save loaded or deleted.  Suppressing pre-level screen." );
          lastPreLevelScreenState = false;
          currentLevel?.levelStatusUI.preLevelScreen.gameObject.SetActive( false );
+      }
+      #endregion
+
+      #region Save/Load Deletion
+      private static bool bypassNextSaveLoad;
+      private static void DisableNextSaveLoadClose ( ref Action OnDeleted ) {
+         if ( OnDeleted != null ) return;
+         bypassNextSaveLoad = true;
+         OnDeleted = () => typeof( SaveLoad ).TryMethod( "RebuildList" )?.Invoke( Initializer.GetInstance().saveLoadPanel, null );
+      }
+      private static bool CheckSaveLoadCloseDisabled () {
+         if ( ! bypassNextSaveLoad ) return true;
+         return bypassNextSaveLoad = false;
       }
       #endregion
 
