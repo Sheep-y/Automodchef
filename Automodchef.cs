@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Analytics;
+using UnityEngine.UI;
 using ZyMod;
 using static I2.Loc.ScriptLocalization.Warnings;
 
@@ -171,8 +172,10 @@ namespace Automodchef {
             if ( config.power_log_rows > 0 )
                Modder.TryPatch( typeof( KitchenEventsLog ), "ToString", postfix: nameof( AppendPowerLog ) );
          }
-         if ( config.hide_tutorial_efficiency )
-            Modder.TryPatch( typeof( LevelSelection ), "InitializeLevelList", postfix: nameof( HideTutorialEfficiency ) );
+         if ( config.hide_tutorial_efficiency ) {
+            Modder.TryPatch( typeof( LevelSelection ), "InitializeLevelList", postfix: nameof( HideTutorialMaxEfficiency ) );
+            Modder.TryPatch( typeof( LevelStatus ), "RenderStats", postfix: nameof( HideTutorialEfficiencyStat ) );
+         }
       } catch ( Exception ex ) { Err( ex ); } }
 
       private static void ApplyMechanicPatches () { try {
@@ -379,7 +382,7 @@ namespace Automodchef {
       } catch ( Exception ex ) { Err( ex ); } }
 
       private static void AppendPowerLog ( ref string __result ) { try {
-         if ( powerLog == null || IsTutorial() ) return;
+         if ( powerLog == null || ( config.hide_tutorial_efficiency && IsTutorial() ) ) return;
          Log.Info( "Appending power log (up to {0} lines) to kitchen log.", config.power_log_rows );
          float total = 0;
          Dictionary< string, PowerLog > byType = new Dictionary<string, PowerLog>();
@@ -411,13 +414,17 @@ namespace Automodchef {
       } catch ( Exception ex ) { Err( ex ); } }
       #endregion
 
-      private static void HideTutorialEfficiency ( List<Level> ___levelsList, Dictionary<string, GameObject> ___levelObjectMapping ) { try {
+      private static void HideTutorialMaxEfficiency ( List<Level> ___levelsList, Dictionary<string, GameObject> ___levelObjectMapping ) { try {
          foreach ( var level in ___levelsList.Where( IsTutorial ) ) {
             var text = ___levelObjectMapping[ level.number ].GetComponent<LevelSelectionItem>()?.maxEfficiency;
             if ( text?.gameObject.activeSelf != true ) return;
             text.text = ScriptLocalization.Main_UI.Success;
             Log.Fine( $"Hiding efficiency of tutorial level {0}", level.number );
          }
+      } catch ( Exception ex ) { Err( ex ); } }
+
+      private static void HideTutorialEfficiencyStat ( Text ___statsEfficiencyValueUI ) { try {
+         if ( IsTutorial() ) ___statsEfficiencyValueUI.text = "n/a";
       } catch ( Exception ex ) { Err( ex ); } }
 
       #region Freshness
@@ -470,11 +477,12 @@ namespace Automodchef {
 
       // Show modded logs even when kitchen has no events
       private static void ForceShowEfficiencyLog ( LevelStatus __instance, KitchenEventsLog log ) { try {
-         if ( log.GetEventsCount() <= 0 && ! IsTutorial() ) __instance.eventsLogTextField.text = log.ToString();
+         if ( log.GetEventsCount() <= 0 && ( ! config.hide_tutorial_efficiency || ! IsTutorial() ) )
+            __instance.eventsLogTextField.text = log.ToString();
       } catch ( Exception ex ) { Err( ex ); } }
 
       private static void AppendEfficiencyLog ( ref string __result ) { try {
-         if ( extraLog.Count == 0 || IsTutorial() ) return;
+         if ( extraLog.Count == 0 || ( config.hide_tutorial_efficiency && IsTutorial() ) ) return;
          Log.Info( "Appending efficiency log ({0} lines) to kitchen log.", extraLog.Count + orderedDish?.Count );
          __result += "\n\n";
          if ( orderedDish?.Count > 0 ) {
@@ -637,14 +645,15 @@ namespace Automodchef {
          string file = Path.Combine( ZySimpleMod.AppDataDir, "hardwares.csv" );
          Log.Info( "Exporting hardware list to {0}", file );
          using ( TextWriter f = File.CreateText( file ) ) {
-            f.Csv( "Id", "Name", "Description", "Category", "Price", "Power", "Speed", "Reliability", "Variant", "Code Class" );
+            f.Csv( "Id", "Name", "Description", "Category", "Price", "Power", "Speed", "Time", "Variant", "Code Class" );
             foreach ( var part in AutomachefResources.KitchenParts.GetList_ReadOnly() ) {
                Log.Fine( "#{0} = {1}", part.internalName, part.partName );
                var speed  = part.GetType().GetField( "speed", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance )?.GetValue( part );
                var rspeed = part.GetType().GetField( "rotationSpeed", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance )?.GetValue( part ) ??
                             part.GetType().GetField( "armRotationSpeed", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance )?.GetValue( part );
-               f.Csv( part.internalName, part.partName, part.description, part.category, part.cost, part.powerInWatts, speed ?? rspeed ?? "",
-                  part.reliabilityPercentage, part.nextVariantInternalName, part.GetType().FullName );
+               var pTime  = part.GetType().GetField( "timeToProcess", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance )?.GetValue( part );
+               f.Csv( part.internalName, part.partName, part.description, part.category, part.cost, part.powerInWatts, speed ?? rspeed ?? "", pTime ?? "",
+                      part.nextVariantInternalName, part.GetType().FullName );
             }
             f.Flush();
          }
