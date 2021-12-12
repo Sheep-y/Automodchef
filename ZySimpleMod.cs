@@ -25,10 +25,10 @@ namespace ZyMod {
          try {
             Log.Initialize();
             AppDomain.CurrentDomain.UnhandledException += ( _, evt ) => Log.Error( evt.ExceptionObject );
-            AppDomain.CurrentDomain.AssemblyResolve += ( _, evt ) => { Log.Fine( $"Resolving {evt.Name}" ); return null; };
+            AppDomain.CurrentDomain.AssemblyResolve += ( _, evt ) => { Log.Fine( "Resolving {0}", evt.Name ); return null; };
             foreach ( var asm in AppDomain.CurrentDomain.GetAssemblies() ) {
                if ( ignoreAssembly( asm ) ) continue;
-               Log.Fine( $"DLL {asm.FullName}, {asm.CodeBase}" );
+               Log.Fine( "DLL {0}, {1}", asm.FullName, asm.CodeBase );
                if ( isTargetAssembly( asm ) ) { GameLoaded( asm ); return; }
             }
             AppDomain.CurrentDomain.AssemblyLoad += AsmLoaded;
@@ -41,9 +41,9 @@ namespace ZyMod {
       private void AsmLoaded ( object sender, AssemblyLoadEventArgs args ) {
          Assembly asm = args.LoadedAssembly;
          if ( ignoreAssembly( asm ) ) return;
-         Log.Fine( $"DLL {asm.FullName}, {asm.CodeBase}" );
+         Log.Fine( "DLL {0}, {1}", asm.FullName, asm.CodeBase );
          if ( ! isTargetAssembly( asm ) ) return;
-         if ( Log.LogLevel >= TraceLevel.Info ) AppDomain.CurrentDomain.AssemblyLoad -= AsmLoaded;
+         if ( Log.LogLevel <= TraceLevel.Info ) AppDomain.CurrentDomain.AssemblyLoad -= AsmLoaded;
          GameLoaded( asm );
       }
 
@@ -91,12 +91,12 @@ namespace ZyMod {
          if ( ! File.Exists( path ) ) {
             Create( path );
          } else {
-            Log.Info( "Loading " + path );
+            Log.Info( "Loading {0}", path );
             foreach ( var line in File.ReadAllLines( path ) ) {
                var split = line.Split( new char[]{ '=' }, 2 );
                if ( split.Length != 2 || line.StartsWith( ";" ) ) continue;
                var prop = GetType().GetField( split[ 0 ].Trim() );
-               if ( prop == null ) { Log.Warn( "Unknown field: " + split[ 0 ] ); continue; }
+               if ( prop == null ) { Log.Warn( "Unknown field: {0}", split[ 0 ] ); continue; }
                var val = split[1].Trim();
                if ( val.Length > 1 && val.StartsWith( "\"" ) && val.EndsWith( "\"" ) ) val = val.Substring( 1, val.Length - 2 );
                switch ( prop.FieldType.FullName ) {
@@ -116,19 +116,18 @@ namespace ZyMod {
                      prop.SetValue( this, val == "yes" || val == "1" || val == "true" );
                      break;
                   default :
-                     Log.Warn( $"Unexpected field type {prop.FieldType} of {split[0]}" );
+                     Log.Warn( "Unexpected field type {0} of {1}", prop.FieldType, split[ 0 ] );
                      break;
                }
             }
          }
-         foreach ( var prop in GetType().GetFields() )
-            Log.Info( $"Config {prop.Name} = {prop.GetValue( this )}" );
+         foreach ( var prop in GetType().GetFields() ) Log.Info( "Config {0} = {1}", prop.Name, prop.GetValue( this ) );
       } catch ( Exception ex ) { Log.Warn( ex ); } }
 
       private string lastSection = "";
 
       public virtual void Create ( string ini ) { try {
-         Log.Info( "Creating " + ini );
+         Log.Info( "Creating {0}", ini );
          using ( TextWriter tw = File.CreateText( ini ) ) {
             var attr = GetType().GetCustomAttribute<ConfigAttribute>();
             if ( ! string.IsNullOrWhiteSpace( attr?.Comment ) ) tw.Write( $"{attr.Comment}\r\n" );
@@ -145,9 +144,9 @@ namespace ZyMod {
             }
             tw.Flush();
          }
-         if ( File.Exists( ini ) ) Log.Fine( $"{new FileInfo( ini ).Length} bytes written" );
+         if ( File.Exists( ini ) ) Log.Fine( "{0} bytes written", new FileInfo( ini ).Length );
          else Log.Warn( "Config file not written." );
-      } catch ( Exception ex ) { Log.Warn( "Cannot create config file: " + ex ); } }
+      } catch ( Exception ex ) { Log.Warn( "Cannot create config file: {0}", ex ); } }
    }
 
    public static class Modder {
@@ -167,7 +166,7 @@ namespace ZyMod {
 
       internal static MethodInfo Patch ( MethodBase method, string prefix = null, string postfix = null, string transpiler = null ) {
          if ( harmony == null ) harmony = new Harmony( ZySimpleMod.ModName );
-         Log.Fine( $"Patching {method.DeclaringType} {method} | Pre: {prefix} | Post: {postfix} | Trans: {transpiler}" );
+         Log.Fine( "Patching {0} {1} | Pre: {2} | Post: {3} | Trans: {4}", method.DeclaringType, method, prefix, postfix, transpiler );
          return harmony.Patch( method, ToHarmony( prefix ), ToHarmony( postfix ), ToHarmony( transpiler ) );
       }
 
@@ -177,7 +176,7 @@ namespace ZyMod {
       internal static MethodInfo TryPatch ( MethodBase method, string prefix = null, string postfix = null, string transpiler = null ) { try {
          return Patch( method, prefix, postfix, transpiler );
       } catch ( Exception ex ) {
-         Log.Warn( $"Could not patch {method?.DeclaringType} {method?.Name} | {prefix} | {postfix} | {transpiler} :\n" + ex );
+         Log.Warn( "Could not patch {0} {1} | Pre: {2} | Post: {3} | Trans: {4}\n{5}", method?.DeclaringType, method?.Name, prefix, postfix, transpiler, ex );
          return null;
       } }
 

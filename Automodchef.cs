@@ -137,6 +137,7 @@ namespace Automodchef {
          if ( config.dropdown_toogle_threshold > 0 ) {
             dropdownProp = new ConditionalWeakTable< MaterialDropdown, KitchenPartProperty >();
             dropdownIcon = new ConditionalWeakTable< MaterialDropdown, DropdownIcon >();
+            Modder.TryPatch( typeof( PartPropertyPoolHandler ), "GetDropdown", postfix: nameof( RemoveDropdown ) );
             Modder.TryPatch( typeof( PartProperties ), "PopulateDropdownForProperty", nameof( TrackDropdown ) );
             Modder.TryPatch( typeof( PartProperties ), "RenderDropdownWithButton", postfix: nameof( TrackComputerropdown ) );
             Modder.TryPatch( typeof( MaterialDropdown ), "ShowDropdown", nameof( ToggleDropdown ) );
@@ -201,7 +202,7 @@ namespace Automodchef {
          if ( ! ___m_SplashStates.Any( e => e.m_AnimToPlay == "LoadStartScreen" ) ) return;
          ___m_SplashStates = ___m_SplashStates.Where( e => e.m_AnimToPlay == "LoadStartScreen" ).ToArray();
          ___m_SplashStates[0].m_TimeInState = 0.01f;
-         Log.Info( $"Skipping Logos and Warnings." );
+         Log.Info( "Skipping Logos and Warnings." );
          // [ { "Unity, 1, False }, { "HermesInteractive, 2, False }, { "Team 17, 4, True }, { "Legal, 3, False }, { "LoadStartScreen", 2, False } ]
       } catch ( Exception ex ) { Err( ex ); } }
 
@@ -240,7 +241,7 @@ namespace Automodchef {
          foreach ( var dish in Dish.GetAll() ) {
             var i = FindDishMinIngredient( dish ) + config.dish_ingredient_quota_buffer;
             if ( i > dish.expectedIngredients && ! ( i == 2 && config.dish_ingredient_quota_buffer == 1 ) ) {
-               Log.Info( $"Bumping {dish.GetFriendlyNameTranslated()} ingredient qouta from {dish.expectedIngredients} to {i}.");
+               Log.Info( "Bumping {0} ingredient qouta from {1} to {2}.", dish.GetFriendlyNameTranslated(), dish.expectedIngredients, i );
                dish.expectedIngredients = i;
                updated = true;
             }
@@ -308,7 +309,7 @@ namespace Automodchef {
          if ( data == null ) { Log.Info( "Save data not found, aborting." ); return; }
 		 for ( var i = 0; i < 5; i++ )
 			if ( data.Get( i ) != null ) {
-               Log.Info( $"Found saved level at slot {i+1}, offering load dialog." );
+               Log.Info( "Found saved level at slot {0}, offering load dialog.", i+1 );
                lastPreLevelScreenState = currentLevel.levelStatusUI.preLevelInfoRoot.gameObject.activeSelf;
                currentLevel.levelStatusUI.preLevelScreen.gameObject.SetActive( false );
                Initializer.GetInstance().saveLoadPanel.Open( false );
@@ -335,29 +336,34 @@ namespace Automodchef {
       private static ConditionalWeakTable< MaterialDropdown, KitchenPartProperty > dropdownProp;
       private static ConditionalWeakTable< MaterialDropdown, DropdownIcon > dropdownIcon;
 
+      private static void RemoveDropdown ( DropdownPartPropertyObject __result ) { try {
+         Log.Fine( "Removing dropdown {0}", __result.GetHashCode() );
+         dropdownProp.Remove( __result?.Dropdown ); dropdownIcon.Remove( __result?.Dropdown );
+      } catch ( Exception ex ) { Err( ex ); } }
+
       private static void TrackDropdown ( MaterialDropdown dropdown, KitchenPartProperty prop, DropdownIcon icon ) { try {
-         Log.Fine( "Tracking dropdown for kitchen part prop {0}", prop.name );
+         Log.Fine( "Tracking dropdown {0} for kitchen part prop {1}", dropdown.GetHashCode(), prop.name );
          dropdownProp.Remove( dropdown ); if ( prop != null ) dropdownProp.Add( dropdown, prop );
          dropdownIcon.Remove( dropdown ); if ( icon != null ) dropdownIcon.Add( dropdown, icon );
       } catch ( Exception ex ) { Err( ex ); } }
 
       private static void TrackComputerropdown ( KitchenPartProperty prop, bool forProgramableComputer, DropdownPartPropertyObject __result ) { try {
-         if ( ! forProgramableComputer || __result?.Dropdown == null ) return;
-         Log.Fine( "Tracking dropdown for computer prop {0}", prop.name );
-         dropdownProp.Remove( __result.Dropdown ); if ( prop != null ) dropdownProp.Add( __result.Dropdown, prop );
-         dropdownIcon.Remove( __result.Dropdown );
+         dropdownProp.Remove( __result.Dropdown ); dropdownIcon.Remove( __result.Dropdown );
+         if ( ! forProgramableComputer || __result?.Dropdown == null || prop == null ) return;
+         Log.Fine( "Tracking dropdown {0} for computer prop {1}", __result.Dropdown.GetHashCode(), prop.name );
+         dropdownProp.Add( __result.Dropdown, prop );
       } catch ( Exception ex ) { Err( ex ); } }
 
       private static bool ToggleDropdown ( MaterialDropdown __instance, ref int ___m_CurrentlySelected ) { try {
-         if ( Initializer.GetInstance().levelManager?.GetLevel()?.IsTutorial() != false ) return true;
+         if ( Initializer.GetInstance()?.levelManager?.GetLevel()?.IsTutorial() != false ) return true;
          if ( ! dropdownProp.TryGetValue( __instance, out KitchenPartProperty prop ) ) return true;
          int max_options = prop?.friendlyValues?.Count ?? 0, new_selection = ___m_CurrentlySelected + 1;
          if ( max_options <= 1 || max_options > config.dropdown_toogle_threshold ) return true;
-         Log.Fine( "Toggle dropdown of prop {0} from {1} to {2} (max {3}", prop.name, ___m_CurrentlySelected, new_selection, max_options );
+         Log.Fine( "Toggle dropdown {0} of prop {1} from {2} to {3} (or 0 if {4})", __instance.GetHashCode(), prop.name, ___m_CurrentlySelected, new_selection, max_options );
          __instance.Select( new_selection >= max_options ? 0 : new_selection );
          if ( dropdownIcon.TryGetValue( __instance, out DropdownIcon icon ) ) icon?.UpdateIcon();
          return false;
-      } catch ( Exception ex ) { Err( ex ); return true; } }
+      } catch ( Exception ex ) { return Err( ex, true ); } }
       #endregion
 
       #region Power
@@ -382,7 +388,7 @@ namespace Automodchef {
 
       private static void AppendPowerLog ( ref string __result ) { try {
          if ( powerLog == null ) return;
-         Log.Info( $"Appending power log (up to {config.power_log_rows} lines) to kitchen log." );
+         Log.Info( "Appending power log (up to {0} lines) to kitchen log.", config.power_log_rows );
          float total = 0;
          Dictionary< string, PowerLog > byType = new Dictionary<string, PowerLog>();
          HashSet<KitchenPart> allParts = Initializer.GetInstance().kitchen.GetAllKitchenParts();
@@ -404,7 +410,7 @@ namespace Automodchef {
             else byType.Add( key, new PowerLog { power = partPower.power } );
             total += partPower.power;
          }
-         Log.Info( $"Found {allParts.Count} parts in {byType.Count} groups totaling {Wh(total)}" );
+         Log.Info( "Found {0} parts in {1} groups totaling {2}", allParts.Count, byType.Count, Wh( total ) );
          __result += $"\n\nTop {Math.Min(allParts.Count,config.power_log_rows)} power using equipment groups:";
          __result += "\n" + string.Join( "\n", byType.OrderBy( e => e.Value.power ).Reverse().Take( config.power_log_rows ).Select( e =>
             $"{AutomachefResources.KitchenParts.CreateNewInstance(e.Key).partName} ... {Wh(e.Value.power,false)} ({e.Value.power*100/total:0.0}%)" ) );
@@ -468,7 +474,7 @@ namespace Automodchef {
 
       private static void AppendEfficiencyLog ( ref string __result ) { try {
          if ( extraLog.Count == 0 ) return;
-         Log.Info( $"Appending efficiency log ({extraLog.Count+orderedDish.Count} lines) to kitchen log." );
+         Log.Info( "Appending efficiency log ({0} lines) to kitchen log.", extraLog.Count + orderedDish.Count );
          __result += "\n\n";
          if ( orderedDish.Count > 0 ) __result += "Delivered / Ordered Dish ... Quota Contribution\n";
          foreach ( var key in orderedDish.Keys ) {
@@ -484,18 +490,26 @@ namespace Automodchef {
          __result = __result.Trim();
          Log.Fine( __result );
       } catch ( Exception ex ) { Err( ex ); } }
+
+      private static string Wh ( float wh, bool prefix = true ) {
+         var power = CachedData.fixedDeltaTime * wh / 3600f;
+         var unit = "Wh";
+         if ( prefix && power >= 1000 ) { power /= 1000f; unit = "kWh"; }
+         if ( prefix && power >= 1000 ) { power /= 1000f; unit = "MWh"; }
+         return prefix ? $"{power:0.00}{unit}" : $"{power:0}Wh";
+      }
       #endregion
 
       private static bool SuppressConfirmation ( string bodyText, Action onAffirmativeButtonClicked, Action onDismissiveButtonClicked ) { try {
          foreach ( var msg in new string[] { About_To_Load_Game, Bonus_Level, Delete_Blueprint_Confirmation, Delete_Game,
                   Overwrite_Game, Overwrite_Blueprint, Quit_Confirmation, Quit_Confirmation_In_Game, Reset_Kitchen } )
             if ( bodyText == msg ) {
-               Log.Info( $"Assuming yes for {bodyText}" );
+               Log.Info( "Assuming yes for {0}", bodyText );
                onAffirmativeButtonClicked();
                return false;
             }
          if ( bodyText == Save_Before_Quitting ) {
-            Log.Info( $"Assuming no for {bodyText}" );
+            Log.Info( "Assuming no for {0}", bodyText );
             onDismissiveButtonClicked();
             return false;
          }
@@ -508,7 +522,7 @@ namespace Automodchef {
 
       private static void AdjustGameSpeedPresets ( Initializer __instance ) { try {
          if ( __instance == null || __instance.speeds == null || __instance.speeds.Count < 4 ) return;
-         Log.Info( $"Setting game speeds to [ {__instance.speeds[0]}x, {__instance.speeds[1]}x, {config.speed2}x, {config.speed3}x ]" );
+         Log.Info( "Setting game speeds to [ {0}x, {1}x, {2}x, {3}x ]", __instance.speeds[0], __instance.speeds[1], __instance.speeds[2], __instance.speeds[3] );
          __instance.speeds[2] = config.speed2;
          __instance.speeds[3] = config.speed3;
       } catch ( Exception ex ) { Err( ex ); } }
@@ -518,7 +532,7 @@ namespace Automodchef {
       private static void SetPackagingMachinePower ( PackagingMachine __instance, bool ___packaging ) { try {
          if ( fullPMpower == 0 ) {
             fullPMpower = __instance.powerInWatts;
-            Log.Info( $"Packaging machine power: {config.packaging_machine_idle_power}W when idle, {fullPMpower}W when packaging." );
+            Log.Info( "Packaging machine power: {0}W when idle, {1}W when packaging.", config.packaging_machine_idle_power, fullPMpower );
          }
          __instance.powerInWatts = ___packaging ? fullPMpower : config.packaging_machine_idle_power;
       } catch ( Exception ex ) { Err( ex ); } }
@@ -543,12 +557,12 @@ namespace Automodchef {
             foreach ( var dishA in canMake.ToArray() ) foreach ( var dishB in canMake ) {
                if ( dishA == dishB || dishA.recipe.Count >= dishB.recipe.Count ) continue;
                if ( dishA.recipe.Any( i => ! dishB.recipe.Contains( i ) ) ) continue;
-               Log.Fine( $"Delisting {dishA.GetFriendlyNameTranslated()} as a sub-recipe of {dishB.GetFriendlyNameTranslated()}" );
+               Log.Fine( "Delisting {0} as a sub-recipe of {1}", dishA.GetFriendlyNameTranslated(), dishB.GetFriendlyNameTranslated() );
                canMake.Remove( dishA );
                break;
             }
             if ( canMake.Count > 1 && packMachineLastDish.TryGetValue( __instance, out Dish lastDish ) && canMake.Contains( lastDish ) ) {
-               Log.Fine( $"Delisting last dish {lastDish.GetFriendlyNameTranslated()}" );
+               Log.Fine( "Delisting last dish {0}", lastDish.GetFriendlyNameTranslated() );
                canMake.Remove( lastDish );
             }
             Log.Info( canMake.Count > 1 ? "Randomly pick from reminders" : $"Winner: {canMake.ElementAt(0).GetFriendlyNameTranslated()}" );
@@ -567,7 +581,7 @@ namespace Automodchef {
             var id = i.internalName;
             foreach ( var d in __instance.dishesToAssemble )
                if ( Dish.GetByInternalName( d ).recipe.Contains( id ) ) return;
-            Log.Fine( $"Packaging Machine is passing through {i.GetFriendlyNameTranslated()}" );
+            Log.Fine( "Packaging Machine is passing through {0}", i.GetFriendlyNameTranslated() );
             ___ingredientsInside.Remove( i );
             i.SetPosition( exitNode.position );
             __instance.TransferToNode( i, exitNode );
@@ -609,11 +623,11 @@ namespace Automodchef {
       private static void DumpHardwareCsv () { try {
          if ( hardwareDumped ) return;
          string file = Path.Combine( ZySimpleMod.AppDataDir, "hardwares.csv" );
-         Log.Info( $"Exporting hardware list to {file}" );
+         Log.Info( "Exporting hardware list to {0}", file );
          using ( TextWriter f = File.CreateText( file ) ) {
             f.Csv( "Id", "Name", "Description", "Category", "Price", "Power", "Reliability", "Variant", "Code Class" );
             foreach ( var part in AutomachefResources.KitchenParts.GetList_ReadOnly() ) {
-               Log.Fine( $"#{part.internalName} = {part.partName}" );
+               Log.Fine( "#{0} = {1}", part.internalName, part.partName );
                f.Csv( part.internalName, part.partName, part.description, part.category, part.cost, part.powerInWatts, part.reliabilityPercentage,
                   part.nextVariantInternalName, part.GetType().FullName );
             }
@@ -638,13 +652,5 @@ namespace Automodchef {
 
       private static void Err ( object msg ) => Log.Error( msg );
       private static T Err < T > ( object msg, T val ) { Log.Error( msg ); return val; }
-
-      private static string Wh ( float wh, bool prefix = true ) {
-         var power = CachedData.fixedDeltaTime * wh / 3600f;
-         var unit = "Wh";
-         if ( prefix && power >= 1000 ) { power /= 1000f; unit = "kWh"; }
-         if ( prefix && power >= 1000 ) { power /= 1000f; unit = "MWh"; }
-         return prefix ? $"{power:0.00}{unit}" : $"{power:0}Wh";
-      }
    }
 }
