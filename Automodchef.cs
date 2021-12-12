@@ -135,11 +135,8 @@ namespace Automodchef {
             Modder.TryPatch( typeof( SaveLoadManager ), "LoadAndBuildKitchen", nameof( ClearPreLevelFlag ) );
          }
          if ( config.dropdown_toogle_threshold > 0 ) {
-            dropdownProp = new ConditionalWeakTable< MaterialDropdown, KitchenPartProperty >();
             dropdownIcon = new ConditionalWeakTable< MaterialDropdown, DropdownIcon >();
-            Modder.TryPatch( typeof( PartPropertyPoolHandler ), "GetDropdown", postfix: nameof( RemoveDropdown ) );
             Modder.TryPatch( typeof( PartProperties ), "PopulateDropdownForProperty", nameof( TrackDropdown ) );
-            Modder.TryPatch( typeof( PartProperties ), "RenderDropdownWithButton", postfix: nameof( TrackComputerropdown ) );
             Modder.TryPatch( typeof( MaterialDropdown ), "ShowDropdown", nameof( ToggleDropdown ) );
          }
          if ( config.tooltip_power_usage || config.power_log_rows > 0 ) {
@@ -333,33 +330,18 @@ namespace Automodchef {
       #endregion
 
       #region Dropdown Toggle
-      private static ConditionalWeakTable< MaterialDropdown, KitchenPartProperty > dropdownProp;
       private static ConditionalWeakTable< MaterialDropdown, DropdownIcon > dropdownIcon;
 
-      private static void RemoveDropdown ( DropdownPartPropertyObject __result ) { try {
-         Log.Fine( "Removing dropdown {0}", __result.GetHashCode() );
-         dropdownProp.Remove( __result?.Dropdown ); dropdownIcon.Remove( __result?.Dropdown );
-      } catch ( Exception ex ) { Err( ex ); } }
-
       private static void TrackDropdown ( MaterialDropdown dropdown, KitchenPartProperty prop, DropdownIcon icon ) { try {
-         Log.Fine( "Tracking dropdown {0} for kitchen part prop {1}", dropdown.GetHashCode(), prop.name );
-         dropdownProp.Remove( dropdown ); if ( prop != null ) dropdownProp.Add( dropdown, prop );
+         Log.Fine( "Tracking dropdown {0} icon for kitchen part prop {1}", dropdown.GetHashCode(), prop.name );
          dropdownIcon.Remove( dropdown ); if ( icon != null ) dropdownIcon.Add( dropdown, icon );
       } catch ( Exception ex ) { Err( ex ); } }
 
-      private static void TrackComputerropdown ( KitchenPartProperty prop, bool forProgramableComputer, DropdownPartPropertyObject __result ) { try {
-         dropdownProp.Remove( __result.Dropdown ); dropdownIcon.Remove( __result.Dropdown );
-         if ( ! forProgramableComputer || __result?.Dropdown == null || prop == null ) return;
-         Log.Fine( "Tracking dropdown {0} for computer prop {1}", __result.Dropdown.GetHashCode(), prop.name );
-         dropdownProp.Add( __result.Dropdown, prop );
-      } catch ( Exception ex ) { Err( ex ); } }
-
-      private static bool ToggleDropdown ( MaterialDropdown __instance, ref int ___m_CurrentlySelected ) { try {
-         if ( Initializer.GetInstance()?.levelManager?.GetLevel()?.IsTutorial() != false ) return true;
-         if ( ! dropdownProp.TryGetValue( __instance, out KitchenPartProperty prop ) ) return true;
-         int max_options = prop?.friendlyValues?.Count ?? 0, new_selection = ___m_CurrentlySelected + 1;
+      private static bool ToggleDropdown ( MaterialDropdown __instance, ref int ___m_CurrentlySelected, OptionDataList ___m_OptionDataList ) { try {
+         if ( Initializer.GetInstance()?.levelManager?.GetLevel()?.IsTutorial() == true ) return true;
+         int max_options = ___m_OptionDataList?.options.Count ?? 0, new_selection = ___m_CurrentlySelected + 1;
          if ( max_options <= 1 || max_options > config.dropdown_toogle_threshold ) return true;
-         Log.Fine( "Toggle dropdown {0} of prop {1} from {2} to {3} (or 0 if {4})", __instance.GetHashCode(), prop.name, ___m_CurrentlySelected, new_selection, max_options );
+         Log.Fine( "Toggle dropdown {0} of from {1} to {2} (or 0 if {3})", __instance.GetHashCode(), ___m_CurrentlySelected, new_selection, max_options );
          __instance.Select( new_selection >= max_options ? 0 : new_selection );
          if ( dropdownIcon.TryGetValue( __instance, out DropdownIcon icon ) ) icon?.UpdateIcon();
          return false;
