@@ -37,7 +37,7 @@ namespace Automodchef {
 
       [ ConfigAttribute( "Bug Fix", "Fix food mouseover hints not showing when game is paused." ) ]
       public bool fix_food_hint_when_paused = true;
-      [ ConfigAttribute( "Bug Fix", "Make sure all dishes that have this much efficiency quota for their ingredients.  Game is inconsistent.  Mod default 1.  Set to 0 to fix Double Bypass Meal.  Set to -1 to disable." ) ]
+      [ ConfigAttribute( "Bug Fix", "Make sure all dishes that have this much efficiency quota for their ingredients.  Game is inconsistent.  Mod default 1.  0 to fix Double Bypass Meal.  -1 to disable.  When set to 1, this mod will not apply buffer to single ingredient recipes for better balance." ) ]
       public sbyte dish_ingredient_quota_buffer = 1;
 
       [ ConfigAttribute( "Camera", "Angle of left / right view.  Game default 35.  Set to 0 to not change." ) ]
@@ -120,7 +120,6 @@ namespace Automodchef {
             Modder.TryPatch( typeof( SplashScreen ), "Awake", postfix: nameof( FixDishIngredientQuota ) );
          if ( config.side__view_angle != 0 || config.close_view_angle != 0 || config.far_view_angle != 0 || config.far_view_height != 0 )
             Modder.TryPatch( typeof( CameraMovement ), "Awake", postfix: nameof( OverrideCameraSettings ) );
-         //Modder.TryPatch( typeof( CameraMovement ), "Awake", postfix: nameof( Dump ) );
       } catch ( Exception ex ) { Err( ex ); } }
 
       private static void ApplyUserInterfacePatches () { try {
@@ -241,9 +240,9 @@ namespace Automodchef {
       } catch ( Exception ex ) { return Err( ex, 0 ); } }
 
       private static void FixDishIngredientQuota () { try {
-         foreach ( var dish in Dish.GetAll() ) {
+         foreach ( var dish in Dish.GetAll() ) { // When buffer = 1, ignore single ingredient recipes (fries, sweat potatos, and rice). Other foods should have enough spare.
             var i = FindDishMinIngredient( dish ) + config.dish_ingredient_quota_buffer;
-            if ( i > dish.expectedIngredients ) {
+            if ( i > dish.expectedIngredients && ! ( i == 2 && config.dish_ingredient_quota_buffer == 1 ) ) {
                Log.Info( $"Bumping {dish.GetFriendlyNameTranslated()} ingredient qouta from {dish.expectedIngredients} to {i}.");
                dish.expectedIngredients = i;
             }
@@ -270,12 +269,6 @@ namespace Automodchef {
          // panSpeed = 5
          // modeChangeSpeed = 150
       }
-
-      private static void Dump ( CameraMovement __instance ) {
-         foreach ( var f in typeof( CameraMovement ).GetFields() )
-            Log.Info( f.Name + " " + f.GetType() + " = " + f.GetValue( __instance ) );
-      }
-
 
       #region Pre-level load dialogue
       private static LevelManager currentLevel;
@@ -542,7 +535,7 @@ namespace Automodchef {
       } catch ( Exception ex ) { return Err( ex, true ); } }
 
       private static void PackagingMachinePassThrough ( PackagingMachine __instance, List<Ingredient> ___ingredientsInside, KitchenPart.NodeData[] ___ourIngredientNodes ) { try {
-         KitchenPart.NodeData exitNode = ___ourIngredientNodes[ 3 ];
+         KitchenPart.NodeData exitNode = ___ourIngredientNodes[ 3 ]; // 3 is hardcoded in the game.
          if ( exitNode.ingredientExists ) return;
          PartStatus status = __instance.GetPartStatus();
          if ( status == PartStatus.Off || status == PartStatus.Working ) return;
