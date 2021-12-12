@@ -206,20 +206,21 @@ namespace ZyMod {
              f.WriteLine( $"{DateTime.Now:u} {ZySimpleMod.ModName} initiated, log level {LogLevel}" );
          Write(  $"{ZySimpleMod.ModName}_LOG_LEVEL".Replace( ' ', '_' ).ToUpperInvariant() );
       } catch ( Exception ) { } }
-      public static void Error ( object msg ) => Write( LogLevel >= TraceLevel.Error   ? Timestamp( "ERROR ", msg ) : null );
-      public static void Warn  ( object msg ) => Write( LogLevel >= TraceLevel.Warning ? Timestamp( "WARN ", msg ) : null );
-      public static void Info  ( object msg ) => Write( LogLevel >= TraceLevel.Info    ? Timestamp( "INFO ", msg ) : null );
-      public static void Fine  ( object msg ) => Write( LogLevel >= TraceLevel.Verbose ? Timestamp( "FINE ", msg ) : null );
+      public static void Error ( object msg, params object[] arg ) => Write( LogLevel >= TraceLevel.Error   ? Timestamp( "ERROR ", msg, arg ) : null );
+      public static void Warn  ( object msg, params object[] arg ) => Write( LogLevel >= TraceLevel.Warning ? Timestamp( "WARN " , msg, arg ) : null );
+      public static void Info  ( object msg, params object[] arg ) => Write( LogLevel >= TraceLevel.Info    ? Timestamp( "INFO " , msg, arg ) : null );
+      public static void Fine  ( object msg, params object[] arg ) => Write( LogLevel >= TraceLevel.Verbose ? Timestamp( "FINE " , msg, arg ) : null );
       public static void Write ( object msg ) { if ( msg != null ) try {
          using ( TextWriter f = File.AppendText( LogPath ) ) f.WriteLine( msg );
       } catch ( Exception ) { } }
-      private static string lastException;
-      private static string Timestamp ( string level, object msg ) {
+      private static object lastException;
+      private static string Timestamp ( string level, object msg, object[] arg ) {
          if ( msg is Exception ) {
-            msg = msg.ToString();
-            if ( msg.ToString() == lastException ) return null;
+            if ( msg.ToString() == lastException.ToString() ) return null;
             lastException = msg.ToString();
          }
+         if ( msg is string txt && txt.Contains( '{' ) && arg?.Length > 0 ) msg = string.Format( msg.ToString(), arg );
+         else if ( arg?.Length > 0 ) msg = string.Join( ", ", new object[] { msg }.Union( arg ).Select( e => e?.ToString() ?? "null" ) );
          return DateTime.Now.ToString( "HH:mm:ss.fff " ) + level + ( msg ?? "null" );
       }
    }
