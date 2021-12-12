@@ -135,22 +135,18 @@ namespace ZyMod {
             var fields = GetType().GetFields();
             if ( fields.Any( e => e.GetCustomAttribute<ConfigAttribute>() != null ) )
                fields = fields.Where( e => e.GetCustomAttribute<ConfigAttribute>() != null ).ToArray();
-            foreach ( var f in fields )
-               if ( f.IsPublic && ! f.IsStatic ) {
-                  attr = f.GetCustomAttribute<ConfigAttribute>();
-                  if ( attr != null ) {
-                     if ( ! string.IsNullOrWhiteSpace( attr.Section ) && attr.Section != lastSection ) {
-                        lastSection = attr.Section;
-                        tw.Write( $"\r\n[{attr.Section}]\r\n" );
-                     }
-                     if ( ! string.IsNullOrWhiteSpace( attr.Comment ) ) tw.Write( $"; {attr.Comment}\r\n" );
-                  }
-                  tw.Write( f.Name + " = " + f.GetValue( this ) + "\r\n" );
+            foreach ( var f in fields ) {
+               if ( ! f.IsPublic || f.IsStatic ) continue;
+               if ( ( attr = f.GetCustomAttribute<ConfigAttribute>() ) != null ) {
+                  if ( ! string.IsNullOrWhiteSpace( attr.Section ) && attr.Section != lastSection ) tw.Write( $"\r\n[{lastSection = attr.Section}]\r\n" );
+                  if ( ! string.IsNullOrWhiteSpace( attr.Comment ) ) tw.Write( $"; {attr.Comment}\r\n" );
                }
-            tw.Flush();
+               tw.Write( f.Name + " = " + f.GetValue( this ) + "\r\n" );
             }
-            if ( File.Exists( ini ) ) Log.Fine( $"{new FileInfo( ini ).Length} bytes written" );
-            else Log.Warn( "Config file not written." );
+            tw.Flush();
+         }
+         if ( File.Exists( ini ) ) Log.Fine( $"{new FileInfo( ini ).Length} bytes written" );
+         else Log.Warn( "Config file not written." );
       } catch ( Exception ex ) { Log.Warn( "Cannot create config file: " + ex ); } }
    }
 
@@ -162,30 +158,27 @@ namespace ZyMod {
       public static IEnumerable< MethodInfo > AllMethods ( this Type type ) => type.GetMethods( Public | NonPublic | Instance | Static ).Where( e => ! e.IsAbstract );
       public static IEnumerable< MethodInfo > AllMethods ( this Type type, string name ) => type.AllMethods().Where( e => e.Name == name );
       public static MethodInfo Method ( this Type type, string method ) { try {
-         var result = type?.GetMethod( method, Public | NonPublic | Instance | Static );
-         if ( result == null ) throw new ApplicationException( $"Not found: {type}.{method}" );
-         return result;
+         return type?.GetMethod( method, Public | NonPublic | Instance | Static ) ?? throw new ApplicationException( $"Not found: {type}.{method}" );
       } catch ( AmbiguousMatchException ex ) { throw new ApplicationException( $"Multiple: {type}.{method}", ex ); } }
       public static MethodInfo TryMethod ( this Type type, string method ) { try { return Method( type, method ); } catch ( ApplicationException ) { return null; } }
 
-      internal static void Patch ( Type type, string method, string prefix = null, string postfix = null, string transpiler = null ) =>
+      internal static MethodInfo Patch ( Type type, string method, string prefix = null, string postfix = null, string transpiler = null ) =>
          Patch( Method( type, method ), prefix, postfix, transpiler );
 
-      internal static void Patch ( MethodBase method, string prefix = null, string postfix = null, string transpiler = null ) {
+      internal static MethodInfo Patch ( MethodBase method, string prefix = null, string postfix = null, string transpiler = null ) {
          if ( harmony == null ) harmony = new Harmony( ZySimpleMod.ModName );
-         harmony.Patch( method, ToHarmony( prefix ), ToHarmony( postfix ), ToHarmony( transpiler ) );
-         Log.Fine( $"Patched {method.DeclaringType} {method} | Pre: {prefix} | Post: {postfix} | Trans: {transpiler}" );
+         Log.Fine( $"Patching {method.DeclaringType} {method} | Pre: {prefix} | Post: {postfix} | Trans: {transpiler}" );
+         return harmony.Patch( method, ToHarmony( prefix ), ToHarmony( postfix ), ToHarmony( transpiler ) );
       }
 
-      internal static bool TryPatch ( Type type, string method, string prefix = null, string postfix = null, string transpiler = null ) =>
+      internal static MethodInfo TryPatch ( Type type, string method, string prefix = null, string postfix = null, string transpiler = null ) =>
          TryPatch( Method( type, method ), prefix, postfix, transpiler );
 
-      internal static bool TryPatch ( MethodBase method, string prefix = null, string postfix = null, string transpiler = null ) { try {
-         Patch( method, prefix, postfix, transpiler );
-         return true;
+      internal static MethodInfo TryPatch ( MethodBase method, string prefix = null, string postfix = null, string transpiler = null ) { try {
+         return Patch( method, prefix, postfix, transpiler );
       } catch ( Exception ex ) {
          Log.Warn( $"Could not patch {method?.DeclaringType} {method?.Name} | {prefix} | {postfix} | {transpiler} :\n" + ex );
-         return false;
+         return null;
       } }
 
       private static HarmonyMethod ToHarmony ( string name ) {
@@ -195,7 +188,7 @@ namespace ZyMod {
       }
    }
 
-   public static class Log {
+   public static class Log { // Write immediately. NOT suitable for heavy logging.
       public static TraceLevel LogLevel = TraceLevel.Info;
       internal static string LogPath = Path.Combine( ZySimpleMod.AppDataDir, ZySimpleMod.ModName + ".log" );
       internal static void Initialize () { try {
