@@ -37,8 +37,17 @@ namespace Automodchef {
 
       [ ConfigAttribute( "Bug Fix", "Fix food mouseover hints not showing when game is paused." ) ]
       public bool fix_food_hint_when_paused = true;
-      [ ConfigAttribute( "Bug Fix", "Check and fix dishes that have less efficiency quota than the ingredients required to make them." ) ]
-      public bool fix_dish_ingredient_quota = true;
+      [ ConfigAttribute( "Bug Fix", "Make sure all dishes that have this much efficiency quota for their ingredients.  Game is inconsistent.  Mod default 1.  Set to 0 to fix Double Bypass Meal.  Set to -1 to disable." ) ]
+      public sbyte dish_ingredient_quota_buffer = 1;
+
+      [ ConfigAttribute( "Camera", "Angle of left / right view.  Game default 35.  Set to 0 to not change." ) ]
+      public float side__view_angle = 0;
+      [ ConfigAttribute( "Camera", "Downward angle of close up view.  Game default 40.  Set to 0 to not change." ) ]
+      public float close_view_angle = 0;
+      [ ConfigAttribute( "Camera", "Downward angle of far view.  Game default 60.  Mode default 70.  Set to 0 to not change.  Set to 90 for a top-down view." ) ]
+      public float far_view_angle = 70;
+      [ ConfigAttribute( "Camera", "Height of far camera.  Game default 20.  Set to 0 to not change." ) ]
+      public float far_view_height = 0;
 
       [ ConfigAttribute( "User Interface", "Suppress yes/no confirmations - save before quit, load game, delete or overwrite save / blueprint / scenario, quit level / game, reset layout" ) ]
       public bool suppress_confirmation = true;
@@ -107,8 +116,11 @@ namespace Automodchef {
          }
          if ( config.fix_food_hint_when_paused )
             Modder.TryPatch( typeof( IngredientTooltip ), "Update", postfix: nameof( FixIngredientHintOnPause ) );
-         if ( config.fix_dish_ingredient_quota )
+         if ( config.dish_ingredient_quota_buffer >= 0 )
             Modder.TryPatch( typeof( SplashScreen ), "Awake", postfix: nameof( FixDishIngredientQuota ) );
+         if ( config.side__view_angle != 0 || config.close_view_angle != 0 || config.far_view_angle != 0 || config.far_view_height != 0 )
+            Modder.TryPatch( typeof( CameraMovement ), "Awake", postfix: nameof( OverrideCameraSettings ) );
+         //Modder.TryPatch( typeof( CameraMovement ), "Awake", postfix: nameof( Dump ) );
       } catch ( Exception ex ) { Err( ex ); } }
 
       private static void ApplyUserInterfacePatches () { try {
@@ -206,6 +218,7 @@ namespace Automodchef {
 
       private static bool DisableAnalytics () { Log.Info( "Analytics Blocked" ); return false; }
 
+      #region Bug fixes
       private static void FixIngredientHintOnPause ( IngredientTooltip __instance, RectTransform ___ourRectTransform ) { try {
          if ( __instance.canvasGroup.alpha != 0 || ! Initializer.GetInstance().IsSimRunning() ) return;
          if ( __instance.kitchenBuilder.IsSomethingBeingPlaced() || InputWrapper.IsPointerOverUI( -1 ) ) return;
@@ -229,13 +242,40 @@ namespace Automodchef {
 
       private static void FixDishIngredientQuota () { try {
          foreach ( var dish in Dish.GetAll() ) {
-            var i = FindDishMinIngredient( dish );
+            var i = FindDishMinIngredient( dish ) + config.dish_ingredient_quota_buffer;
             if ( i > dish.expectedIngredients ) {
                Log.Info( $"Bumping {dish.GetFriendlyNameTranslated()} ingredient qouta from {dish.expectedIngredients} to {i}.");
                dish.expectedIngredients = i;
             }
          }
       } catch ( Exception ex ) { Err( ex ); } }
+      #endregion
+
+      private static void OverrideCameraSettings ( ref float ___wideAngle, ref float ___wideHeight, ref float ___teleAngle, ref float ___isometricAngle ) {
+         if ( config.side__view_angle != 0 ) ___isometricAngle = config.side__view_angle;
+         if ( config.close_view_angle != 0 ) ___teleAngle = config.close_view_angle;
+         if ( config.far_view_angle   != 0 ) ___wideAngle = config.far_view_angle;
+         if ( config.far_view_height  != 0 ) ___wideHeight = config.far_view_height;
+         Log.Info( "Camera settigns applied." );
+         // Default camera settings:
+         // edgePanMarginMouse = 10
+         // edgePanMarginController = 80
+         // wideFoV = 32
+         // teleFoV = 16
+         // wideAngle = 60
+         // teleAngle = 40
+         // isometricAngle = 35
+         // wideHeight = 20
+         // zoomSpeed = 60
+         // panSpeed = 5
+         // modeChangeSpeed = 150
+      }
+
+      private static void Dump ( CameraMovement __instance ) {
+         foreach ( var f in typeof( CameraMovement ).GetFields() )
+            Log.Info( f.Name + " " + f.GetType() + " = " + f.GetValue( __instance ) );
+      }
+
 
       #region Pre-level load dialogue
       private static LevelManager currentLevel;
