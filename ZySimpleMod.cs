@@ -113,7 +113,8 @@ namespace ZyMod {
                   case "System.String" : prop.SetValue( this, val ); break;
                   case "System.Boolean" :
                      val = val.ToLowerInvariant();
-                     prop.SetValue( this, val == "yes" || val == "1" || val == "true" );
+                     if ( val == "yes" || val == "1" || val == "true" ) prop.SetValue( this, true );
+                     else if ( val == "no" || val == "0" || val == "false" ) prop.SetValue( this, false );
                      break;
                   default :
                      Log.Warn( "Unexpected field type {0} of {1}", prop.FieldType, split[ 0 ] );
