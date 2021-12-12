@@ -120,6 +120,7 @@ namespace Automodchef {
             Modder.TryPatch( typeof( SplashScreen ), "Awake", postfix: nameof( FixDishIngredientQuota ) );
          if ( config.side__view_angle != 0 || config.close_view_angle != 0 || config.far_view_angle != 0 || config.far_view_height != 0 )
             Modder.TryPatch( typeof( CameraMovement ), "Awake", postfix: nameof( OverrideCameraSettings ) );
+         Modder.TryPatch( typeof( ContractsLogic ), "AddNewIncomingContract", nameof( OverrideContracts ), nameof( RestoreContracts ) );
       } catch ( Exception ex ) { Err( ex ); } }
 
       private static void ApplyUserInterfacePatches () { try {
@@ -155,14 +156,14 @@ namespace Automodchef {
             if ( config.efficiency_log ) {
                extraLog = new List<string>();
                if ( config.efficiency_log_breakdown )
-                  if ( Modder.TryPatch( typeof( EfficiencyMeter ), "Reset", nameof( ClearEfficiencyLog ) ) ) {
+                  if ( Modder.TryPatch( typeof( EfficiencyMeter ), "Reset", nameof( ClearEfficiencyLog ) ) != null ) {
                      orderedDish = new Dictionary<object, int>();
                      cookedDish = new Dictionary<object, int>();
                      Modder.TryPatch( typeof( EfficiencyMeter ), "AddOrder", nameof( TrackOrdersEfficiency ) );
                      Modder.TryPatch( typeof( EfficiencyMeter ), "AddDeliveredDish", nameof( TrackDeliveryEfficiency ) );
                   }
-               if ( Modder.TryPatch( typeof( EfficiencyMeter ), "GetEfficiency", postfix: nameof( CalculateEfficiency ) ) )
-                  Modder.TryPatch( typeof( KitchenEventsLog ), "ToString", postfix: nameof( AppendEfficiencyLog ) );
+               Modder.TryPatch( typeof( EfficiencyMeter ), "GetEfficiency", postfix: nameof( CalculateEfficiency ) );
+               Modder.TryPatch( typeof( KitchenEventsLog ), "ToString", postfix: nameof( AppendEfficiencyLog ) );
             }
             if ( config.power_log_rows > 0 )
                Modder.TryPatch( typeof( KitchenEventsLog ), "ToString", postfix: nameof( AppendPowerLog ) );
@@ -231,29 +232,27 @@ namespace Automodchef {
       } catch ( Exception ex ) { Err( ex ); } }
 
       private static int FindDishMinIngredient ( Dish dish ) { try {
-         int result = 0;
-         foreach ( var id in dish.recipe ) {
-            var i = Ingredient.GetByInternalName( id ) ?? Dish.GetByInternalName( id );
-            result += i is Dish d ? FindDishMinIngredient( d ) : 1;
-         }
-         return result;
-      } catch ( Exception ex ) { return Err( ex, 0 ); } }
+         return dish.recipe.Select( id => Ingredient.GetByInternalName( id ) ?? Dish.GetByInternalName( id ) ).Sum( e => e is Dish d ? FindDishMinIngredient( d ) : 1 );
+      } catch ( Exception ex ) { return Err( ex, dish?.recipe?.Count ?? 0 ); } }
 
       private static void FixDishIngredientQuota () { try {
-         foreach ( var dish in Dish.GetAll() ) { // When buffer = 1, ignore single ingredient recipes (fries, sweat potatos, and rice). Other foods should have enough spare.
+         var updated = false;
+         foreach ( var dish in Dish.GetAll() ) {
             var i = FindDishMinIngredient( dish ) + config.dish_ingredient_quota_buffer;
             if ( i > dish.expectedIngredients && ! ( i == 2 && config.dish_ingredient_quota_buffer == 1 ) ) {
                Log.Info( $"Bumping {dish.GetFriendlyNameTranslated()} ingredient qouta from {dish.expectedIngredients} to {i}.");
                dish.expectedIngredients = i;
+               updated = true;
             }
          }
+         if ( updated && config.dish_ingredient_quota_buffer == 1 ) Log.Info( "Dishes made from single ingredient are not buffed for better game balance." );
       } catch ( Exception ex ) { Err( ex ); } }
       #endregion
 
       private static void OverrideCameraSettings ( ref float ___wideAngle, ref float ___wideHeight, ref float ___teleAngle, ref float ___isometricAngle ) {
          if ( config.side__view_angle != 0 ) ___isometricAngle = config.side__view_angle;
-         if ( config.close_view_angle != 0 ) ___teleAngle = config.close_view_angle;
-         if ( config.far_view_angle   != 0 ) ___wideAngle = config.far_view_angle;
+         if ( config.close_view_angle != 0 ) ___teleAngle  = config.close_view_angle;
+         if ( config.far_view_angle   != 0 ) ___wideAngle  = config.far_view_angle;
          if ( config.far_view_height  != 0 ) ___wideHeight = config.far_view_height;
          Log.Info( "Camera settigns applied." );
          // Default camera settings:
@@ -269,6 +268,28 @@ namespace Automodchef {
          // panSpeed = 5
          // modeChangeSpeed = 150
       }
+
+      private static List<Contract> allContracts;
+      private static void OverrideContracts ( ref List<Contract> ___allPossibleContracts, Company ___company ) { // Find BeachBurger contracts for bug fixing.
+         if ( allContracts != null ) allContracts = ___allPossibleContracts;
+         List<Contract> filteredContracts = ___allPossibleContracts
+            .Where( e => e.requiredDishes.Contains( "BeachBurger" ) && e.client.minReputation <= ___company.reputation ).ToList();
+         if ( filteredContracts.Count == 0 ) return;
+         Log.Info( "Filtering {0} down to {1}.", allContracts.Count, filteredContracts.Count );
+         ___allPossibleContracts = filteredContracts;
+         // Client's name and clientName
+         // Client1 The Feedbag
+         // Client2 Heartburns
+         // Client3 Dine 'N Dash
+         // Client4 The Happy Gorger
+         // Client5 Salad Bowl
+         // Client6 Cheesy Does It
+         // Client7 Calorie Cabin
+         // Client8 Lots O' Flavour
+         // Client9 Fresh & Tasty
+         // Client10 Big Taste Inc.
+      }
+      private static void RestoreContracts ( ref List<Contract> ___allPossibleContracts ) => ___allPossibleContracts = allContracts;
 
       #region Pre-level load dialogue
       private static LevelManager currentLevel;
@@ -315,12 +336,14 @@ namespace Automodchef {
       private static ConditionalWeakTable< MaterialDropdown, DropdownIcon > dropdownIcon;
 
       private static void TrackDropdown ( MaterialDropdown dropdown, KitchenPartProperty prop, DropdownIcon icon ) { try {
+         Log.Fine( "Tracking dropdown for kitchen part prop {0}", prop.name );
          dropdownProp.Remove( dropdown ); if ( prop != null ) dropdownProp.Add( dropdown, prop );
          dropdownIcon.Remove( dropdown ); if ( icon != null ) dropdownIcon.Add( dropdown, icon );
       } catch ( Exception ex ) { Err( ex ); } }
 
       private static void TrackComputerropdown ( KitchenPartProperty prop, bool forProgramableComputer, DropdownPartPropertyObject __result ) { try {
          if ( ! forProgramableComputer || __result?.Dropdown == null ) return;
+         Log.Fine( "Tracking dropdown for computer prop {0}", prop.name );
          dropdownProp.Remove( __result.Dropdown ); if ( prop != null ) dropdownProp.Add( __result.Dropdown, prop );
          dropdownIcon.Remove( __result.Dropdown );
       } catch ( Exception ex ) { Err( ex ); } }
@@ -328,10 +351,11 @@ namespace Automodchef {
       private static bool ToggleDropdown ( MaterialDropdown __instance, ref int ___m_CurrentlySelected ) { try {
          if ( Initializer.GetInstance().levelManager?.GetLevel()?.IsTutorial() != false ) return true;
          if ( ! dropdownProp.TryGetValue( __instance, out KitchenPartProperty prop ) ) return true;
-         int max_options = prop.friendlyValues?.Count ?? 0, new_selection = ___m_CurrentlySelected + 1;
-         if ( max_options > config.dropdown_toogle_threshold ) return true;
+         int max_options = prop?.friendlyValues?.Count ?? 0, new_selection = ___m_CurrentlySelected + 1;
+         if ( max_options <= 1 || max_options > config.dropdown_toogle_threshold ) return true;
+         Log.Fine( "Toggle dropdown of prop {0} from {1} to {2} (max {3}", prop.name, ___m_CurrentlySelected, new_selection, max_options );
          __instance.Select( new_selection >= max_options ? 0 : new_selection );
-         if ( dropdownIcon.TryGetValue( __instance, out DropdownIcon icon ) ) icon.UpdateIcon();
+         if ( dropdownIcon.TryGetValue( __instance, out DropdownIcon icon ) ) icon?.UpdateIcon();
          return false;
       } catch ( Exception ex ) { Err( ex ); return true; } }
       #endregion
@@ -396,7 +420,7 @@ namespace Automodchef {
 
       private static void AppendFreshnessTooltip ( Ingredient __instance, ref string __result ) { try {
             Initializer init = Initializer.GetInstance();
-         if ( simpleTooltip ) { __result = __instance.GetFriendlyNameTranslated(); }
+         if ( simpleTooltip ) { __result = __instance.GetFriendlyNameTranslated(); return; }
          if ( ! init.IsSimRunning() || __instance.HasGoneBad() || __instance.name.StartsWith( "Insects" ) ) return;
          if ( init.levelManager.GetLevel().hasInsectsDisaster && __instance.GetInsectTime() > 0 ) {
             var part = __instance.currentNode?.kitchenPart;
@@ -511,8 +535,8 @@ namespace Automodchef {
 
       private static bool OverridePackagingMachineLogic ( PackagingMachine __instance, List<Ingredient> ___ingredientsInside ) { try {
          if ( ___ingredientsInside.Count == 0 ) return false;
-         HashSet<Dish> canMake = new HashSet<Dish>( __instance.dishesToAssemble.Select( Dish.GetByInternalName ).Where( e =>
-            (bool) packMachineCanMake.Invoke( __instance, new object[]{ e } ) ) );
+         HashSet<Dish> canMake = new HashSet<Dish>( __instance.dishesToAssemble.Select( Dish.GetByInternalName )
+            .Where( e => (bool) packMachineCanMake.Invoke( __instance, new object[]{ e } ) ) );
          if ( canMake.Count == 0 ) return false;
          if ( canMake.Count > 1 ) {
             Log.Info( "Packaging options: " + string.Join( ", ", canMake.Select( e => e.GetFriendlyNameTranslated() ) ) );
