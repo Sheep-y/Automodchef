@@ -236,7 +236,7 @@ namespace ZyMod {
          using ( TextWriter f = File.AppendText( LogPath ) ) foreach ( var line in buf ) f.WriteLine( line );
       } catch ( Exception ) { } }
       private void Terminate ( object _, EventArgs __ ) { flushTimer?.Stop(); flushTimer = null; Flush(); AppDomain.CurrentDomain.ProcessExit -= Terminate; }
-      private string lastException;
+      private HashSet< string > knownErrors = new HashSet<string>(); // Duplicate exception are ignored.  Modding is a risky business.
       public void Write ( TraceLevel level, object msg, params object[] arg ) {
          string line = "INFO ", time;
          lock ( buffer ) { if ( level > _LogLevel ) return; time = TimeFormat; }
@@ -248,9 +248,9 @@ namespace ZyMod {
          }
          try {
             if ( msg is string txt && txt.Contains( '{' ) && arg?.Length > 0 ) msg = string.Format( msg.ToString(), arg );
-            else if ( msg is Exception ) { txt = msg.ToString(); if ( txt == lastException ) return; msg = lastException = txt; }
+            else if ( msg is Exception ) { txt = msg.ToString(); if ( knownErrors.Contains( txt ) ) return; knownErrors.Add( txt ); msg = txt; }
             else if ( arg?.Length > 0 ) msg = string.Join( ", ", new object[] { msg }.Union( arg ).Select( e => e?.ToString() ?? "null" ) );
-            else msg = msg.ToString();
+            else msg = msg?.ToString();
             line = DateTime.Now.ToString( time ?? "mm:ss " ) + line + ( msg ?? "null" );
          } catch ( Exception e ) { // toString error, format error, stacktrace error...
             if ( msg is Exception ex ) line = msg.GetType() + ": " + ex.Message;
