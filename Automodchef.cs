@@ -94,6 +94,8 @@ namespace Automodchef {
       public bool export_food_csv = false;
       [ ConfigAttribute( "Misc", "Export hardwares to hardwares.csv on game launch.  Default false.  Ditto." ) ]
       public bool export_hardware_csv = false;
+      [ ConfigAttribute( "Misc", "Export text from current language to text-0.csv on game launch.  Default false.  Ditto." ) ]
+      public bool export_text_csv = false;
       [ ConfigAttribute( "Misc", "Change Simplified Chinese to Traditional Chinese with improved translations.  No effect on other langauges." ) ]
       public bool traditional_chinese = true;
 
@@ -217,6 +219,8 @@ namespace Automodchef {
             Modder.TryPatch( typeof( SplashScreen ), "Awake", nameof( DumpFoodCsv ) );
          if ( config.export_hardware_csv )
             Modder.TryPatch( typeof( SplashScreen ), "Awake", nameof( DumpHardwareCsv ) );
+         if ( config.export_text_csv )
+            Modder.TryPatch( typeof( LocalizationManager ), "LocalizeAll", postfix: nameof( DumpLanguageCsv ) );
          if ( config.traditional_chinese ) {
             Modder.TryPatch( typeof( LanguageSelectionScreen ), "OnShown", nameof( ShowZht ) );
             Modder.TryPatch( typeof( LocalizationManager ), "CreateCultureForCode", nameof( DetectZh ) );
@@ -269,7 +273,7 @@ namespace Automodchef {
             var i = FindDishMinIngredient( dish ) + config.dish_ingredient_quota_buffer;
             if ( i == 2 && config.dish_ingredient_quota_buffer == 1 ) i = 1;
             if ( i > dish.expectedIngredients ) {
-               Info( "Bumping {0} ingredient qouta from {1} to {2}.", dish.GetFriendlyNameTranslated(), dish.expectedIngredients, i );
+               Info( "Bumping {0} ingredient quota from {1} to {2}.", dish.GetFriendlyNameTranslated(), dish.expectedIngredients, i );
                dish.expectedIngredients = i;
                updated = true;
             }
@@ -632,12 +636,12 @@ namespace Automodchef {
       #endregion
 
       #region Csv dump
-      private static bool foodDumped, hardwareDumped;
+      private static bool foodDumped, hardwareDumped, textDumped;
       private static readonly StringBuilder line = new StringBuilder();
 
       private static void DumpFoodCsv () { if ( foodDumped ) return; try {
          string file = Path.Combine( ZySimpleMod.AppDataDir, "foods.csv" );
-         Info( $"Exporting food list to {file}" );
+         Info( "Exporting food list to {0}", file, foodDumped = true );
          using ( TextWriter f = File.CreateText( file ) ) {
             f.Csv( "Id", "Name", "Translated", "Process", "Seconds", "Recipe", "Liquids",
                    "Processed", "Grilled", "Fried", "Steamed", "Baked", "Wet", //"Bacterias",
@@ -656,13 +660,12 @@ namespace Automodchef {
             }
             f.Flush();
          }
-         foodDumped = true;
          Info( "Food list exported" );
       } catch ( Exception ex ) { Err( ex ); } }
 
       private static void DumpHardwareCsv () { if ( hardwareDumped ) return; try {
          string file = Path.Combine( ZySimpleMod.AppDataDir, "hardwares.csv" );
-         Info( "Exporting hardware list to {0}", file );
+         Info( "Exporting hardware list to {0}", file, hardwareDumped = true );
          using ( TextWriter f = File.CreateText( file ) ) {
             f.Csv( "Id", "Name", "Description", "Category", "Price", "Power", "Speed", "Time", "Variant", "Code Class" );
             foreach ( var part in AutomachefResources.KitchenParts.GetList_ReadOnly() ) {
@@ -676,8 +679,16 @@ namespace Automodchef {
             }
             f.Flush();
          }
-         hardwareDumped = true;
          Info( "Hardware list exported" );
+      } catch ( Exception ex ) { Err( ex ); } }
+
+      private static void DumpLanguageCsv ( List<LanguageSource> ___Sources ) { if ( textDumped || ___Sources == null ) return; try {
+         for ( var i = 0 ; i < ___Sources.Count ; i++ ) {
+            var file = Path.Combine( ZySimpleMod.AppDataDir, $"text-{i}.csv" );
+            Info( "Exporting game text to {0}", file, textDumped = true );
+            using ( var fw = File.CreateText( file ) ) fw.Write( ___Sources[ i ].Export_CSV( null ) );
+         }
+         Info( "{0} game text exported", ___Sources.Count );
       } catch ( Exception ex ) { Err( ex ); } }
 
       private static void Csv ( this TextWriter f, params object[] values ) {
@@ -714,7 +725,7 @@ namespace Automodchef {
          if ( zhs2zht.TryGetValue( term, out string zht ) ) { Translation = zht; return; }
          zht = new String( ' ', Translation.Length );
          LCMapString( LOCALE_SYSTEM_DEFAULT, LCMAP_TRADITIONAL_CHINESE, Translation, Translation.Length, zht, zht.Length );
-         Fine( "ZH {0} = {1} > {2}", term, Translation, zht = FixZht( zht ) );
+         Fine( "ZH {0} ({1} chars)", term, ( zht = FixZht( zht ) ).Length );
          zhs2zht.Add( term, Translation = zht );
       } catch ( Exception ex ) { Err( ex ); } }
 
