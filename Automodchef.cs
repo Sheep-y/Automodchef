@@ -15,6 +15,7 @@ using ZyMod;
 using static I2.Loc.ScriptLocalization.Warnings;
 
 namespace Automodchef {
+   using Ex = Exception;
 
    public class Automodchef : ZySimpleMod {
       public static void Main () => new Automodchef().Initialize();
@@ -136,7 +137,7 @@ namespace Automodchef {
          if ( Non0( config.side__view_angle ) || Non0( config.close_view_angle ) || Non0( config.far_view_angle ) || Non0( config.far_view_height ) )
             Modder.TryPatch( typeof( CameraMovement ), "Awake", postfix: nameof( OverrideCameraSettings ) );
          Modder.TryPatch( typeof( ContractsLogic ), "AddNewIncomingContract", nameof( OverrideContracts ), nameof( RestoreContracts ) );
-      } catch ( Exception ex ) { Err( ex ); } }
+      } catch ( Ex x ) { Err( x ); } }
 
       private static void ApplyUserInterfacePatches () { try {
          if ( config.suppress_confirmation ) {
@@ -162,7 +163,7 @@ namespace Automodchef {
             Modder.TryPatch( typeof( PartProperties ), "PopulateDropdownForProperty", nameof( TrackDropdownIcon ) );
             Modder.TryPatch( typeof( MaterialDropdown ), "ShowDropdown", nameof( ToggleDropdown ) );
          }
-      } catch ( Exception ex ) { Err( ex ); } }
+      } catch ( Ex x ) { Err( x ); } }
 
       private static void ApplyLogPatches () { try {
          if ( config.tooltip_power_usage || config.power_log_rows > 0 ) {
@@ -192,7 +193,7 @@ namespace Automodchef {
             if ( config.power_log_rows > 0 )
                Modder.TryPatch( typeof( KitchenEventsLog ), "ToString", postfix: nameof( AppendPowerLog ) );
          }
-      } catch ( Exception ex ) { Err( ex ); } }
+      } catch ( Ex x ) { Err( x ); } }
 
       private static void ApplyMechanicPatches () { try {
          if ( config.instant_speed_change )
@@ -225,7 +226,7 @@ namespace Automodchef {
             Modder.TryPatch( typeof( LanguageSelectionScreen ), "OnShown", nameof( ShowZht ) );
             Modder.TryPatch( typeof( LocalizationManager ), "CreateCultureForCode", nameof( DetectZh ) );
          }
-      } catch ( Exception ex ) { Err( ex ); } }
+      } catch ( Ex x ) { Err( x ); } }
 
       #region Skip Splash
       private static void SkipVideoSplashes ( ref FaderUIController.SplashStateInfo[] ___m_SplashStates ) { try {
@@ -235,14 +236,14 @@ namespace Automodchef {
          ___m_SplashStates[0].m_TimeInState = 0.01f;
          Info( "Skipping Logos and Warnings." );
          // [ { "Unity, 1, False }, { "HermesInteractive, 2, False }, { "Team 17, 4, True }, { "Legal, 3, False }, { "LoadStartScreen", 2, False } ]
-      } catch ( Exception ex ) { Err( ex ); } }
+      } catch ( Ex x ) { Err( x ); } }
 
       private static void SkipSpacebarSplash ( SplashScreen __instance, ref bool ___m_bProcessedCloseRequest ) { try {
          if ( ___m_bProcessedCloseRequest || InputWrapper.GetController() == null ) return;
          ___m_bProcessedCloseRequest = true;
          Modder.TryMethod( typeof( SplashScreen ), "ProceedToMainMenu" ).Invoke( __instance, Array.Empty<object>() );
          Info( "Skipped Press Space Splash." );
-      } catch ( Exception ex ) {
+      } catch ( Ex ex ) {
          Error( ex );
          ___m_bProcessedCloseRequest = false;
       } }
@@ -261,11 +262,11 @@ namespace Automodchef {
          ___ourRectTransform.anchoredPosition = Camera.main.WorldToScreenPoint( raycastHit.transform.position ) / __instance.GetComponentInParent<Canvas>().scaleFactor;
          __instance.tooltipText.text = typeof( IngredientTooltip ).Method( "FormatText" ).Invoke( __instance, new object[]{ food.GetTooltipText() } ).ToString();
          __instance.canvasGroup.alpha = 1f;
-      } catch ( Exception ex ) { Err( ex ); } }
+      } catch ( Ex x ) { Err( x ); } }
 
       private static int FindDishMinIngredient ( Dish dish ) { try {
          return dish.recipe.Select( id => Ingredient.GetByInternalName( id ) ?? Dish.GetByInternalName( id ) ).Sum( e => e is Dish d ? FindDishMinIngredient( d ) : 1 );
-      } catch ( Exception ex ) { return Err( ex, dish?.recipe?.Count ?? 0 ); } }
+      } catch ( Ex x ) { return Err( x, dish?.recipe?.Count ?? 0 ); } }
 
       private static void FixDishIngredientQuota () { try {
          var updated = false;
@@ -279,7 +280,7 @@ namespace Automodchef {
             }
          }
          if ( updated && config.dish_ingredient_quota_buffer == 1 ) Info( "Dishes made from single ingredient are not buffed for better game balance." );
-      } catch ( Exception ex ) { Err( ex ); } }
+      } catch ( Ex x ) { Err( x ); } }
       #endregion
 
       private static void OverrideCameraSettings ( ref float ___wideAngle, ref float ___wideHeight, ref float ___teleAngle, ref float ___isometricAngle ) {
@@ -333,7 +334,7 @@ namespace Automodchef {
          Fine( "Entering new non-tutorial level." );
          currentLevel = __instance;
          ___m_saveLoadManager.OnMetadataReady += OfferToLoadGameOnEnter;
-      } catch ( Exception ex ) { Err( ex ); } }
+      } catch ( Ex x ) { Err( x ); } }
 
       private static void OfferToLoadGameOnEnter () { try {
          Fine( "New level data loaded." );
@@ -348,14 +349,14 @@ namespace Automodchef {
                return;
             }
          Info( "No saved level found.  Skipping load dialog." );
-      } catch ( Exception ex ) { Err( ex ); } }
+      } catch ( Ex x ) { Err( x ); } }
 
       private static void RestorePreLevelScreen () { try {
          if ( ! lastPreLevelScreenState ) return;
          Fine( "Restoring level brief screen." );
          lastPreLevelScreenState = false;
          currentLevel.levelStatusUI.preLevelScreen.gameObject.SetActive( true );
-      } catch ( Exception ex ) { Error( ex ); } }
+      } catch ( Ex ex ) { Error( ex ); } }
 
       private static void ClearPreLevelFlag () {
          Fine( "Save loaded or deleted.  Suppressing pre-level screen." );
@@ -380,7 +381,7 @@ namespace Automodchef {
       private static void TrackDropdownIcon ( MaterialDropdown dropdown, KitchenPartProperty prop, DropdownIcon icon ) { try {
          Fine( "Tracking dropdown {0} icon for kitchen part prop {1}", dropdown.GetHashCode(), prop.name );
          dropdownIcon.Remove( dropdown ); if ( icon != null ) dropdownIcon.Add( dropdown, icon );
-      } catch ( Exception ex ) { Err( ex ); } }
+      } catch ( Ex x ) { Err( x ); } }
 
       private static bool ToggleDropdown ( MaterialDropdown __instance, ref int ___m_CurrentlySelected, OptionDataList ___m_OptionDataList ) { try {
          //if ( IsTutorial() ) return true;
@@ -390,7 +391,7 @@ namespace Automodchef {
          __instance.Select( new_selection >= max_options ? 0 : new_selection );
          if ( dropdownIcon.TryGetValue( __instance, out DropdownIcon icon ) ) icon?.UpdateIcon();
          return false;
-      } catch ( Exception ex ) { return Err( ex, true ); } }
+      } catch ( Ex x ) { return Err( x, true ); } }
       #endregion
 
       #region Power
@@ -400,7 +401,7 @@ namespace Automodchef {
       private static void LogPowerUsage ( KitchenPart __instance, float multiplier ) { try {
          if ( ! Initializer.GetInstance().IsSimRunning() || powerLog == null ) return;
          powerLog.GetOrCreateValue( __instance ).power += __instance.powerInWatts * multiplier;
-      } catch ( Exception ex ) { Err( ex ); } }
+      } catch ( Ex x ) { Err( x ); } }
 
       private static void ClearPowerUsage () { Fine( "Reset power log" ); powerLog = new ConditionalWeakTable<KitchenPart, PowerLog>(); }
 
@@ -408,7 +409,7 @@ namespace Automodchef {
          if ( ! Initializer.GetInstance().IsSimRunning() || __instance.powerInWatts <= 0 || powerLog == null ) return;
          powerLog.TryGetValue( __instance, out PowerLog log );
          __result += $"\n{PowerMeter.GetInstance().GetLastPowerUsage( __instance )}W >> {Wh(log?.power??0)}";
-      } catch ( Exception ex ) { Err( ex ); } }
+      } catch ( Ex x ) { Err( x ); } }
 
       private static void AppendPowerLog ( ref string __result ) { try {
          if ( powerLog == null || ( config.hide_tutorial_efficiency && IsTutorial() ) ) return;
@@ -440,7 +441,7 @@ namespace Automodchef {
             $"{AutomachefResources.KitchenParts.CreateNewInstance(e.Key).partName} ... {Wh(e.Value.power,false)} ({e.Value.power*100/total:0.0}%)" ) );
          __result = __result.Trim();
          Fine( __result );
-      } catch ( Exception ex ) { Err( ex ); } }
+      } catch ( Ex x ) { Err( x ); } }
       #endregion
 
       private static void HideTutorialMaxEfficiency ( List<Level> ___levelsList, Dictionary<string, GameObject> ___levelObjectMapping ) { try {
@@ -450,11 +451,11 @@ namespace Automodchef {
             text.text = ScriptLocalization.Main_UI.Success;
             Fine( $"Hiding efficiency of tutorial level {0}", level.number );
          }
-      } catch ( Exception ex ) { Err( ex ); } }
+      } catch ( Ex x ) { Err( x ); } }
 
       private static void HideTutorialEfficiencyStat ( Text ___statsEfficiencyValueUI ) { try {
          if ( IsTutorial() ) ___statsEfficiencyValueUI.text = "n/a";
-      } catch ( Exception ex ) { Err( ex ); } }
+      } catch ( Ex x ) { Err( x ); } }
 
       #region Freshness
       private static bool simpleTooltip;
@@ -479,7 +480,7 @@ namespace Automodchef {
             float spoil = dish.timeToBeSpoiled - __instance.GetAge();
             if ( spoil > 0 ) __result += $"\nFresh for {spoil:0.0}s";
          }
-      } catch ( Exception ex ) { Err( ex ); } }
+      } catch ( Ex x ) { Err( x ); } }
       #endregion
 
       #region Efficiency Log
@@ -502,13 +503,13 @@ namespace Automodchef {
          extraLog.Add( $"Ingredients Quota {___expectedIngredientsUsage} / {iUsed} Spent = {iMark:0.00}" );
          extraLog.Add( $"Power Quota {___expectedPowerUsage}Wh / {pUsed}Wh Spent = {pMark:0.00}" );
          extraLog.Add( $"( Average {mark:0.00}" + ( allGoalsFulfilled ? "" : " - 0.1 goal failed" ) + $" )² = Final {__result/100f:0.00}" );
-      } catch ( Exception ex ) { Err( ex ); } }
+      } catch ( Ex x ) { Err( x ); } }
 
       // Show modded logs even when kitchen has no events
       private static void ForceShowEfficiencyLog ( LevelStatus __instance, KitchenEventsLog log ) { try {
          if ( log.GetEventsCount() <= 0 && ( ! config.hide_tutorial_efficiency || ! IsTutorial() ) )
             __instance.eventsLogTextField.text = log.ToString();
-      } catch ( Exception ex ) { Err( ex ); } }
+      } catch ( Ex x ) { Err( x ); } }
 
       private static void AppendEfficiencyLog ( ref string __result ) { try {
          if ( extraLog.Count == 0 || ( config.hide_tutorial_efficiency && IsTutorial() ) ) return;
@@ -529,7 +530,7 @@ namespace Automodchef {
          __result += "\n" + string.Join( "\n", extraLog.ToArray() );
          __result = __result.Trim();
          Fine( __result );
-      } catch ( Exception ex ) { Err( ex ); } }
+      } catch ( Ex x ) { Err( x ); } }
 
       private static string Wh ( float wh, bool prefix = true ) {
          var power = CachedData.fixedDeltaTime * wh / 3600f;
@@ -554,18 +555,18 @@ namespace Automodchef {
             return false;
          }
          return true;
-      } catch ( Exception ex ) { return Err( ex, true ); } }
+      } catch ( Ex x ) { return Err( x, true ); } }
 
       private static void InstantGameSpeedUpdate ( float ___targetTimeScale ) { try {
          if ( Time.timeScale != ___targetTimeScale ) Time.timeScale = ___targetTimeScale;
-      } catch ( Exception ex ) { Err( ex ); } }
+      } catch ( Ex x ) { Err( x ); } }
 
       private static void AdjustGameSpeedPresets ( Initializer __instance ) { try {
          if ( __instance == null || __instance.speeds == null || __instance.speeds.Count < 4 ) return;
          Info( "Setting game speeds to [ {0}x, {1}x, {2}x, {3}x ]", __instance.speeds[0], __instance.speeds[1], __instance.speeds[2], __instance.speeds[3] );
          __instance.speeds[2] = config.speed2;
          __instance.speeds[3] = config.speed3;
-      } catch ( Exception ex ) { Err( ex ); } }
+      } catch ( Ex x ) { Err( x ); } }
 
       #region Packaging Machine and Food Processor
       private static void SetIdlePower ( KitchenPart part, string name, bool isBusy, ref float fullPower, float idlePower ) { try {
@@ -574,7 +575,7 @@ namespace Automodchef {
             Info( "{0} power: {1}W when idle, {2}W when busy.", name, idlePower, fullPower );
          }
          part.powerInWatts = isBusy ? fullPower : idlePower;
-      } catch ( Exception ex ) { Err( ex ); } }
+      } catch ( Ex x ) { Err( x ); } }
 
       private static float fullFPpower, fullPMpower;
       private static void SetFoodProcessorPower ( Processor __instance, float ___processingTime ) =>
@@ -597,7 +598,7 @@ namespace Automodchef {
             __instance.TransferToNode( i, exitNode );
             return;
          }
-      } catch ( Exception ex ) { Err( ex ); } }
+      } catch ( Ex x ) { Err( x ); } }
 
       private static MethodInfo packMachineCanMake, packMachineConsume, packMachinePackage;
       private static System.Random packMachineRandom;
@@ -607,7 +608,7 @@ namespace Automodchef {
       private static void LogPackagingMachineLastDish ( PackagingMachine __instance, Dish dishToPrepare ) { try {
          packMachineLastDish.Remove( __instance );
          packMachineLastDish.Add( __instance, dishToPrepare );
-      } catch ( Exception ex ) { Err( ex ); } }
+      } catch ( Ex x ) { Err( x ); } }
 
       private static bool OverridePackagingMachineLogic ( PackagingMachine __instance, List<Ingredient> ___ingredientsInside ) { try {
          if ( ( ___ingredientsInside?.Count ?? 0 ) == 0 ) return false;
@@ -632,7 +633,7 @@ namespace Automodchef {
          var dish = canMake.ElementAt( canMake.Count == 1 ? 0 : packMachineRandom.Next( canMake.Count ) );
          if ( (bool) packMachineConsume.Invoke( __instance, new object[] { dish } ) ) packMachinePackage.Invoke( __instance, new object[] { dish } );
          return false;
-      } catch ( Exception ex ) { return Err( ex, true ); } }
+      } catch ( Ex x ) { return Err( x, true ); } }
       #endregion
 
       #region Csv dump
@@ -661,7 +662,7 @@ namespace Automodchef {
             f.Flush();
          }
          Info( "Food list exported" );
-      } catch ( Exception ex ) { Err( ex ); } }
+      } catch ( Ex x ) { Err( x ); } }
 
       private static void DumpHardwareCsv () { if ( hardwareDumped ) return; try {
          string file = Path.Combine( ZySimpleMod.AppDataDir, "hardwares.csv" );
@@ -680,7 +681,7 @@ namespace Automodchef {
             f.Flush();
          }
          Info( "Hardware list exported" );
-      } catch ( Exception ex ) { Err( ex ); } }
+      } catch ( Ex x ) { Err( x ); } }
 
       private static void DumpLanguageCsv ( List<LanguageSource> ___Sources ) { if ( textDumped || ___Sources == null ) return; try {
          for ( var i = 0 ; i < ___Sources.Count ; i++ ) {
@@ -689,7 +690,7 @@ namespace Automodchef {
             using ( var fw = File.CreateText( file ) ) fw.Write( ___Sources[ i ].Export_CSV( null ) );
          }
          Info( "{0} game text exported", ___Sources.Count );
-      } catch ( Exception ex ) { Err( ex ); } }
+      } catch ( Ex x ) { Err( x ); } }
 
       private static void Csv ( this TextWriter f, params object[] values ) {
          foreach ( var val in values ) {
@@ -710,14 +711,14 @@ namespace Automodchef {
                ___languageNames[ i ] = "中文";
                return;
             }
-      } catch ( Exception ex ) { Err( ex ); } }
+      } catch ( Ex x ) { Err( x ); } }
 
       private static void DetectZh ( string code ) { try {
          Info( "Game language set to {0}", code );
          if ( code != "zh" ) return;
          zhs2zht = new Dictionary< string, string >();
          Modder.TryPatch( typeof( LanguageSource ), "TryGetTranslation", postfix: nameof( ToZht ) );
-      } catch ( Exception ex ) { Err( ex ); } }
+      } catch ( Ex x ) { Err( x ); } }
 
       private static Dictionary< string, string > zhs2zht;
 
@@ -727,7 +728,7 @@ namespace Automodchef {
          LCMapString( LOCALE_SYSTEM_DEFAULT, LCMAP_TRADITIONAL_CHINESE, Translation, Translation.Length, zht, zht.Length );
          Fine( "ZH {0} ({1} chars)", term, ( zht = FixZht( zht ) ).Length );
          zhs2zht.Add( term, Translation = zht );
-      } catch ( Exception ex ) { Err( ex ); } }
+      } catch ( Ex x ) { Err( x ); } }
 
       private static string FixZht ( string zht ) {
          zht = zht.Replace( "任務目標", "任務" ).Replace( "菜肴", "餐點" ).Replace( "美食評論家", "食評家" )
@@ -744,13 +745,13 @@ namespace Automodchef {
 
       private static void Err ( object msg ) => Error( msg );
       private static T Err < T > ( object msg, T val ) { Error( msg ); return val; }
-      private static bool Non0 ( float val ) => val != 0 && ! float.IsNaN( val ) && ! float.IsInfinity( val );
-      private static bool IsTutorial () => IsTutorial( Initializer.GetInstance().levelManager?.GetLevel() );
-      private static bool IsTutorial ( Level lv ) => lv == null || lv.IsTutorial() || lv.IsOptionalTutorial();
-
       public static void Error ( object msg, params object[] arg ) => ZySimpleMod.Log?.Error( msg, arg );
       public static void Warn  ( object msg, params object[] arg ) => ZySimpleMod.Log?.Warn ( msg, arg );
       public static void Info  ( object msg, params object[] arg ) => ZySimpleMod.Log?.Info ( msg, arg );
       public static void Fine  ( object msg, params object[] arg ) => ZySimpleMod.Log?.Fine ( msg, arg );
+
+      private static bool Non0 ( float val ) => val != 0 && ! float.IsNaN( val ) && ! float.IsInfinity( val );
+      private static bool IsTutorial () => IsTutorial( Initializer.GetInstance().levelManager?.GetLevel() );
+      private static bool IsTutorial ( Level lv ) => lv == null || lv.IsTutorial() || lv.IsOptionalTutorial();
    }
 }
