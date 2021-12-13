@@ -89,9 +89,9 @@ namespace Automodchef {
       [ ConfigAttribute( "Mechanic", "Packaging machine's sub-recipes have lowest priority (Fries < Bacon Fries < Loaded Cheese Fries), last processed recipe have lower priority, and random for remaining ties.  Default true." ) ]
       public bool smart_packaging_machine = true;
 
-      [ ConfigAttribute( "Tools", "Export foods to foods.csv on game launch.  Default false.  Neglectable speed impact, disabled because most players don't need the data." ) ]
+      [ ConfigAttribute( "Misc", "Export foods to foods.csv on game launch.  Default false.  Neglectable speed impact, disabled because most players don't need the data." ) ]
       public bool export_food_csv = false;
-      [ ConfigAttribute( "Tools", "Export hardwares to hardwares.csv on game launch.  Default false.  Ditto." ) ]
+      [ ConfigAttribute( "Misc", "Export hardwares to hardwares.csv on game launch.  Default false.  Ditto." ) ]
       public bool export_hardware_csv = false;
 
       public override void Load ( string path ) {
@@ -154,7 +154,7 @@ namespace Automodchef {
          }
          if ( config.dropdown_toogle_threshold > 1 ) {
             dropdownIcon = new ConditionalWeakTable< MaterialDropdown, DropdownIcon >();
-            Modder.TryPatch( typeof( PartProperties ), "PopulateDropdownForProperty", nameof( TrackDropdown ) );
+            Modder.TryPatch( typeof( PartProperties ), "PopulateDropdownForProperty", nameof( TrackDropdownIcon ) );
             Modder.TryPatch( typeof( MaterialDropdown ), "ShowDropdown", nameof( ToggleDropdown ) );
          }
       } catch ( Exception ex ) { Err( ex ); } }
@@ -222,7 +222,7 @@ namespace Automodchef {
          if ( ! ___m_SplashStates.Any( e => e.m_AnimToPlay == "LoadStartScreen" ) ) return;
          ___m_SplashStates = ___m_SplashStates.Where( e => e.m_AnimToPlay == "LoadStartScreen" ).ToArray();
          ___m_SplashStates[0].m_TimeInState = 0.01f;
-         Log.Info( "Skipping Logos and Warnings." );
+         Info( "Skipping Logos and Warnings." );
          // [ { "Unity, 1, False }, { "HermesInteractive, 2, False }, { "Team 17, 4, True }, { "Legal, 3, False }, { "LoadStartScreen", 2, False } ]
       } catch ( Exception ex ) { Err( ex ); } }
 
@@ -230,14 +230,14 @@ namespace Automodchef {
          if ( ___m_bProcessedCloseRequest || InputWrapper.GetController() == null ) return;
          ___m_bProcessedCloseRequest = true;
          Modder.TryMethod( typeof( SplashScreen ), "ProceedToMainMenu" ).Invoke( __instance, Array.Empty<object>() );
-         Log.Info( "Skipped Press Space Splash." );
+         Info( "Skipped Press Space Splash." );
       } catch ( Exception ex ) {
-         Log.Error( ex );
+         Error( ex );
          ___m_bProcessedCloseRequest = false;
       } }
       #endregion
 
-      private static bool DisableAnalytics () { Log.Info( "Analytics Blocked" ); return false; }
+      private static bool DisableAnalytics () { Info( "Analytics Blocked" ); return false; }
 
       #region Bug fixes
       private static void FixIngredientHintOnPause ( IngredientTooltip __instance, RectTransform ___ourRectTransform ) { try {
@@ -262,12 +262,12 @@ namespace Automodchef {
             var i = FindDishMinIngredient( dish ) + config.dish_ingredient_quota_buffer;
             if ( i == 2 && config.dish_ingredient_quota_buffer == 1 ) i = 1;
             if ( i > dish.expectedIngredients ) {
-               Log.Info( "Bumping {0} ingredient qouta from {1} to {2}.", dish.GetFriendlyNameTranslated(), dish.expectedIngredients, i );
+               Info( "Bumping {0} ingredient qouta from {1} to {2}.", dish.GetFriendlyNameTranslated(), dish.expectedIngredients, i );
                dish.expectedIngredients = i;
                updated = true;
             }
          }
-         if ( updated && config.dish_ingredient_quota_buffer == 1 ) Log.Info( "Dishes made from single ingredient are not buffed for better game balance." );
+         if ( updated && config.dish_ingredient_quota_buffer == 1 ) Info( "Dishes made from single ingredient are not buffed for better game balance." );
       } catch ( Exception ex ) { Err( ex ); } }
       #endregion
 
@@ -276,7 +276,7 @@ namespace Automodchef {
          if ( Non0( config.close_view_angle ) ) ___teleAngle  = config.close_view_angle;
          if ( Non0( config.far_view_angle   ) ) ___wideAngle  = config.far_view_angle;
          if ( Non0( config.far_view_height  ) ) ___wideHeight = config.far_view_height;
-         Log.Info( "Camera settigns applied." );
+         Info( "Camera settigns applied." );
          // Default camera settings:
          // edgePanMarginMouse = 10
          // edgePanMarginController = 80
@@ -297,7 +297,7 @@ namespace Automodchef {
          List<Contract> filteredContracts = ___allPossibleContracts
             .Where( e => e.requiredDishes.Contains( "BeachBurger" ) && e.client.minReputation <= ___company.reputation ).ToList();
          if ( filteredContracts.Count == 0 ) return;
-         Log.Info( "Filtering {0} down to {1}.", allContracts.Count, filteredContracts.Count );
+         Info( "Filtering {0} down to {1}.", allContracts.Count, filteredContracts.Count );
          ___allPossibleContracts = filteredContracts;
          // Client's name and clientName
          // Client1 The Feedbag
@@ -319,35 +319,35 @@ namespace Automodchef {
 
       private static void SetNewLevelTrigger ( LevelManager __instance, SaveLoadManager ___m_saveLoadManager ) { try {
          if ( IsTutorial( __instance.GetLevel() ) ) return;
-         Log.Fine( "Entering new non-tutorial level." );
+         Fine( "Entering new non-tutorial level." );
          currentLevel = __instance;
          ___m_saveLoadManager.OnMetadataReady += OfferToLoadGameOnEnter;
       } catch ( Exception ex ) { Err( ex ); } }
 
       private static void OfferToLoadGameOnEnter () { try {
-         Log.Fine( "New level data loaded." );
+         Fine( "New level data loaded." );
          var data = SaveLoadManager.GetInstance().getSavedKitchenData();
-         if ( data == null ) { Log.Info( "Save data not found, aborting." ); return; }
-		 for ( var i = 0; i < 5; i++ )
-			if ( data.Get( i ) != null ) {
-               Log.Info( "Found saved level at slot {0}, offering load dialog.", i+1 );
+         if ( data == null ) { Info( "Save data not found, aborting." ); return; }
+         for ( var i = 0; i < 5; i++ )
+            if ( data.Get( i ) != null ) {
+               Info( "Found saved level at slot {0}, offering load dialog.", i+1 );
                lastPreLevelScreenState = currentLevel.levelStatusUI.preLevelInfoRoot.gameObject.activeSelf;
                currentLevel.levelStatusUI.preLevelScreen.gameObject.SetActive( false );
                Initializer.GetInstance().saveLoadPanel.Open( false );
                return;
             }
-         Log.Info( "No saved level found.  Skipping load dialog." );
+         Info( "No saved level found.  Skipping load dialog." );
       } catch ( Exception ex ) { Err( ex ); } }
 
       private static void RestorePreLevelScreen () { try {
          if ( ! lastPreLevelScreenState ) return;
-         Log.Fine( "Restoring level brief screen." );
+         Fine( "Restoring level brief screen." );
          lastPreLevelScreenState = false;
          currentLevel.levelStatusUI.preLevelScreen.gameObject.SetActive( true );
-      } catch ( Exception ex ) { Log.Error( ex ); } }
+      } catch ( Exception ex ) { Error( ex ); } }
 
       private static void ClearPreLevelFlag () {
-         Log.Fine( "Save loaded or deleted.  Suppressing pre-level screen." );
+         Fine( "Save loaded or deleted.  Suppressing pre-level screen." );
          lastPreLevelScreenState = false;
          currentLevel?.levelStatusUI.preLevelScreen.gameObject.SetActive( false );
       }
@@ -360,17 +360,14 @@ namespace Automodchef {
          bypassNextSaveLoad = true;
          OnDeleted = () => typeof( SaveLoad ).TryMethod( "RebuildList" )?.Invoke( Initializer.GetInstance().saveLoadPanel, null );
       }
-      private static bool CheckSaveLoadCloseDisabled () {
-         if ( ! bypassNextSaveLoad ) return true;
-         return bypassNextSaveLoad = false;
-      }
+      private static bool CheckSaveLoadCloseDisabled () => ( ! bypassNextSaveLoad ) || ( bypassNextSaveLoad = false );
       #endregion
 
       #region Dropdown Toggle
       private static ConditionalWeakTable< MaterialDropdown, DropdownIcon > dropdownIcon;
 
-      private static void TrackDropdown ( MaterialDropdown dropdown, KitchenPartProperty prop, DropdownIcon icon ) { try {
-         Log.Fine( "Tracking dropdown {0} icon for kitchen part prop {1}", dropdown.GetHashCode(), prop.name );
+      private static void TrackDropdownIcon ( MaterialDropdown dropdown, KitchenPartProperty prop, DropdownIcon icon ) { try {
+         Fine( "Tracking dropdown {0} icon for kitchen part prop {1}", dropdown.GetHashCode(), prop.name );
          dropdownIcon.Remove( dropdown ); if ( icon != null ) dropdownIcon.Add( dropdown, icon );
       } catch ( Exception ex ) { Err( ex ); } }
 
@@ -378,7 +375,7 @@ namespace Automodchef {
          //if ( IsTutorial() ) return true;
          int max_options = ___m_OptionDataList?.options.Count ?? 0, new_selection = ___m_CurrentlySelected + 1;
          if ( max_options <= 1 || max_options > config.dropdown_toogle_threshold ) return true;
-         Log.Fine( "Toggle dropdown {0} of from {1} to {2} (or 0 if {3})", __instance.GetHashCode(), ___m_CurrentlySelected, new_selection, max_options );
+         Fine( "Toggle dropdown {0} of from {1} to {2} (or 0 if {3})", __instance.GetHashCode(), ___m_CurrentlySelected, new_selection, max_options );
          __instance.Select( new_selection >= max_options ? 0 : new_selection );
          if ( dropdownIcon.TryGetValue( __instance, out DropdownIcon icon ) ) icon?.UpdateIcon();
          return false;
@@ -394,10 +391,7 @@ namespace Automodchef {
          powerLog.GetOrCreateValue( __instance ).power += __instance.powerInWatts * multiplier;
       } catch ( Exception ex ) { Err( ex ); } }
 
-      private static void ClearPowerUsage () {
-         Log.Fine( "Reset power log" );
-         powerLog = new ConditionalWeakTable<KitchenPart, PowerLog>();
-      }
+      private static void ClearPowerUsage () { Fine( "Reset power log" ); powerLog = new ConditionalWeakTable<KitchenPart, PowerLog>(); }
 
       private static void AppendPowerToTooltip ( KitchenPart __instance, ref string __result ) { try {
          if ( ! Initializer.GetInstance().IsSimRunning() || __instance.powerInWatts <= 0 || powerLog == null ) return;
@@ -407,7 +401,7 @@ namespace Automodchef {
 
       private static void AppendPowerLog ( ref string __result ) { try {
          if ( powerLog == null || ( config.hide_tutorial_efficiency && IsTutorial() ) ) return;
-         Log.Info( "Appending power log (up to {0} lines) to kitchen log.", config.power_log_rows );
+         Info( "Appending power log (up to {0} lines) to kitchen log.", config.power_log_rows );
          float total = 0;
          Dictionary< string, PowerLog > byType = new Dictionary<string, PowerLog>();
          HashSet<KitchenPart> allParts = Initializer.GetInstance().kitchen.GetAllKitchenParts();
@@ -429,12 +423,12 @@ namespace Automodchef {
             else byType.Add( key, new PowerLog { power = partPower.power } );
             total += partPower.power;
          }
-         Log.Info( "Found {0} parts in {1} groups totaling {2}", allParts.Count, byType.Count, Wh( total ) );
+         Info( "Found {0} parts in {1} groups totaling {2}", allParts.Count, byType.Count, Wh( total ) );
          __result += $"\n\nTop {Math.Min(allParts.Count,config.power_log_rows)} power using equipment groups:";
          __result += "\n" + string.Join( "\n", byType.OrderBy( e => e.Value.power ).Reverse().Take( config.power_log_rows ).Select( e =>
             $"{AutomachefResources.KitchenParts.CreateNewInstance(e.Key).partName} ... {Wh(e.Value.power,false)} ({e.Value.power*100/total:0.0}%)" ) );
          __result = __result.Trim();
-         Log.Fine( __result );
+         Fine( __result );
       } catch ( Exception ex ) { Err( ex ); } }
       #endregion
 
@@ -443,7 +437,7 @@ namespace Automodchef {
             var text = ___levelObjectMapping[ level.number ].GetComponent<LevelSelectionItem>()?.maxEfficiency;
             if ( text?.gameObject.activeSelf != true ) return;
             text.text = ScriptLocalization.Main_UI.Success;
-            Log.Fine( $"Hiding efficiency of tutorial level {0}", level.number );
+            Fine( $"Hiding efficiency of tutorial level {0}", level.number );
          }
       } catch ( Exception ex ) { Err( ex ); } }
 
@@ -507,7 +501,7 @@ namespace Automodchef {
 
       private static void AppendEfficiencyLog ( ref string __result ) { try {
          if ( extraLog.Count == 0 || ( config.hide_tutorial_efficiency && IsTutorial() ) ) return;
-         Log.Info( "Appending efficiency log ({0} lines) to kitchen log.", extraLog.Count + orderedDish?.Count );
+         Info( "Appending efficiency log ({0} lines) to kitchen log.", extraLog.Count + orderedDish?.Count );
          __result += "\n\n";
          if ( orderedDish?.Count > 0 ) {
             __result += "Delivered / Ordered Dish ... Quota Contribution\n";
@@ -523,7 +517,7 @@ namespace Automodchef {
          }
          __result += "\n" + string.Join( "\n", extraLog.ToArray() );
          __result = __result.Trim();
-         Log.Fine( __result );
+         Fine( __result );
       } catch ( Exception ex ) { Err( ex ); } }
 
       private static string Wh ( float wh, bool prefix = true ) {
@@ -539,12 +533,12 @@ namespace Automodchef {
          foreach ( var msg in new string[] { About_To_Load_Game, Bonus_Level, Delete_Blueprint_Confirmation, Delete_Game,
                   Overwrite_Game, Overwrite_Blueprint, Quit_Confirmation, Quit_Confirmation_In_Game, Reset_Kitchen } )
             if ( bodyText == msg ) {
-               Log.Info( "Assuming yes for {0}", bodyText );
+               Info( "Assuming yes for {0}", bodyText );
                onAffirmativeButtonClicked();
                return false;
             }
          if ( bodyText == Save_Before_Quitting ) {
-            Log.Info( "Assuming no for {0}", bodyText );
+            Info( "Assuming no for {0}", bodyText );
             onDismissiveButtonClicked();
             return false;
          }
@@ -557,29 +551,25 @@ namespace Automodchef {
 
       private static void AdjustGameSpeedPresets ( Initializer __instance ) { try {
          if ( __instance == null || __instance.speeds == null || __instance.speeds.Count < 4 ) return;
-         Log.Info( "Setting game speeds to [ {0}x, {1}x, {2}x, {3}x ]", __instance.speeds[0], __instance.speeds[1], __instance.speeds[2], __instance.speeds[3] );
+         Info( "Setting game speeds to [ {0}x, {1}x, {2}x, {3}x ]", __instance.speeds[0], __instance.speeds[1], __instance.speeds[2], __instance.speeds[3] );
          __instance.speeds[2] = config.speed2;
          __instance.speeds[3] = config.speed3;
       } catch ( Exception ex ) { Err( ex ); } }
 
-      private static float fullFPpower;
-      private static void SetFoodProcessorPower ( PackagingMachine __instance, float ___processingTime ) { try {
-         if ( fullFPpower == 0 ) {
-            fullFPpower = __instance.powerInWatts;
-            Log.Info( "Food Processor power: {0}W when idle, {1}W when processing.", config.food_processor_idle_power, fullFPpower );
+      #region Packaging Machine and Food Processor
+      private static void SetIdlePower ( KitchenPart part, string name, bool isBusy, ref float fullPower, float idlePower ) { try {
+         if ( fullPower == 0 ) {
+            fullPower = part.powerInWatts;
+            Info( "{0} power: {1}W when idle, {2}W when busy.", name, idlePower, fullPower );
          }
-         __instance.powerInWatts = ___processingTime > 0 ? fullFPpower : config.food_processor_idle_power;
+         part.powerInWatts = isBusy ? fullPower : idlePower;
       } catch ( Exception ex ) { Err( ex ); } }
 
-      #region Packaging Machine mechanics
-      private static float fullPMpower;
-      private static void SetPackagingMachinePower ( PackagingMachine __instance, bool ___packaging ) { try {
-         if ( fullPMpower == 0 ) {
-            fullPMpower = __instance.powerInWatts;
-            Log.Info( "Packaging machine power: {0}W when idle, {1}W when packaging.", config.packaging_machine_idle_power, fullPMpower );
-         }
-         __instance.powerInWatts = ___packaging ? fullPMpower : config.packaging_machine_idle_power;
-      } catch ( Exception ex ) { Err( ex ); } }
+      private static float fullFPpower, fullPMpower;
+      private static void SetFoodProcessorPower ( Processor __instance, float ___processingTime ) =>
+         SetIdlePower( __instance, "Food Processor", ___processingTime > 0, ref fullFPpower, config.food_processor_idle_power );
+      private static void SetPackagingMachinePower ( PackagingMachine __instance, bool ___packaging ) =>
+         SetIdlePower( __instance, "Packaging Machine", ___packaging, ref fullPMpower, config.packaging_machine_idle_power );
 
       private static void PackagingMachinePassThrough ( PackagingMachine __instance, List<Ingredient> ___ingredientsInside, KitchenPart.NodeData[] ___ourIngredientNodes ) { try {
          KitchenPart.NodeData exitNode = ___ourIngredientNodes[ 3 ]; // 3 is hardcoded in the game.
@@ -590,7 +580,7 @@ namespace Automodchef {
             var id = i.internalName;
             foreach ( var d in __instance.dishesToAssemble )
                if ( Dish.GetByInternalName( d ).recipe.Contains( id ) ) return;
-            Log.Fine( "Packaging Machine is passing through {0}", i.GetFriendlyNameTranslated() );
+            Fine( "Packaging Machine is passing through {0}", i.GetFriendlyNameTranslated() );
             ___ingredientsInside.Remove( i );
             i.SetPosition( exitNode.position );
             __instance.TransferToNode( i, exitNode );
@@ -609,24 +599,24 @@ namespace Automodchef {
       } catch ( Exception ex ) { Err( ex ); } }
 
       private static bool OverridePackagingMachineLogic ( PackagingMachine __instance, List<Ingredient> ___ingredientsInside ) { try {
-         if ( ___ingredientsInside.Count == 0 ) return false;
+         if ( ( ___ingredientsInside?.Count ?? 0 ) == 0 ) return false;
          HashSet<Dish> canMake = new HashSet<Dish>( __instance.dishesToAssemble.Select( Dish.GetByInternalName )
             .Where( e => (bool) packMachineCanMake.Invoke( __instance, new object[]{ e } ) ) );
          if ( canMake.Count == 0 ) return false;
          if ( canMake.Count > 1 ) {
-            Log.Info( "Packaging options: " + string.Join( ", ", canMake.Select( e => e.GetFriendlyNameTranslated() ) ) );
+            Info( "Packaging options: " + string.Join( ", ", canMake.Select( e => e.GetFriendlyNameTranslated() ) ) );
             foreach ( var dishA in canMake.ToArray() ) foreach ( var dishB in canMake ) {
                if ( dishA == dishB || dishA.recipe.Count >= dishB.recipe.Count ) continue;
                if ( dishA.recipe.Any( i => ! dishB.recipe.Contains( i ) ) ) continue;
-               Log.Fine( "Delisting {0} as a sub-recipe of {1}", dishA.GetFriendlyNameTranslated(), dishB.GetFriendlyNameTranslated() );
+               Fine( "Delisting {0} as a sub-recipe of {1}", dishA.GetFriendlyNameTranslated(), dishB.GetFriendlyNameTranslated() );
                canMake.Remove( dishA );
                break;
             }
             if ( canMake.Count > 1 && packMachineLastDish.TryGetValue( __instance, out Dish lastDish ) && canMake.Contains( lastDish ) ) {
-               Log.Fine( "Delisting last dish {0}", lastDish.GetFriendlyNameTranslated() );
+               Fine( "Delisting last dish {0}", lastDish.GetFriendlyNameTranslated() );
                canMake.Remove( lastDish );
             }
-            Log.Info( canMake.Count > 1 ? "Randomly pick from reminders" : $"Winner: {canMake.ElementAt(0).GetFriendlyNameTranslated()}" );
+            Info( canMake.Count > 1 ? "Randomly pick from reminders" : $"Winner: {canMake.ElementAt(0).GetFriendlyNameTranslated()}" );
          }
          var dish = canMake.ElementAt( canMake.Count == 1 ? 0 : packMachineRandom.Next( canMake.Count ) );
          if ( (bool) packMachineConsume.Invoke( __instance, new object[] { dish } ) ) packMachinePackage.Invoke( __instance, new object[] { dish } );
@@ -638,16 +628,15 @@ namespace Automodchef {
       private static bool foodDumped, hardwareDumped;
       private static readonly StringBuilder line = new StringBuilder();
 
-      private static void DumpFoodCsv () { try {
-         if ( foodDumped ) return;
+      private static void DumpFoodCsv () { if ( foodDumped ) return; try {
          string file = Path.Combine( ZySimpleMod.AppDataDir, "foods.csv" );
-         Log.Info( $"Exporting food list to {file}" );
+         Info( $"Exporting food list to {file}" );
          using ( TextWriter f = File.CreateText( file ) ) {
             f.Csv( "Id", "Name", "Translated", "Process", "Seconds", "Recipe", "Liquids",
                    "Processed", "Grilled", "Fried", "Steamed", "Baked", "Wet", //"Bacterias",
                    "Spoil (sec)", "Ingredients Quota", "Power Quota" );
             foreach ( var mat in Ingredient.GetAll().Union( Dish.GetAll() ) ) {
-               Log.Fine( $"#{mat.internalName} = {mat.friendlyName}" );
+               Fine( $"#{mat.internalName} = {mat.friendlyName}" );
                float spoil = 0, iQ = 0, pQ = 0;
                if ( mat is Dish dish ) { spoil = dish.timeToBeSpoiled;  iQ = dish.expectedIngredients;  pQ = dish.expectedPower; }
                f.Csv( mat.internalName, mat.friendlyName, mat.GetFriendlyNameTranslated(), mat.technique.ToString(), mat.timeToBeAssembled + "",
@@ -661,17 +650,16 @@ namespace Automodchef {
             f.Flush();
          }
          foodDumped = true;
-         Log.Info( "Food list exported" );
+         Info( "Food list exported" );
       } catch ( Exception ex ) { Err( ex ); } }
 
-      private static void DumpHardwareCsv () { try {
-         if ( hardwareDumped ) return;
+      private static void DumpHardwareCsv () { if ( hardwareDumped ) return; try {
          string file = Path.Combine( ZySimpleMod.AppDataDir, "hardwares.csv" );
-         Log.Info( "Exporting hardware list to {0}", file );
+         Info( "Exporting hardware list to {0}", file );
          using ( TextWriter f = File.CreateText( file ) ) {
             f.Csv( "Id", "Name", "Description", "Category", "Price", "Power", "Speed", "Time", "Variant", "Code Class" );
             foreach ( var part in AutomachefResources.KitchenParts.GetList_ReadOnly() ) {
-               Log.Fine( "#{0} = {1}", part.internalName, part.partName );
+               Fine( "#{0} = {1}", part.internalName, part.partName );
                var speed  = part.GetType().GetField( "speed", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance )?.GetValue( part );
                var rspeed = part.GetType().GetField( "rotationSpeed", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance )?.GetValue( part ) ??
                             part.GetType().GetField( "armRotationSpeed", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance )?.GetValue( part );
@@ -682,7 +670,7 @@ namespace Automodchef {
             f.Flush();
          }
          hardwareDumped = true;
-         Log.Info( "Hardware list exported" );
+         Info( "Hardware list exported" );
       } catch ( Exception ex ) { Err( ex ); } }
 
       private static void Csv ( this TextWriter f, params object[] values ) {
@@ -697,14 +685,12 @@ namespace Automodchef {
       }
       #endregion
 
-      private static void Err ( object msg ) => Log.Error( msg );
-      private static T Err < T > ( object msg, T val ) { Log.Error( msg ); return val; }
+      private static void Err ( object msg ) => Error( msg );
+      private static T Err < T > ( object msg, T val ) { Error( msg ); return val; }
       private static bool Non0 ( float val ) => val != 0 && ! float.IsNaN( val ) && ! float.IsInfinity( val );
       private static bool IsTutorial () => IsTutorial( Initializer.GetInstance().levelManager?.GetLevel() );
       private static bool IsTutorial ( Level lv ) => lv == null || lv.IsTutorial() || lv.IsOptionalTutorial();
-   }
 
-   internal static class Log {
       public static void Error ( object msg, params object[] arg ) => ZySimpleMod.Log?.Error( msg, arg );
       public static void Warn  ( object msg, params object[] arg ) => ZySimpleMod.Log?.Warn ( msg, arg );
       public static void Info  ( object msg, params object[] arg ) => ZySimpleMod.Log?.Info ( msg, arg );
