@@ -189,11 +189,12 @@ namespace ZyMod {
 
    public class ZyLogger { // Thread safe logger.  Write in background thread by default.
       public TraceLevel LogLevel = TraceLevel.Info; // Can be changed on the fly.  No lock, may take a while to take effect.
+      public string TimeFormat = "HH:mm:ss.fff ";  // Same, no multi-thread lock.
       public uint FlushInterval { get; private set; } = 2; // Seconds.  0 to write immediate on every line, not recommended.  Fixed on creation.
       public string LogPath { get; private set; } // Also fixed on creation.
       private readonly List< string > buffer = new List<string>();
       private System.Timers.Timer flushTimer;
-      public ZyLogger ( string path, uint interval = 2 ) { try {
+      public ZyLogger ( string path, uint interval = 2 ) { new FileInfo( path ); try {
          Initialize( path );
          if ( LogLevel == TraceLevel.Off ) return;
          if ( ( FlushInterval = Math.Min( interval, 60 ) ) > 0 ) {
@@ -209,7 +210,7 @@ namespace ZyMod {
          try { File.Delete( LogPath = path ); } catch ( IOException _ ) { }
          var conf = Path.Combine( Path.GetDirectoryName( path ), Path.GetFileNameWithoutExtension( path ) + "-log.conf" );
          buffer.Clear();
-         buffer.Add( $"Logging controlled by {conf}.  First line is log level (Off/Error/Warn/Verbose). Second line is write interval in seconds, 0 to 60, default 2." );
+         buffer.Add( $"Logging controlled by {conf}.  First line is log level (Off/Error/Warn/Verbose).  Second line is write interval in seconds, 0 to 60, default 2." );
          if ( ! File.Exists( conf ) ) return;
          var lines = File.ReadLines( conf ).GetEnumerator();
          if ( lines.MoveNext() ) switch ( ( ( lines.Current?.ToUpperInvariant() ?? "" ) + "?" )[0] ) {
@@ -247,7 +248,7 @@ namespace ZyMod {
          }
          if ( msg is string txt && txt.Contains( '{' ) && arg?.Length > 0 ) msg = string.Format( msg.ToString(), arg );
          else if ( arg?.Length > 0 ) msg = string.Join( ", ", new object[] { msg }.Union( arg ).Select( e => e?.ToString() ?? "null" ) );
-         return DateTime.Now.ToString( "HH:mm:ss.fff " ) + level + ( msg ?? "null" );
+         return DateTime.Now.ToString( TimeFormat ?? "mm:ss " ) + level + ( msg ?? "null" );
       }
 
    }
