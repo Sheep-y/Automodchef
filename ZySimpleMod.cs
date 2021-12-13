@@ -181,6 +181,8 @@ namespace ZyMod {
          return null;
       } }
 
+      internal static MethodInfo Unpatch ( MethodInfo orig ) { if ( orig != null ) harmony?.Unpatch( orig, HarmonyPatchType.All, harmony.Id ); return null; }
+
       private static HarmonyMethod ToHarmony ( string name ) {
          if ( string.IsNullOrWhiteSpace( name ) ) return null;
          return new HarmonyMethod( ZySimpleMod.PatchClass?.GetMethod( name, Public | NonPublic | Static ) ?? throw new NullReferenceException( name + " not found" ) );
@@ -230,7 +232,7 @@ namespace ZyMod {
       public void Fine  ( object msg, params object[] arg ) => Write( TraceLevel.Verbose, msg, arg );
       public void Flush () { try {
          string[] buf;
-         lock ( buffer ) { if ( _LogLevel == TraceLevel.Off || buffer.Count == 0 ) return; buf = buffer.ToArray(); buffer.Clear(); }
+         lock ( buffer ) { if ( buffer.Count == 0 ) return; buf = buffer.ToArray(); buffer.Clear(); if ( _LogLevel == TraceLevel.Off ) return; }
          using ( TextWriter f = File.AppendText( LogPath ) ) foreach ( var line in buf ) f.WriteLine( line );
       } catch ( Exception ) { } }
       private void Terminate ( object _, EventArgs __ ) { flushTimer?.Stop(); flushTimer = null; Flush(); AppDomain.CurrentDomain.ProcessExit -= Terminate; }
