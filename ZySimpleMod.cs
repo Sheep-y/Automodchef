@@ -188,26 +188,28 @@ namespace ZyMod {
    }
 
    public class ZyLogger { // Thread safe logger.  Write in background thread by default.
-      public TraceLevel LogLevel = TraceLevel.Info; // Can be changed on the fly.  No lock, may take a while to take effect.
-      public string TimeFormat = "HH:mm:ss.fff ";  // Same, no multi-thread lock.
-      public uint FlushInterval { get; private set; } = 2; // Seconds.  0 to write immediate on every line, not recommended.  Fixed on creation.
-      public string LogPath { get; private set; } // Also fixed on creation.
-      private readonly List< string > buffer = new List<string>();
-      private System.Timers.Timer flushTimer;
+      private TraceLevel _LogLevel = TraceLevel.Info;
+      public TraceLevel LogLevel { get { lock ( buffer ) return _LogLevel; } set { lock ( buffer ) _LogLevel = value; } }
+      private string _TimeFormat = "HH:mm:ss.fff ";
+      public string TimeFormat { get { lock ( buffer ) return _TimeFormat; } set { lock ( buffer ) _TimeFormat = value; } }
+      public uint FlushInterval { get; private set; } = 2; // Seconds.  0 to write immediate on every line, not recommended.
+      public string LogPath { get; private set; }
+      private readonly List< string > buffer = new List<string>(); // Double as lock object.
+      private System.Timers.Timer flushTimer; // null if FlushInterval is 0.
       public ZyLogger ( string path, uint interval = 2 ) { new FileInfo( path ); try {
          Initialize( path );
-         if ( LogLevel == TraceLevel.Off ) return;
+         if ( _LogLevel == TraceLevel.Off ) return;
          if ( ( FlushInterval = Math.Min( interval, 60 ) ) > 0 ) {
             flushTimer = new System.Timers.Timer( FlushInterval * 1000 ){ AutoReset = true };
             flushTimer.Elapsed += ( _, __ ) => Flush();
             AppDomain.CurrentDomain.ProcessExit += Terminate;
          }
-         buffer.Insert( 0, $"{DateTime.Now:u} {ZySimpleMod.ModName} initiated, log level {LogLevel}, " + ( FlushInterval > 0 ? $" flush every {FlushInterval}s." : "flush on write." ) );
+         buffer.Insert( 0, $"{DateTime.Now:u} {ZySimpleMod.ModName} initiated, log level {_LogLevel}, " + ( FlushInterval > 0 ? $"flush every {FlushInterval}s." : "flush on write." ) );
          Flush();
          flushTimer?.Start();
       } catch ( Exception ) { } }
       private void Initialize ( string path ) { try {
-         try { File.Delete( LogPath = path ); } catch ( IOException _ ) { }
+         try { File.Delete( LogPath = path ); } catch ( IOException ) { }
          var conf = Path.Combine( Path.GetDirectoryName( path ), Path.GetFileNameWithoutExtension( path ) + "-log.conf" );
          buffer.Clear();
          buffer.Add( $"Logging controlled by {conf}.  First line is log level (Off/Error/Warn/Verbose).  Second line is write interval in seconds, 0 to 60, default 2." );
@@ -215,41 +217,42 @@ namespace ZyMod {
          var lines = File.ReadLines( conf ).GetEnumerator();
          if ( lines.MoveNext() ) switch ( ( ( lines.Current?.ToUpperInvariant() ?? "" ) + "?" )[0] ) {
             case 'O' : LogLevel = TraceLevel.Off; break;
-            case 'E' : LogLevel = TraceLevel.Verbose; break;
+            case 'E' : LogLevel = TraceLevel.Error; break;
             case 'W' : LogLevel = TraceLevel.Warning; break;
-            case 'V' : LogLevel = TraceLevel.Verbose; break;
-            default  : LogLevel = TraceLevel.Info; break;
+            case 'I' : LogLevel = TraceLevel.Info; break;
+            case 'V' : case 'F' : LogLevel = TraceLevel.Verbose; break;
          }
          if ( lines.MoveNext() && uint.TryParse( lines.Current, out uint i ) ) FlushInterval = i;
       } catch ( Exception ) { } }
-      public void Error ( object msg, params object[] arg ) {  Write( LogLevel >= TraceLevel.Error   ? Timestamp( "ERROR ", msg, arg ) : null ); Flush(); }
-      public void Warn  ( object msg, params object[] arg ) => Write( LogLevel >= TraceLevel.Warning ? Timestamp( "WARN " , msg, arg ) : null );
-      public void Info  ( object msg, params object[] arg ) => Write( LogLevel >= TraceLevel.Info    ? Timestamp( "INFO " , msg, arg ) : null );
-      public void Fine  ( object msg, params object[] arg ) => Write( LogLevel >= TraceLevel.Verbose ? Timestamp( "FINE " , msg, arg ) : null );
-      public void Write ( TraceLevel level, object msg, params object[] arg ) { switch ( level ) {
-         case TraceLevel.Off : return;
-         case TraceLevel.Error : Error( msg, arg ); break;
-         case TraceLevel.Warning : Warn( msg, arg ); break;
-         case TraceLevel.Verbose : Fine( msg, arg ); break;
-         default : Info( msg, arg ); break;
-      } }
-      private void Write ( object msg ) { if ( msg == null ) return; lock ( buffer ) buffer.Add( msg.ToString() ); if ( FlushInterval == 0 ) Flush(); }
+      public void Error ( object msg, params object[] arg ) => Write( TraceLevel.Error, msg, arg );
+      public void Warn  ( object msg, params object[] arg ) => Write( TraceLevel.Warning, msg, arg );
+      public void Info  ( object msg, params object[] arg ) => Write( TraceLevel.Info, msg, arg );
+      public void Fine  ( object msg, params object[] arg ) => Write( TraceLevel.Verbose, msg, arg );
       public void Flush () { try {
          string[] buf;
-         lock ( buffer ) { if ( buffer.Count == 0 ) return; buf = buffer.ToArray(); buffer.Clear(); }
+         lock ( buffer ) { if ( _LogLevel == TraceLevel.Off || buffer.Count == 0 ) return; buf = buffer.ToArray(); buffer.Clear(); }
          using ( TextWriter f = File.AppendText( LogPath ) ) foreach ( var line in buf ) f.WriteLine( line );
       } catch ( Exception ) { } }
       private void Terminate ( object _, EventArgs __ ) { flushTimer?.Stop(); flushTimer = null; Flush(); AppDomain.CurrentDomain.ProcessExit -= Terminate; }
-      private object lastException;
-      private string Timestamp ( string level, object msg, object[] arg ) {
-         if ( msg is Exception ) {
-            if ( msg.ToString() == lastException.ToString() ) return null;
-            lastException = msg.ToString();
+      private string lastException;
+      public void Write ( TraceLevel level, object msg, params object[] arg ) {
+         string line = "INFO ", time;
+         lock ( buffer ) { if ( level > _LogLevel ) return; time = TimeFormat; }
+         switch ( level ) {
+            case TraceLevel.Off : return;
+            case TraceLevel.Error : line = "ERROR "; break;
+            case TraceLevel.Warning : line = "WARN "; break;
+            case TraceLevel.Verbose : line = "FINE "; break;
          }
-         if ( msg is string txt && txt.Contains( '{' ) && arg?.Length > 0 ) msg = string.Format( msg.ToString(), arg );
-         else if ( arg?.Length > 0 ) msg = string.Join( ", ", new object[] { msg }.Union( arg ).Select( e => e?.ToString() ?? "null" ) );
-         return DateTime.Now.ToString( TimeFormat ?? "mm:ss " ) + level + ( msg ?? "null" );
+         try {
+            if ( msg is string txt && txt.Contains( '{' ) && arg?.Length > 0 ) msg = string.Format( msg.ToString(), arg );
+            else if ( msg is Exception ) { txt = msg.ToString(); if ( txt == lastException ) return; msg = lastException = txt; }
+            else if ( arg?.Length > 0 ) msg = string.Join( ", ", new object[] { msg }.Union( arg ).Select( e => e?.ToString() ?? "null" ) );
+            else msg = msg.ToString();
+            line = DateTime.Now.ToString( time ?? "mm:ss " ) + line + ( msg ?? "null" );
+         } catch ( Exception e ) { if ( msg is Exception ex ) line = msg.GetType() + ": " + ex.Message; else { Warn( e ); return; } }
+         lock ( buffer ) buffer.Add( line );
+         if ( level == TraceLevel.Error || FlushInterval == 0 ) Flush();
       }
-
    }
 }
