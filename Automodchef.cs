@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Analytics;
@@ -93,6 +94,8 @@ namespace Automodchef {
       public bool export_food_csv = false;
       [ ConfigAttribute( "Misc", "Export hardwares to hardwares.csv on game launch.  Default false.  Ditto." ) ]
       public bool export_hardware_csv = false;
+      [ ConfigAttribute( "Misc", "Change Simplified Chinese to Traditional Chinese with improved translations.  No effect on other langauges." ) ]
+      public bool traditional_chinese = true;
 
       public override void Load ( string path ) {
          base.Load( path );
@@ -214,6 +217,10 @@ namespace Automodchef {
             Modder.TryPatch( typeof( SplashScreen ), "Awake", nameof( DumpFoodCsv ) );
          if ( config.export_hardware_csv )
             Modder.TryPatch( typeof( SplashScreen ), "Awake", nameof( DumpHardwareCsv ) );
+         if ( config.traditional_chinese ) {
+            Modder.TryPatch( typeof( LanguageSelectionScreen ), "OnShown", nameof( ShowZht ) );
+            Modder.TryPatch( typeof( LocalizationManager ), "CreateCultureForCode", nameof( DetectZh ) );
+         }
       } catch ( Exception ex ) { Err( ex ); } }
 
       #region Skip Splash
@@ -328,8 +335,8 @@ namespace Automodchef {
          Fine( "New level data loaded." );
          var data = SaveLoadManager.GetInstance().getSavedKitchenData();
          if ( data == null ) { Info( "Save data not found, aborting." ); return; }
-         for ( var i = 0; i < 5; i++ )
-            if ( data.Get( i ) != null ) {
+		 for ( var i = 0; i < 5; i++ )
+			if ( data.Get( i ) != null ) {
                Info( "Found saved level at slot {0}, offering load dialog.", i+1 );
                lastPreLevelScreenState = currentLevel.levelStatusUI.preLevelInfoRoot.gameObject.activeSelf;
                currentLevel.levelStatusUI.preLevelScreen.gameObject.SetActive( false );
@@ -683,6 +690,45 @@ namespace Automodchef {
          f.Write( line.Append( "\r\n" ) );
          line.Length = 0;
       }
+      #endregion
+
+      #region Traditional Chinese.  Hooray for Taiwan, Hong Kong, Macau!
+      private static void ShowZht ( List<string> ___languageNames ) { try {
+         for ( var i = ___languageNames.Count - 1 ; i >= 0 ; i-- )
+            if ( ___languageNames[ i ] == "简体中文" ) {
+               ___languageNames[ i ] = "中文";
+               return;
+            }
+      } catch ( Exception ex ) { Err( ex ); } }
+
+      private static void DetectZh ( string code ) { try {
+         Info( "Game language set to {0}", code );
+         if ( code != "zh" ) return;
+         zhs2zht = new Dictionary< string, string >();
+         Modder.TryPatch( typeof( LanguageSource ), "TryGetTranslation", postfix: nameof( ToZht ) );
+      } catch ( Exception ex ) { Err( ex ); } }
+
+      private static Dictionary< string, string > zhs2zht;
+
+      private static void ToZht ( string term, ref string Translation, bool __result ) { if ( ! __result ) return; try {
+         if ( zhs2zht.TryGetValue( term, out string zht ) ) { Translation = zht; return; }
+         zht = new String( ' ', Translation.Length );
+         LCMapString( LOCALE_SYSTEM_DEFAULT, LCMAP_TRADITIONAL_CHINESE, Translation, Translation.Length, zht, zht.Length );
+         Fine( "ZH {0} = {1} > {2}", term, Translation, zht = FixZht( zht ) );
+         zhs2zht.Add( term, Translation = zht );
+      } catch ( Exception ex ) { Err( ex ); } }
+
+      private static string FixZht ( string zht ) {
+         zht = zht.Replace( "任務目標", "任務" ).Replace( "菜肴", "餐點" ).Replace( "美食評論家", "食評家" )
+            .Replace( "已上餐點", "上菜" ).Replace( "電力消耗", "耗電" ).Replace( "使用的食材", "食材" );
+         return zht;
+      }
+
+      [ DllImport( "kernel32", CharSet = CharSet.Unicode, SetLastError = true ) ]
+      private static extern int LCMapString ( int Locale, int dwMapFlags, string lpSrcStr, int cchSrc, [Out] string lpDestStr, int cchDest );
+      private const int LOCALE_SYSTEM_DEFAULT = 0x0800;
+      private const int LCMAP_SIMPLIFIED_CHINESE = 0x02000000;
+      private const int LCMAP_TRADITIONAL_CHINESE = 0x04000000;
       #endregion
 
       private static void Err ( object msg ) => Error( msg );
