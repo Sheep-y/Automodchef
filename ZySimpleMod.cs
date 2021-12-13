@@ -152,19 +152,10 @@ namespace ZyMod {
    }
 
    public static class Modder { // Not thread safe.  Patches are assumed to happen on the same thread.
-
       private static Harmony harmony;
 
-      public static IEnumerable< MethodInfo > AllMethods ( this Type type ) => type.GetMethods( Public | NonPublic | Instance | Static ).Where( e => ! e.IsAbstract );
-      public static IEnumerable< MethodInfo > AllMethods ( this Type type, string name ) => type.AllMethods().Where( e => e.Name == name );
-      public static MethodInfo Method ( this Type type, string method ) { try {
-         return type?.GetMethod( method, Public | NonPublic | Instance | Static ) ?? throw new ApplicationException( $"Not found: {type}.{method}" );
-      } catch ( AmbiguousMatchException ex ) { throw new ApplicationException( $"Multiple: {type}.{method}", ex ); } }
-      public static MethodInfo TryMethod ( this Type type, string method ) { try { return Method( type, method ); } catch ( ApplicationException ) { return null; } }
-
       internal static MethodInfo Patch ( Type type, string method, string prefix = null, string postfix = null, string transpiler = null ) =>
-         Patch( Method( type, method ), prefix, postfix, transpiler );
-
+         Patch( type.Method( method ), prefix, postfix, transpiler );
       internal static MethodInfo Patch ( MethodBase method, string prefix = null, string postfix = null, string transpiler = null ) {
          if ( harmony == null ) harmony = new Harmony( ZySimpleMod.ModName );
          ZySimpleMod.Log.Fine( "Patching {0} {1} | Pre: {2} | Post: {3} | Trans: {4}", method.DeclaringType, method, prefix, postfix, transpiler );
@@ -172,8 +163,7 @@ namespace ZyMod {
       }
 
       internal static MethodInfo TryPatch ( Type type, string method, string prefix = null, string postfix = null, string transpiler = null ) =>
-         TryPatch( Method( type, method ), prefix, postfix, transpiler );
-
+         TryPatch( type.Method( method ), prefix, postfix, transpiler );
       internal static MethodInfo TryPatch ( MethodBase method, string prefix = null, string postfix = null, string transpiler = null ) { try {
          return Patch( method, prefix, postfix, transpiler );
       } catch ( Exception ex ) {
@@ -187,6 +177,24 @@ namespace ZyMod {
          if ( string.IsNullOrWhiteSpace( name ) ) return null;
          return new HarmonyMethod( ZySimpleMod.PatchClass?.GetMethod( name, Public | NonPublic | Static ) ?? throw new NullReferenceException( name + " not found" ) );
       }
+   }
+
+   public static class ModHelpers {
+      public static void Err ( object msg ) => Error( msg );
+      public static T Err < T > ( object msg, T val ) { Error( msg ); return val; }
+      public static void Error ( object msg, params object[] arg ) => ZySimpleMod.Log?.Error( msg, arg );
+      public static void Warn  ( object msg, params object[] arg ) => ZySimpleMod.Log?.Warn ( msg, arg );
+      public static void Info  ( object msg, params object[] arg ) => ZySimpleMod.Log?.Info ( msg, arg );
+      public static void Fine  ( object msg, params object[] arg ) => ZySimpleMod.Log?.Fine ( msg, arg );
+      public static bool Non0 ( float val ) => val != 0 && ! float.IsNaN( val ) && ! float.IsInfinity( val );
+
+      public static IEnumerable< MethodInfo > Methods ( this Type type ) => type.GetMethods( Public | NonPublic | Instance | Static ).Where( e => ! e.IsAbstract );
+      public static IEnumerable< MethodInfo > Methods ( this Type type, string name ) => type.Methods().Where( e => e.Name == name );
+
+      public static MethodInfo Method ( this Type type, string name ) => type?.GetMethod( name, Public | NonPublic | Instance | Static );
+      public static MethodInfo TryMethod ( this Type type, string name ) { try { return Method( type, name ); } catch ( Exception ) { return null; } }
+      public static FieldInfo  Field ( this Type type, string name ) => type?.GetField( name, Public | NonPublic | Instance | Static );
+      public static PropertyInfo Property ( this Type type, string name ) => type?.GetProperty( name, Public | NonPublic | Instance | Static );
    }
 
    public class ZyLogger { // Thread safe logger.  Format in foreground and write in background thread by default.

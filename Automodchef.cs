@@ -12,6 +12,7 @@ using UnityEngine;
 using UnityEngine.Analytics;
 using UnityEngine.UI;
 using ZyMod;
+using static ZyMod.ModHelpers;
 using static I2.Loc.ScriptLocalization.Warnings;
 
 namespace Automodchef {
@@ -126,7 +127,7 @@ namespace Automodchef {
          if ( config.skip_spacebar )
             Modder.TryPatch( typeof( SplashScreen ), "Update", postfix: nameof( SkipSpacebarSplash ) );
          if ( config.disable_analytics ) {
-            foreach ( var m in typeof( Analytics ).AllMethods().Where( e => e.Name == "CustomEvent" || e.Name == "Transaction" || e.Name.StartsWith( "Send" ) ) )
+            foreach ( var m in typeof( Analytics ).Methods().Where( e => e.Name == "CustomEvent" || e.Name == "Transaction" || e.Name.StartsWith( "Send" ) ) )
                Modder.TryPatch( m, nameof( DisableAnalytics ) );
             Modder.TryPatch( typeof( AutomachefAnalytics ), "Track", nameof( DisableAnalytics ) );
          }
@@ -141,7 +142,7 @@ namespace Automodchef {
 
       private static void ApplyUserInterfacePatches () { try {
          if ( config.suppress_confirmation ) {
-            var orig = typeof( DialogManager ).AllMethods( "ShowAlert" ).FirstOrDefault( e => e.GetParameters().Length == 7 );
+            var orig = typeof( DialogManager ).Methods( "ShowAlert" ).FirstOrDefault( e => e.GetParameters().Length == 7 );
             if ( orig != null ) Modder.TryPatch( orig, nameof( SuppressConfirmation ) );
          }
          if ( config.ask_loadgame_on_level_start ) {
@@ -167,7 +168,7 @@ namespace Automodchef {
 
       private static void ApplyLogPatches () { try {
          if ( config.tooltip_power_usage || config.power_log_rows > 0 ) {
-            Modder.TryPatch( typeof( KitchenPart ).AllMethods( "ConsumePower" ).FirstOrDefault( e => e.GetParameters().Length > 0 ), nameof( LogPowerUsage ) );
+            Modder.TryPatch( typeof( KitchenPart ).Methods( "ConsumePower" ).FirstOrDefault( e => e.GetParameters().Length > 0 ), nameof( LogPowerUsage ) );
             Modder.TryPatch( typeof( PowerMeter ), "Reset", nameof( ClearPowerUsage ) );
             if ( config.tooltip_power_usage )
                Modder.TryPatch( typeof( KitchenPart ), "GetTooltipText", postfix: nameof( AppendPowerToTooltip ) );
@@ -241,7 +242,7 @@ namespace Automodchef {
       private static void SkipSpacebarSplash ( SplashScreen __instance, ref bool ___m_bProcessedCloseRequest ) { try {
          if ( ___m_bProcessedCloseRequest || InputWrapper.GetController() == null ) return;
          ___m_bProcessedCloseRequest = true;
-         Modder.TryMethod( typeof( SplashScreen ), "ProceedToMainMenu" ).Invoke( __instance, Array.Empty<object>() );
+         typeof( SplashScreen ).TryMethod( "ProceedToMainMenu" )?.Invoke( __instance, Array.Empty<object>() );
          Info( "Skipped Press Space Splash." );
       } catch ( Ex ex ) {
          Error( ex );
@@ -671,10 +672,9 @@ namespace Automodchef {
             f.Csv( "Id", "Name", "Description", "Category", "Price", "Power", "Speed", "Time", "Variant", "Code Class" );
             foreach ( var part in AutomachefResources.KitchenParts.GetList_ReadOnly() ) {
                Fine( "#{0} = {1}", part.internalName, part.partName );
-               var speed  = part.GetType().GetField( "speed", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance )?.GetValue( part );
-               var rspeed = part.GetType().GetField( "rotationSpeed", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance )?.GetValue( part ) ??
-                            part.GetType().GetField( "armRotationSpeed", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance )?.GetValue( part );
-               var pTime  = part.GetType().GetField( "timeToProcess", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance )?.GetValue( part );
+               var speed  = part.GetType().Field( "speed" )?.GetValue( part );
+               var rspeed = part.GetType().Field( "rotationSpeed" )?.GetValue( part ) ??  part.GetType().Field( "armRotationSpeed" )?.GetValue( part );
+               var pTime  = part.GetType().Field( "timeToProcess" )?.GetValue( part );
                f.Csv( part.internalName, part.partName, part.description, part.category, part.cost, part.powerInWatts, speed ?? rspeed ?? "", pTime ?? "",
                       part.nextVariantInternalName, part.GetType().FullName );
             }
@@ -743,14 +743,6 @@ namespace Automodchef {
       private const int LCMAP_TRADITIONAL_CHINESE = 0x04000000;
       #endregion
 
-      private static void Err ( object msg ) => Error( msg );
-      private static T Err < T > ( object msg, T val ) { Error( msg ); return val; }
-      public static void Error ( object msg, params object[] arg ) => ZySimpleMod.Log?.Error( msg, arg );
-      public static void Warn  ( object msg, params object[] arg ) => ZySimpleMod.Log?.Warn ( msg, arg );
-      public static void Info  ( object msg, params object[] arg ) => ZySimpleMod.Log?.Info ( msg, arg );
-      public static void Fine  ( object msg, params object[] arg ) => ZySimpleMod.Log?.Fine ( msg, arg );
-
-      private static bool Non0 ( float val ) => val != 0 && ! float.IsNaN( val ) && ! float.IsInfinity( val );
       private static bool IsTutorial () => IsTutorial( Initializer.GetInstance().levelManager?.GetLevel() );
       private static bool IsTutorial ( Level lv ) => lv == null || lv.IsTutorial() || lv.IsOptionalTutorial();
    }
