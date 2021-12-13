@@ -11,6 +11,7 @@ namespace ZyMod {
    public abstract class ZySimpleMod {
       protected static object sync = new object();
       internal static ZySimpleMod instance;
+      public static ZyLogger Log { get; private set; }
       internal static string ModName { get { lock ( sync ) return instance?.GetModName() ?? "ZyMod"; } }
       internal static Type PatchClass { get { lock ( sync ) return instance?.GetPatchClass() ?? typeof( ZySimpleMod ); } }
 
@@ -23,7 +24,7 @@ namespace ZyMod {
             instance = this;
          }
          try {
-            Log.Initialize();
+            Log = new ZyLogger( Path.Combine( AppDataDir, ModName + ".log" ) );
             AppDomain.CurrentDomain.UnhandledException += ( _, evt ) => Log.Error( evt.ExceptionObject );
             AppDomain.CurrentDomain.AssemblyResolve += ( _, evt ) => { Log.Fine( "Resolving {0}", evt.Name ); return null; };
             foreach ( var asm in AppDomain.CurrentDomain.GetAssemblies() ) {
@@ -85,7 +86,8 @@ namespace ZyMod {
    }
 
    public class IniConfig {
-      public void Load () => Load( Path.Combine( ZySimpleMod.AppDataDir, ZySimpleMod.ModName + ".ini" ) );
+      protected ZyLogger Log => ZySimpleMod.Log;
+      public void Load () => Load ( Path.Combine( ZySimpleMod.AppDataDir, ZySimpleMod.ModName + ".ini" ) );
       public virtual void Load ( string path ) { try {
          if ( ! File.Exists( path ) ) {
             Create( path );
@@ -165,7 +167,7 @@ namespace ZyMod {
 
       internal static MethodInfo Patch ( MethodBase method, string prefix = null, string postfix = null, string transpiler = null ) {
          if ( harmony == null ) harmony = new Harmony( ZySimpleMod.ModName );
-         Log.Fine( "Patching {0} {1} | Pre: {2} | Post: {3} | Trans: {4}", method.DeclaringType, method, prefix, postfix, transpiler );
+         ZySimpleMod.Log.Fine( "Patching {0} {1} | Pre: {2} | Post: {3} | Trans: {4}", method.DeclaringType, method, prefix, postfix, transpiler );
          return harmony.Patch( method, ToHarmony( prefix ), ToHarmony( postfix ), ToHarmony( transpiler ) );
       }
 
@@ -175,7 +177,7 @@ namespace ZyMod {
       internal static MethodInfo TryPatch ( MethodBase method, string prefix = null, string postfix = null, string transpiler = null ) { try {
          return Patch( method, prefix, postfix, transpiler );
       } catch ( Exception ex ) {
-         Log.Warn( "Could not patch {0} {1} | Pre: {2} | Post: {3} | Trans: {4}\n{5}", method?.DeclaringType, method?.Name, prefix, postfix, transpiler, ex );
+         ZySimpleMod.Log.Warn( "Could not patch {0} {1} | Pre: {2} | Post: {3} | Trans: {4}\n{5}", method?.DeclaringType, method?.Name, prefix, postfix, transpiler, ex );
          return null;
       } }
 
@@ -185,33 +187,14 @@ namespace ZyMod {
       }
    }
 
-   public static class Log { // Write immediately. NOT suitable for heavy logging.
-      public static TraceLevel LogLevel = TraceLevel.Info;
-      public static uint FlushInterval { get; private set; } = 2;
-      public static string LogPath { get; private set; }
-      private static readonly List< string > buffer = new List<string>();
-      private static System.Timers.Timer flushTimer;
-      internal static void Initialize () { try {
-         var conf = Path.Combine( ZySimpleMod.AppDataDir, ZySimpleMod.ModName + "-log.conf" );
-         if ( File.Exists( conf ) ) {
-            var lines = File.ReadLines( conf ).GetEnumerator();
-            if ( lines.MoveNext() ) switch ( ( ( lines.Current?.ToUpperInvariant() ?? "" ) + "?" )[0] ) {
-               case 'O' : LogLevel = TraceLevel.Off; break;
-               case 'E' : LogLevel = TraceLevel.Verbose; break;
-               case 'W' : LogLevel = TraceLevel.Warning; break;
-               case 'V' : LogLevel = TraceLevel.Verbose; break;
-               default  : LogLevel = TraceLevel.Info; break;
-            }
-            if ( lines.MoveNext() && uint.TryParse( lines.Current, out uint i ) ) FlushInterval = i;
-         }
-         buffer.Clear();
-         buffer.Add( $"Logging controlled by {conf}.  First line is log level (Off/Error/Warn/Verbose). Second line is write interval in seconds, 0 to 60, default 2." );
-      } catch ( Exception ) {
-      } finally {
-         Initialize( Path.Combine( ZySimpleMod.AppDataDir, ZySimpleMod.ModName + ".log" ), FlushInterval );
-      } }
-      internal static void Initialize ( string path, uint interval = 2 ) { try {
-         File.Delete( LogPath = path );
+   public class ZyLogger { // Thread safe logger.  Write in background thread by default.
+      public TraceLevel LogLevel = TraceLevel.Info; // Can be changed on the fly.  No lock, may take a while to take effect.
+      public uint FlushInterval { get; private set; } = 2; // Seconds.  0 to write immediate on every line, not recommended.  Fixed on creation.
+      public string LogPath { get; private set; } // Also fixed on creation.
+      private readonly List< string > buffer = new List<string>();
+      private System.Timers.Timer flushTimer;
+      public ZyLogger ( string path, uint interval = 2 ) { try {
+         Initialize( path );
          if ( LogLevel == TraceLevel.Off ) return;
          if ( ( FlushInterval = Math.Min( interval, 60 ) ) > 0 ) {
             flushTimer = new System.Timers.Timer( FlushInterval * 1000 ){ AutoReset = true };
@@ -222,26 +205,42 @@ namespace ZyMod {
          Flush();
          flushTimer?.Start();
       } catch ( Exception ) { } }
-      public static void Error ( object msg, params object[] arg ) {  Write( LogLevel >= TraceLevel.Error   ? Timestamp( "ERROR ", msg, arg ) : null ); Flush(); }
-      public static void Warn  ( object msg, params object[] arg ) => Write( LogLevel >= TraceLevel.Warning ? Timestamp( "WARN " , msg, arg ) : null );
-      public static void Info  ( object msg, params object[] arg ) => Write( LogLevel >= TraceLevel.Info    ? Timestamp( "INFO " , msg, arg ) : null );
-      public static void Fine  ( object msg, params object[] arg ) => Write( LogLevel >= TraceLevel.Verbose ? Timestamp( "FINE " , msg, arg ) : null );
-      public static void Write ( TraceLevel level, object msg, params object[] arg ) { switch ( level ) {
+      private void Initialize ( string path ) { try {
+         try { File.Delete( LogPath = path ); } catch ( IOException _ ) { }
+         var conf = Path.Combine( Path.GetDirectoryName( path ), Path.GetFileNameWithoutExtension( path ) + "-log.conf" );
+         buffer.Clear();
+         buffer.Add( $"Logging controlled by {conf}.  First line is log level (Off/Error/Warn/Verbose). Second line is write interval in seconds, 0 to 60, default 2." );
+         if ( ! File.Exists( conf ) ) return;
+         var lines = File.ReadLines( conf ).GetEnumerator();
+         if ( lines.MoveNext() ) switch ( ( ( lines.Current?.ToUpperInvariant() ?? "" ) + "?" )[0] ) {
+            case 'O' : LogLevel = TraceLevel.Off; break;
+            case 'E' : LogLevel = TraceLevel.Verbose; break;
+            case 'W' : LogLevel = TraceLevel.Warning; break;
+            case 'V' : LogLevel = TraceLevel.Verbose; break;
+            default  : LogLevel = TraceLevel.Info; break;
+         }
+         if ( lines.MoveNext() && uint.TryParse( lines.Current, out uint i ) ) FlushInterval = i;
+      } catch ( Exception ) { } }
+      public void Error ( object msg, params object[] arg ) {  Write( LogLevel >= TraceLevel.Error   ? Timestamp( "ERROR ", msg, arg ) : null ); Flush(); }
+      public void Warn  ( object msg, params object[] arg ) => Write( LogLevel >= TraceLevel.Warning ? Timestamp( "WARN " , msg, arg ) : null );
+      public void Info  ( object msg, params object[] arg ) => Write( LogLevel >= TraceLevel.Info    ? Timestamp( "INFO " , msg, arg ) : null );
+      public void Fine  ( object msg, params object[] arg ) => Write( LogLevel >= TraceLevel.Verbose ? Timestamp( "FINE " , msg, arg ) : null );
+      public void Write ( TraceLevel level, object msg, params object[] arg ) { switch ( level ) {
          case TraceLevel.Off : return;
          case TraceLevel.Error : Error( msg, arg ); break;
          case TraceLevel.Warning : Warn( msg, arg ); break;
          case TraceLevel.Verbose : Fine( msg, arg ); break;
          default : Info( msg, arg ); break;
       } }
-      private static void Write ( object msg ) { if ( msg == null ) return; lock ( buffer ) buffer.Add( msg.ToString() ); if ( FlushInterval == 0 ) Flush(); }
-      public static void Flush () { try {
+      private void Write ( object msg ) { if ( msg == null ) return; lock ( buffer ) buffer.Add( msg.ToString() ); if ( FlushInterval == 0 ) Flush(); }
+      public void Flush () { try {
          string[] buf;
          lock ( buffer ) { if ( buffer.Count == 0 ) return; buf = buffer.ToArray(); buffer.Clear(); }
          using ( TextWriter f = File.AppendText( LogPath ) ) foreach ( var line in buf ) f.WriteLine( line );
       } catch ( Exception ) { } }
-      private static void Terminate ( object _, EventArgs __ ) { flushTimer?.Stop(); flushTimer = null; Flush(); AppDomain.CurrentDomain.ProcessExit -= Terminate; }
-      private static object lastException;
-      private static string Timestamp ( string level, object msg, object[] arg ) {
+      private void Terminate ( object _, EventArgs __ ) { flushTimer?.Stop(); flushTimer = null; Flush(); AppDomain.CurrentDomain.ProcessExit -= Terminate; }
+      private object lastException;
+      private string Timestamp ( string level, object msg, object[] arg ) {
          if ( msg is Exception ) {
             if ( msg.ToString() == lastException.ToString() ) return null;
             lastException = msg.ToString();
@@ -250,5 +249,6 @@ namespace ZyMod {
          else if ( arg?.Length > 0 ) msg = string.Join( ", ", new object[] { msg }.Union( arg ).Select( e => e?.ToString() ?? "null" ) );
          return DateTime.Now.ToString( "HH:mm:ss.fff " ) + level + ( msg ?? "null" );
       }
+
    }
 }

@@ -703,4 +703,11 @@ namespace Automodchef {
       private static bool IsTutorial () => IsTutorial( Initializer.GetInstance().levelManager?.GetLevel() );
       private static bool IsTutorial ( Level lv ) => lv == null || lv.IsTutorial() || lv.IsOptionalTutorial();
    }
+
+   internal static class Log {
+      public static void Error ( object msg, params object[] arg ) => ZySimpleMod.Log?.Error( msg, arg );
+      public static void Warn  ( object msg, params object[] arg ) => ZySimpleMod.Log?.Warn ( msg, arg );
+      public static void Info  ( object msg, params object[] arg ) => ZySimpleMod.Log?.Info ( msg, arg );
+      public static void Fine  ( object msg, params object[] arg ) => ZySimpleMod.Log?.Fine ( msg, arg );
+   }
 }
