@@ -187,15 +187,15 @@ namespace ZyMod {
       }
    }
 
-   public class ZyLogger { // Thread safe logger.  Write in background thread by default.
+   public class ZyLogger { // Thread safe logger.  Format in foreground and write in background thread by default.
       private TraceLevel _LogLevel = TraceLevel.Info;
       public TraceLevel LogLevel { get { lock ( buffer ) return _LogLevel; } set { lock ( buffer ) _LogLevel = value; } }
       private string _TimeFormat = "HH:mm:ss.fff ";
       public string TimeFormat { get { lock ( buffer ) return _TimeFormat; } set { lock ( buffer ) _TimeFormat = value; } }
-      public uint FlushInterval { get; private set; } = 2; // Seconds.  0 to write immediate on every line, not recommended.
+      public uint FlushInterval { get; private set; } = 2; // Seconds.  0 to write and flush every line, a lot slower.
       public string LogPath { get; private set; }
-      private readonly List< string > buffer = new List<string>(); // Double as lock object.
-      private System.Timers.Timer flushTimer; // null if FlushInterval is 0.
+      private readonly List< string > buffer = new List<string>();
+      private System.Timers.Timer flushTimer;
       public ZyLogger ( string path, uint interval = 2 ) { new FileInfo( path ); try {
          Initialize( path );
          if ( _LogLevel == TraceLevel.Off ) return;
@@ -250,7 +250,10 @@ namespace ZyMod {
             else if ( arg?.Length > 0 ) msg = string.Join( ", ", new object[] { msg }.Union( arg ).Select( e => e?.ToString() ?? "null" ) );
             else msg = msg.ToString();
             line = DateTime.Now.ToString( time ?? "mm:ss " ) + line + ( msg ?? "null" );
-         } catch ( Exception e ) { if ( msg is Exception ex ) line = msg.GetType() + ": " + ex.Message; else { Warn( e ); return; } }
+         } catch ( Exception e ) { // toString error, format error, stacktrace error...
+            if ( msg is Exception ex ) line = msg.GetType() + ": " + ex.Message;
+            else { Warn( e ); if ( msg is string txt ) line = txt; else return; }
+         }
          lock ( buffer ) buffer.Add( line );
          if ( level == TraceLevel.Error || FlushInterval == 0 ) Flush();
       }
