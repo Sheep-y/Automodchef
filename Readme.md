@@ -62,6 +62,9 @@ But because of the mod's tweaks, some vanilla layouts may yield a higher efficie
 Conversely, a layout that can clear the level with this mod may fails to do so in vanilla.
 The save is unchanged; it is on-the-fly changes to Packaging Machine and Efficiency that causes the differences.
 
+As the first known DLL mod for Automachef, it does not have other mods to be compatible with.
+Newer mods can use their own method to "play nice" with this mod.  This one's on them.
+
 
 = Troubleshoot =
 
@@ -81,7 +84,7 @@ Otherwise, if most feature works, but the game was broken in some way, check aut
 You can then disable the relevant feature(s) (see above) to try to fix the game.
 
 I have cleared the game, so don't count on future development or support.
-Mod is open source.  Feel free to fork and release in a new name (to avoid confusion).
+Mod is open source.  Feel free to fork and release in a new name (to avoid confusion), or make a mod that mod this mod.
 
 
 = Removal =
