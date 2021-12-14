@@ -19,10 +19,7 @@ namespace ZyMod {
       private static bool isTargetAssembly ( Assembly asm ) => asm.FullName.StartsWith( "Assembly-CSharp," );
 
       public void Initialize () {
-         lock ( sync ) {
-            if ( instance != null ) { Log.Warn( "Mod already initialized" ); return; }
-            instance = this;
-         }
+         lock ( sync ) { if ( instance != null ) { Log.Warn( "Mod already initialized" ); return; } instance = this; }
          try {
             Log = new ZyLogger( Path.Combine( AppDataDir, ModName + ".log" ) );
             AppDomain.CurrentDomain.UnhandledException += ( _, evt ) => Log.Error( evt.ExceptionObject );
@@ -40,7 +37,7 @@ namespace ZyMod {
       }
 
       private void AsmLoaded ( object sender, AssemblyLoadEventArgs args ) {
-         Assembly asm = args.LoadedAssembly;
+         var asm = args.LoadedAssembly;
          if ( ignoreAssembly( asm ) ) return;
          Log.Fine( "DLL {0}, {1}", asm.FullName, asm.CodeBase );
          if ( ! isTargetAssembly( asm ) ) return;
@@ -57,10 +54,7 @@ namespace ZyMod {
       private static string _AppDataDir;
       public static string AppDataDir { get {
          if ( _AppDataDir != null ) return _AppDataDir;
-         lock ( sync ) {
-            if ( instance == null ) return "";
-            _AppDataDir = instance.GetAppDataDir();
-         }
+         lock ( sync ) { if ( instance == null ) return ""; _AppDataDir = instance.GetAppDataDir(); }
          try {
             if ( ! Directory.Exists( _AppDataDir ) ) {
                Directory.CreateDirectory( _AppDataDir );
@@ -70,34 +64,42 @@ namespace ZyMod {
          return _AppDataDir;
       } }
 
-      // Override these to change mod name, log dir, what to do on Assembly-CSharp, and where patches are located by Modder.
+      // Override / Implement these to change mod name, log dir, what to do on Assembly-CSharp, and where patches are located by Modder.
       protected virtual string GetModName () => GetType().Name;
-      protected abstract string GetAppDataDir (); // Called once on start.  Result will be cached.
-      protected abstract void OnGameAssemblyLoaded ( Assembly game ); // 
+      protected abstract string GetAppDataDir (); // Called once on start.  At most once per thread.  Result will be cached.
+      protected abstract void OnGameAssemblyLoaded ( Assembly game ); // Put all the actions here.
    }
 
-   [ AttributeUsage( AttributeTargets.Class | AttributeTargets.Field | AttributeTargets.Property ) ]
-   public class ConfigAttribute : Attribute {
-      public ConfigAttribute () {}
-      public ConfigAttribute ( string comment ) { Comment = comment; }
-      public ConfigAttribute ( string section, string comment ) { Section = section; Comment = comment; }
-      public string Section;
-      public string Comment;
+   public static class ModHelpers { // Log and reflection helpers.  Reinventing the wheels.  But then Log4J JNDI Injection exploded during development of this code.  No whistles and bells thanks.
+      public static void Err ( object msg ) => Error( msg );
+      public static T Err < T > ( object msg, T val ) { Error( msg ); return val; }
+      public static void Error ( object msg, params object[] arg ) => ZySimpleMod.Log?.Error( msg, arg );
+      public static void Warn  ( object msg, params object[] arg ) => ZySimpleMod.Log?.Warn ( msg, arg );
+      public static void Info  ( object msg, params object[] arg ) => ZySimpleMod.Log?.Info ( msg, arg );
+      public static void Fine  ( object msg, params object[] arg ) => ZySimpleMod.Log?.Fine ( msg, arg );
+      public static bool Non0 ( float val ) => val != 0 && ! float.IsNaN( val ) && ! float.IsInfinity( val );
+
+      public static IEnumerable< MethodInfo > Methods ( this Type type ) => type.GetMethods( Public | NonPublic | Instance | Static ).Where( e => ! e.IsAbstract );
+      public static IEnumerable< MethodInfo > Methods ( this Type type, string name ) => type.Methods().Where( e => e.Name == name );
+
+      public static MethodInfo Method ( this Type type, string name ) => type?.GetMethod( name, Public | NonPublic | Instance | Static );
+      public static MethodInfo TryMethod ( this Type type, string name ) { try { return Method( type, name ); } catch ( Exception ) { return null; } }
+      public static FieldInfo  Field ( this Type type, string name ) => type?.GetField( name, Public | NonPublic | Instance | Static );
+      public static PropertyInfo Property ( this Type type, string name ) => type?.GetProperty( name, Public | NonPublic | Instance | Static );
    }
 
-   public class IniConfig {
-      protected ZyLogger Log => ZySimpleMod.Log;
+   public class IniConfig { // Load and save INI to and from class.
       public void Load () => Load ( Path.Combine( ZySimpleMod.AppDataDir, ZySimpleMod.ModName + ".ini" ) );
       public virtual void Load ( string path ) { try {
          if ( ! File.Exists( path ) ) {
             Create( path );
          } else {
-            Log.Info( "Loading {0}", path );
+            ModHelpers.Info( "Loading {0}", path );
             foreach ( var line in File.ReadAllLines( path ) ) {
                var split = line.Split( new char[]{ '=' }, 2 );
                if ( split.Length != 2 || line.StartsWith( ";" ) ) continue;
                var prop = GetType().GetField( split[ 0 ].Trim() );
-               if ( prop == null ) { Log.Warn( "Unknown field: {0}", split[ 0 ] ); continue; }
+               if ( prop == null ) { ModHelpers.Warn( "Unknown field: {0}", split[ 0 ] ); continue; }
                var val = split[1].Trim();
                if ( val.Length > 1 && val.StartsWith( "\"" ) && val.EndsWith( "\"" ) ) val = val.Substring( 1, val.Length - 2 );
                switch ( prop.FieldType.FullName ) {
@@ -118,18 +120,18 @@ namespace ZyMod {
                      else if ( val == "no" || val == "0" || val == "false" ) prop.SetValue( this, false );
                      break;
                   default :
-                     Log.Warn( "Unexpected field type {0} of {1}", prop.FieldType, split[ 0 ] );
+                     ModHelpers.Warn( "Unexpected field type {0} of {1}", prop.FieldType, split[ 0 ] );
                      break;
                }
             }
          }
-         foreach ( var prop in GetType().GetFields() ) Log.Info( "Config {0} = {1}", prop.Name, prop.GetValue( this ) );
-      } catch ( Exception ex ) { Log.Warn( ex ); } }
+         foreach ( var prop in GetType().GetFields() ) ModHelpers.Info( "Config {0} = {1}", prop.Name, prop.GetValue( this ) );
+      } catch ( Exception ex ) { ModHelpers.Warn( ex ); } }
 
       private string lastSection = "";
 
       public virtual void Create ( string ini ) { try {
-         Log.Info( "Creating {0}", ini );
+         ModHelpers.Info( "Creating {0}", ini );
          using ( TextWriter tw = File.CreateText( ini ) ) {
             var attr = GetType().GetCustomAttribute<ConfigAttribute>();
             if ( ! string.IsNullOrWhiteSpace( attr?.Comment ) ) tw.Write( $"{attr.Comment}\r\n" );
@@ -146,9 +148,17 @@ namespace ZyMod {
             }
             tw.Flush();
          }
-         if ( File.Exists( ini ) ) Log.Fine( "{0} bytes written", new FileInfo( ini ).Length );
-         else Log.Warn( "Config file not written." );
-      } catch ( Exception ex ) { Log.Warn( "Cannot create config file: {0}", ex ); } }
+         if ( File.Exists( ini ) ) ModHelpers.Fine( "{0} bytes written", new FileInfo( ini ).Length );
+         else ModHelpers.Warn( "Config file not written." );
+      } catch ( Exception ex ) { ModHelpers.Warn( "Cannot create config file: {0}", ex ); } }
+   }
+
+   [ AttributeUsage( AttributeTargets.Class | AttributeTargets.Field | AttributeTargets.Property ) ]
+   public class ConfigAttribute : Attribute { // Slap this on config attributes for auto-doc.
+      public ConfigAttribute () {}
+      public ConfigAttribute ( string comment ) { Comment = comment; }
+      public ConfigAttribute ( string section, string comment ) { Section = section; Comment = comment; }
+      public string Section, Comment;
    }
 
    public class Patcher { // Patch classes may inherit from this class for manual patching.  Or you can use Harmony.PatchAll, of course.
@@ -191,24 +201,6 @@ namespace ZyMod {
          if ( string.IsNullOrWhiteSpace( name ) ) return null;
          return new HarmonyMethod( GetType().GetMethod( name, Public | NonPublic | Static ) ?? throw new NullReferenceException( name + " not found" ) );
       }
-   }
-
-   public static class ModHelpers {
-      public static void Err ( object msg ) => Error( msg );
-      public static T Err < T > ( object msg, T val ) { Error( msg ); return val; }
-      public static void Error ( object msg, params object[] arg ) => ZySimpleMod.Log?.Error( msg, arg );
-      public static void Warn  ( object msg, params object[] arg ) => ZySimpleMod.Log?.Warn ( msg, arg );
-      public static void Info  ( object msg, params object[] arg ) => ZySimpleMod.Log?.Info ( msg, arg );
-      public static void Fine  ( object msg, params object[] arg ) => ZySimpleMod.Log?.Fine ( msg, arg );
-      public static bool Non0 ( float val ) => val != 0 && ! float.IsNaN( val ) && ! float.IsInfinity( val );
-
-      public static IEnumerable< MethodInfo > Methods ( this Type type ) => type.GetMethods( Public | NonPublic | Instance | Static ).Where( e => ! e.IsAbstract );
-      public static IEnumerable< MethodInfo > Methods ( this Type type, string name ) => type.Methods().Where( e => e.Name == name );
-
-      public static MethodInfo Method ( this Type type, string name ) => type?.GetMethod( name, Public | NonPublic | Instance | Static );
-      public static MethodInfo TryMethod ( this Type type, string name ) { try { return Method( type, name ); } catch ( Exception ) { return null; } }
-      public static FieldInfo  Field ( this Type type, string name ) => type?.GetField( name, Public | NonPublic | Instance | Static );
-      public static PropertyInfo Property ( this Type type, string name ) => type?.GetProperty( name, Public | NonPublic | Instance | Static );
    }
 
    public class ZyLogger { // Thread safe logger.  Format in foreground and write in background thread by default.
