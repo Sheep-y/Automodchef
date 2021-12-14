@@ -8,10 +8,12 @@ using System.Reflection;
 using static System.Reflection.BindingFlags;
 using static HarmonyLib.HarmonyPatchType;
 
+// Sheepy's "Universal" skeleton mod and tools!  No depency other than Harmony / HarmonyX.
+// Everything I need.  Bootstrap, Background Logging, Roundtrip Config, Reflection, Manual Patcher with Unpatch.  Enjoy!
 namespace ZyMod {
-   public abstract class ZySimpleMod {
+   public abstract class RootMod {
       protected static object sync = new object();
-      internal static ZySimpleMod instance;
+      internal static RootMod instance;
       public static ZyLogger Log { get; private set; }
       internal static string ModName { get { lock ( sync ) return instance?.GetModName() ?? "ZyMod"; } }
 
@@ -75,10 +77,10 @@ namespace ZyMod {
    public static class ModHelpers { // Log and reflection helpers.  Reinventing the wheels.  But then Log4J JNDI Injection exploded during development of this code.  No whistles and bells thanks.
       public static void Err ( object msg ) => Error( msg );
       public static T Err < T > ( object msg, T val ) { Error( msg ); return val; }
-      public static void Error ( object msg, params object[] arg ) => ZySimpleMod.Log?.Error( msg, arg );
-      public static void Warn  ( object msg, params object[] arg ) => ZySimpleMod.Log?.Warn ( msg, arg );
-      public static void Info  ( object msg, params object[] arg ) => ZySimpleMod.Log?.Info ( msg, arg );
-      public static void Fine  ( object msg, params object[] arg ) => ZySimpleMod.Log?.Fine ( msg, arg );
+      public static void Error ( object msg, params object[] arg ) => RootMod.Log?.Error( msg, arg );
+      public static void Warn  ( object msg, params object[] arg ) => RootMod.Log?.Warn ( msg, arg );
+      public static void Info  ( object msg, params object[] arg ) => RootMod.Log?.Info ( msg, arg );
+      public static void Fine  ( object msg, params object[] arg ) => RootMod.Log?.Fine ( msg, arg );
       public static bool Non0 ( float val ) => val != 0 && ! float.IsNaN( val ) && ! float.IsInfinity( val );
 
       public static IEnumerable< MethodInfo > Methods ( this Type type ) => type.GetMethods( Public | NonPublic | Instance | Static ).Where( e => ! e.IsAbstract );
@@ -93,22 +95,20 @@ namespace ZyMod {
          if ( valueType == typeof( string ) ) { parsed = val; return false; }
          if ( string.IsNullOrWhiteSpace( val ) || val == "null" ) return ! ( valueType.IsValueType || valueType.IsEnum );
          switch ( valueType.FullName ) {
-            case "System.SByte"  : if ( SByte .TryParse( val, out sbyte  bval ) ) parsed = bval; break;
-            case "System.Int16"  : if ( Int16 .TryParse( val, out short  sval ) ) parsed = sval; break;
-            case "System.Int32"  : if ( Int32 .TryParse( val, out int    ival ) ) parsed = ival; break;
-            case "System.Int64"  : if ( Int64 .TryParse( val, out long   lval ) ) parsed = lval; break;
-            case "System.Byte"   : if ( Byte  .TryParse( val, out byte   Bval ) ) parsed = Bval; break;
-            case "System.UInt16" : if ( UInt16.TryParse( val, out ushort Sval ) ) parsed = Sval; break;
-            case "System.UInt32" : if ( UInt32.TryParse( val, out uint   Ival ) ) parsed = Ival; break;
-            case "System.UInt64" : if ( UInt64.TryParse( val, out ulong  Lval ) ) parsed = Lval; break;
-            case "System.Single" : if ( Single.TryParse( val, out float  fval ) ) parsed = fval; break;
-            case "System.Double" : if ( Double.TryParse( val, out double dval ) ) parsed = dval; break;
-            case "System.Boolean" :
-               switch ( val.ToLowerInvariant() ) {
-                  case "true" : case "yes" : case "1" : parsed = true ; break;
-                  case "false" : case "no" : case "0" : parsed = false; break;
-               }
-               break;
+            case "System.SByte"   : if ( SByte .TryParse( val, out sbyte  bval ) ) parsed = bval; break;
+            case "System.Int16"   : if ( Int16 .TryParse( val, out short  sval ) ) parsed = sval; break;
+            case "System.Int32"   : if ( Int32 .TryParse( val, out int    ival ) ) parsed = ival; break;
+            case "System.Int64"   : if ( Int64 .TryParse( val, out long   lval ) ) parsed = lval; break;
+            case "System.Byte"    : if ( Byte  .TryParse( val, out byte   Bval ) ) parsed = Bval; break;
+            case "System.UInt16"  : if ( UInt16.TryParse( val, out ushort Sval ) ) parsed = Sval; break;
+            case "System.UInt32"  : if ( UInt32.TryParse( val, out uint   Ival ) ) parsed = Ival; break;
+            case "System.UInt64"  : if ( UInt64.TryParse( val, out ulong  Lval ) ) parsed = Lval; break;
+            case "System.Single"  : if ( Single.TryParse( val, out float  fval ) ) parsed = fval; break;
+            case "System.Double"  : if ( Double.TryParse( val, out double dval ) ) parsed = dval; break;
+            case "System.Boolean" : switch ( val.ToLowerInvariant() ) {
+                                    case "true" : case "yes" : case "1" : parsed = true ; break;
+                                    case "false" : case "no" : case "0" : parsed = false; break;
+                                    } break;
             case "System.DateTime" :
                if ( DateTime.TryParse( val, null, System.Globalization.DateTimeStyles.RoundtripKind, out DateTime dt ) ) parsed = dt;
                break;
@@ -118,15 +118,15 @@ namespace ZyMod {
                break;
          }
          return parsed != null;
-      } catch ( ArgumentException ) { if ( logWarnings ) Warn( "Invalid value for {0}: {1}", valueType, val ); return false; } }
+      } catch ( ArgumentException ) { if ( logWarnings ) Warn( "Invalid value for {0}: {1}", valueType.FullName, val ); return false; } }
    }
 
-   public class IniConfig { // Load and save INI to and from a config object.  All public instant fields (not properties) will be loaded and saved.
+   public class IniConfig { // Load and save INI to and from a config object.  Public instant fields (not properties) will be loaded and saved, may be filtered by attributes.
       public virtual void Load ( string path = "" ) => Read( this, path );
       public void Save ( string path ) => Write( this, path );
 
       public static void Read ( object config, string path = "" ) { try {
-         if ( string.IsNullOrEmpty( path ) ) path = Path.Combine( ZySimpleMod.AppDataDir, ZySimpleMod.ModName + ".ini" );
+         if ( string.IsNullOrEmpty( path ) ) path = Path.Combine( RootMod.AppDataDir, RootMod.ModName + ".ini" );
          var type = config.GetType();
          if ( ! File.Exists( path ) ) {
             Write( config, path );
@@ -148,13 +148,13 @@ namespace ZyMod {
       public static void Write ( object config, string path = "" ) { try {
          var lastSection = "";
          var type = config.GetType();
-         if ( string.IsNullOrEmpty( path ) ) path = Path.Combine( ZySimpleMod.AppDataDir, ZySimpleMod.ModName + ".ini" );
+         if ( string.IsNullOrEmpty( path ) ) path = Path.Combine( RootMod.AppDataDir, RootMod.ModName + ".ini" );
          ModHelpers.Info( "Creating {0} from {1}", path, type.FullName );
          using ( TextWriter tw = File.CreateText( path ) ) {
             var attr = type.GetCustomAttribute<ConfigAttribute>();
             if ( ! string.IsNullOrWhiteSpace( attr?.Comment ) ) tw.Write( $"{attr.Comment}\r\n" );
             var fields = type.GetFields();
-            if ( fields.Any( e => e.GetCustomAttribute<ConfigAttribute>() != null ) )
+            if ( fields.Any( e => e.GetCustomAttribute<ConfigAttribute>() != null ) ) // If any field has ConfigAttribute, save only these fields.
                fields = fields.Where( e => e.GetCustomAttribute<ConfigAttribute>() != null ).ToArray();
             foreach ( var f in fields.Where( e => e.GetCustomAttribute<ObsoleteAttribute>() == null ) ) {
                if ( ! f.IsPublic || f.IsStatic ) continue;
@@ -187,8 +187,8 @@ namespace ZyMod {
          public ModPatch ( Harmony patcher ) { harmony = patcher; }
          public MethodBase original; public HarmonyMethod prefix, postfix, transpiler;
          public void Unpatch ( HarmonyPatchType type = All ) {
-            if ( prefix  != null && ( type == All || type == Prefix  ) ) { harmony.Unpatch( original, prefix.method  ); prefix  = null; }
-            if ( postfix != null && ( type == All || type == Postfix ) ) { harmony.Unpatch( original, postfix.method ); postfix = null; }
+            if ( prefix     != null && ( type == All || type == Prefix     ) ) { harmony.Unpatch( original, prefix.method     ); prefix     = null; }
+            if ( postfix    != null && ( type == All || type == Postfix    ) ) { harmony.Unpatch( original, postfix.method    ); postfix    = null; }
             if ( transpiler != null && ( type == All || type == Transpiler ) ) { harmony.Unpatch( original, transpiler.method ); transpiler = null; }
          }
       };
@@ -196,8 +196,8 @@ namespace ZyMod {
       protected ModPatch Patch ( Type type, string method, string prefix = null, string postfix = null, string transpiler = null ) =>
          Patch( type.Method( method ), prefix, postfix, transpiler );
       protected ModPatch Patch ( MethodBase method, string prefix = null, string postfix = null, string transpiler = null ) {
-         if ( harmony == null ) harmony = new Harmony( ZySimpleMod.ModName );
-         ZySimpleMod.Log.Fine( "Patching {0} {1} | Pre: {2} | Post: {3} | Trans: {4}", method.DeclaringType, method, prefix, postfix, transpiler );
+         if ( harmony == null ) harmony = new Harmony( RootMod.ModName );
+         RootMod.Log.Fine( "Patching {0} {1} | Pre: {2} | Post: {3} | Trans: {4}", method.DeclaringType, method, prefix, postfix, transpiler );
          var patch = new ModPatch( harmony ) { original = method, prefix = ToHarmony( prefix ), postfix = ToHarmony( postfix ), transpiler = ToHarmony( transpiler ) };
          harmony.Patch( method, patch.prefix, patch.postfix, patch.transpiler );
          return patch;
@@ -213,7 +213,7 @@ namespace ZyMod {
       } }
 
       protected void UnpatchAll () { harmony?.UnpatchSelf(); }
-      protected MethodInfo UnpatchAll ( MethodInfo orig ) { if ( orig != null ) harmony?.Unpatch( orig, HarmonyPatchType.All, harmony.Id ); return null; }
+      protected MethodInfo UnpatchAll ( MethodInfo orig ) { if ( orig != null ) harmony?.Unpatch( orig, All, harmony.Id ); return null; }
 
       protected HarmonyMethod ToHarmony ( string name ) {
          if ( string.IsNullOrWhiteSpace( name ) ) return null;
@@ -234,8 +234,10 @@ namespace ZyMod {
       public string TimeFormat { get { lock ( buffer ) return _TimeFormat; } set { lock ( buffer ) _TimeFormat = value; } }
       public uint FlushInterval { get; private set; } = 2; // Seconds.  0 to write and flush every line, a lot slower.
       public string LogPath { get; private set; }
+
       private readonly List< string > buffer = new List<string>();
       private System.Timers.Timer flushTimer;
+
       public ZyLogger ( string path, uint interval = 2 ) { new FileInfo( path ); try {
          Initialize( path );
          if ( ( FlushInterval = Math.Min( interval, 60 ) ) > 0 ) {
@@ -244,10 +246,11 @@ namespace ZyMod {
             AppDomain.CurrentDomain.ProcessExit += Terminate;
          }
          if ( _LogLevel == TraceLevel.Off ) return;
-         buffer.Insert( 0, $"{DateTime.Now:u} {ZySimpleMod.ModName} initiated, log level {_LogLevel}, " + ( FlushInterval > 0 ? $"refresh every {FlushInterval}s." : "no buffer." ) );
+         buffer.Insert( 0, $"{DateTime.Now:u} {RootMod.ModName} initiated, log level {_LogLevel}, " + ( FlushInterval > 0 ? $"refresh every {FlushInterval}s." : "no buffer." ) );
          Flush();
          flushTimer?.Start();
       } catch ( Exception ) { } }
+
       private void Initialize ( string path ) { try {
          try { File.Delete( LogPath = path ); } catch ( IOException ) { }
          var conf = Path.Combine( Path.GetDirectoryName( path ), Path.GetFileNameWithoutExtension( path ) + "-log.conf" );
@@ -264,17 +267,22 @@ namespace ZyMod {
          }
          if ( lines.MoveNext() && uint.TryParse( lines.Current, out uint i ) ) FlushInterval = i;
       } catch ( Exception ) { } }
+
       public void Error ( object msg, params object[] arg ) => Write( TraceLevel.Error, msg, arg );
       public void Warn  ( object msg, params object[] arg ) => Write( TraceLevel.Warning, msg, arg );
       public void Info  ( object msg, params object[] arg ) => Write( TraceLevel.Info, msg, arg );
       public void Fine  ( object msg, params object[] arg ) => Write( TraceLevel.Verbose, msg, arg );
+
       public void Flush () { try {
          string[] buf;
          lock ( buffer ) { if ( buffer.Count == 0 || _LogLevel == TraceLevel.Off ) return; buf = buffer.ToArray(); buffer.Clear(); }
          using ( TextWriter f = File.AppendText( LogPath ) ) foreach ( var line in buf ) f.WriteLine( line );
       } catch ( Exception ) { } }
-      private void Terminate ( object _, EventArgs __ ) { flushTimer?.Stop(); flushTimer = null; Flush(); AppDomain.CurrentDomain.ProcessExit -= Terminate; }
-      private HashSet< string > knownErrors = new HashSet<string>(); // Duplicate exception are ignored.  Modding is a risky business.
+
+      private void Terminate ( object _, EventArgs __ ) { Flush(); LogLevel = TraceLevel.Off; AppDomain.CurrentDomain.ProcessExit -= Terminate; }
+
+      private HashSet< string > knownErrors = new HashSet<string>(); // Duplicate exception are ignored.  Modding is risky.
+
       public void Write ( TraceLevel level, object msg, params object[] arg ) {
          string line = "INFO ", time;
          lock ( buffer ) { if ( level > _LogLevel ) return; time = TimeFormat; }

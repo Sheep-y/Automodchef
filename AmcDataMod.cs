@@ -219,7 +219,7 @@ namespace Automodchef {
       private static readonly StringBuilder line = new StringBuilder();
 
       private static void DumpFoodCsv () { if ( foodDumped ) return; try {
-         string file = Path.Combine( ZySimpleMod.AppDataDir, "foods.csv" );
+         string file = Path.Combine( RootMod.AppDataDir, "foods.csv" );
          Info( "Exporting food list to {0}", file, foodDumped = true );
          using ( TextWriter f = File.CreateText( file ) ) {
             Csv( f, "Id", "Name", "Translated", "Process", "Seconds", "Recipe", "Liquids",
@@ -243,7 +243,7 @@ namespace Automodchef {
       } catch ( Ex x ) { Err( x ); } }
 
       private static void DumpHardwareCsv () { if ( hardwareDumped ) return; try {
-         string file = Path.Combine( ZySimpleMod.AppDataDir, "hardwares.csv" );
+         string file = Path.Combine( RootMod.AppDataDir, "hardwares.csv" );
          Info( "Exporting hardware list to {0}", file, hardwareDumped = true );
          using ( TextWriter f = File.CreateText( file ) ) {
             Csv( f, "Id", "Name", "Description", "Category", "Price", "Power", "Speed", "Time", "Variant", "Code Class" );
@@ -262,7 +262,7 @@ namespace Automodchef {
 
       private static void DumpLanguageCsv ( List<LanguageSource> ___Sources ) { if ( textDumped || ___Sources == null ) return; try {
          for ( var i = 0 ; i < ___Sources.Count ; i++ ) {
-            var file = Path.Combine( ZySimpleMod.AppDataDir, $"text-{i}.csv" );
+            var file = Path.Combine( RootMod.AppDataDir, $"text-{i}.csv" );
             Info( "Exporting game text to {0}", file, textDumped = true );
             using ( var fw = File.CreateText( file ) ) fw.Write( ___Sources[ i ].Export_CSV( null ) );
          }

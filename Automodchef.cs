@@ -4,7 +4,7 @@ using ZyMod;
 
 namespace Automodchef {
 
-   public class Automodchef : ZySimpleMod {
+   public class Automodchef : RootMod {
 
       public static ModConfig Config { get; } = new ModConfig();
 
