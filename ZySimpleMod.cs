@@ -86,6 +86,38 @@ namespace ZyMod {
       public static MethodInfo TryMethod ( this Type type, string name ) { try { return Method( type, name ); } catch ( Exception ) { return null; } }
       public static FieldInfo  Field ( this Type type, string name ) => type?.GetField( name, Public | NonPublic | Instance | Static );
       public static PropertyInfo Property ( this Type type, string name ) => type?.GetProperty( name, Public | NonPublic | Instance | Static );
+
+      public static bool TryParse ( Type valueType, string val, out object parsed, bool logWarnings = true ) { parsed = null; try {
+         if ( valueType == typeof( string ) ) { parsed = val; return false; }
+         if ( string.IsNullOrWhiteSpace( val ) || val == "null" ) return ! ( valueType.IsValueType || valueType.IsEnum );
+         switch ( valueType.FullName ) {
+            case "System.SByte"  : if ( SByte .TryParse( val, out sbyte  bval ) ) parsed = bval; break;
+            case "System.Int16"  : if ( Int16 .TryParse( val, out short  sval ) ) parsed = sval; break;
+            case "System.Int32"  : if ( Int32 .TryParse( val, out int    ival ) ) parsed = ival; break;
+            case "System.Int64"  : if ( Int64 .TryParse( val, out long   lval ) ) parsed = lval; break;
+            case "System.Byte"   : if ( Byte  .TryParse( val, out byte   Bval ) ) parsed = Bval; break;
+            case "System.UInt16" : if ( UInt16.TryParse( val, out ushort Sval ) ) parsed = Sval; break;
+            case "System.UInt32" : if ( UInt32.TryParse( val, out uint   Ival ) ) parsed = Ival; break;
+            case "System.UInt64" : if ( UInt64.TryParse( val, out ulong  Lval ) ) parsed = Lval; break;
+            case "System.Single" : if ( Single.TryParse( val, out float  fval ) ) parsed = fval; break;
+            case "System.Double" : if ( Double.TryParse( val, out double dval ) ) parsed = dval; break;
+            case "System.Boolean" :
+               switch ( val.ToLowerInvariant() ) {
+                  case "true" : case "yes" : case "1" : parsed = true ; break;
+                  case "false" : case "no" : case "0" : parsed = false; break;
+               }
+               break;
+            case "System.DateTime" :
+               if ( DateTime.TryParse( val, null, System.Globalization.DateTimeStyles.RoundtripKind, out DateTime dt ) ) parsed = dt;
+               break;
+            default :
+               if ( valueType.IsEnum )
+                  parsed = Enum.Parse( valueType, val );
+               if ( logWarnings ) Warn( new NotImplementedException( "Unsupported field type " + valueType.FullName ) );
+               break;
+         }
+         return parsed != null;
+      } catch ( ArgumentException ) { if ( logWarnings ) Warn( "Invalid value for {0}: {1}", valueType, val ); return false; } }
    }
 
    public class IniConfig { // Load and save INI to and from a config object.  All public instant fields (not properties) will be loaded and saved.
@@ -94,7 +126,7 @@ namespace ZyMod {
 
       public static void Read ( object config, string path = "" ) { try {
          if ( string.IsNullOrEmpty( path ) ) path = Path.Combine( ZySimpleMod.AppDataDir, ZySimpleMod.ModName + ".ini" );
-         var type = path.GetType();
+         var type = config.GetType();
          if ( ! File.Exists( path ) ) {
             Write( config, path );
          } else {
@@ -102,34 +134,11 @@ namespace ZyMod {
             foreach ( var line in File.ReadAllLines( path ) ) {
                var split = line.Split( new char[]{ '=' }, 2 );
                if ( split.Length != 2 || line.StartsWith( ";" ) ) continue;
-               var prop = type.GetField( split[ 0 ].Trim() );
-               if ( prop == null ) { ModHelpers.Warn( "Unknown field: {0}", split[ 0 ] ); continue; } // Legacy fields are expected to be kept in config class as [Obsolete].
+               var f = type.GetField( split[ 0 ].Trim() );
+               if ( f == null ) { ModHelpers.Warn( "Unknown field: {0}", split[ 0 ] ); continue; } // Legacy fields are expected to be kept in config class as [Obsolete].
                var val = split[1].Trim();
                if ( val.Length > 1 && val.StartsWith( "\"" ) && val.EndsWith( "\"" ) ) val = val.Substring( 1, val.Length - 2 );
-               if ( string.IsNullOrWhiteSpace( val ) && prop.FieldType != typeof( string ) ) continue;
-               switch ( prop.FieldType.FullName ) {
-                  case "System.SByte"  : if ( SByte .TryParse( val, out sbyte  bval ) ) prop.SetValue( config, bval ); break;
-                  case "System.Int16"  : if ( Int16 .TryParse( val, out short  sval ) ) prop.SetValue( config, sval ); break;
-                  case "System.Int32"  : if ( Int32 .TryParse( val, out int    ival ) ) prop.SetValue( config, ival ); break;
-                  case "System.Int64"  : if ( Int64 .TryParse( val, out long   lval ) ) prop.SetValue( config, lval ); break;
-                  case "System.Byte"   : if ( Byte  .TryParse( val, out byte   Bval ) ) prop.SetValue( config, Bval ); break;
-                  case "System.UInt16" : if ( UInt16.TryParse( val, out ushort Sval ) ) prop.SetValue( config, Sval ); break;
-                  case "System.UInt32" : if ( UInt32.TryParse( val, out uint   Ival ) ) prop.SetValue( config, Ival ); break;
-                  case "System.UInt64" : if ( UInt64.TryParse( val, out ulong  Lval ) ) prop.SetValue( config, Lval ); break;
-                  case "System.Single" : if ( Single.TryParse( val, out float  fval ) ) prop.SetValue( config, fval ); break;
-                  case "System.Double" : if ( Double.TryParse( val, out double dval ) ) prop.SetValue( config, dval ); break;
-                  case "System.String" : prop.SetValue( config, val ); break;
-                  case "System.Boolean" :
-                     val = val.ToLowerInvariant();
-                     if ( val == "yes" || val == "1" || val == "true" ) prop.SetValue( config, true );
-                     else if ( val == "no" || val == "0" || val == "false" ) prop.SetValue( config, false );
-                     break;
-                  case "System.DateTime" :
-                     if ( val == "null ") prop.SetValue( config, null );
-                     else if ( DateTime.TryParse( val, null, System.Globalization.DateTimeStyles.RoundtripKind, out DateTime dt ) ) prop.SetValue( config, dt );
-                     break;
-                  default : ModHelpers.Warn( "Unexpected field type {0} of {1}", prop.FieldType, split[ 0 ] ); break;
-               }
+               if ( ModHelpers.TryParse( f.FieldType, val, out object parsed ) ) f.SetValue( config, parsed );
             }
          }
          foreach ( var prop in type.GetFields() ) ModHelpers.Info( "Config {0} = {1}", prop.Name, prop.GetValue( config ) );
@@ -211,9 +220,15 @@ namespace ZyMod {
       }
    }
 
-   public class ZyLogger { // Thread safe logger.  Format in foreground and write in background thread by default.
+   // Thread safe logger.  Buffer and write in background thread by default.
+   // Common usage: Log an Exception (will ignore duplicates), Log a formatted string with params, or log multiple objects (in one call and on one line).
+   public class ZyLogger {
       private TraceLevel _LogLevel = TraceLevel.Info;
-      public TraceLevel LogLevel { get { lock ( buffer ) return _LogLevel; } set { lock ( buffer ) _LogLevel = value; } }
+      public TraceLevel LogLevel {
+         get { lock ( buffer ) return _LogLevel; }
+         set { lock ( buffer ) { _LogLevel = value;
+                  if ( value == TraceLevel.Off ) { flushTimer?.Stop(); buffer.Clear(); }
+                  else flushTimer?.Start(); }  } }
       private string _TimeFormat = "HH:mm:ss.fff ";
       public string TimeFormat { get { lock ( buffer ) return _TimeFormat; } set { lock ( buffer ) _TimeFormat = value; } }
       public uint FlushInterval { get; private set; } = 2; // Seconds.  0 to write and flush every line, a lot slower.
@@ -222,13 +237,13 @@ namespace ZyMod {
       private System.Timers.Timer flushTimer;
       public ZyLogger ( string path, uint interval = 2 ) { new FileInfo( path ); try {
          Initialize( path );
-         if ( _LogLevel == TraceLevel.Off ) return;
          if ( ( FlushInterval = Math.Min( interval, 60 ) ) > 0 ) {
             flushTimer = new System.Timers.Timer( FlushInterval * 1000 ){ AutoReset = true };
             flushTimer.Elapsed += ( _, __ ) => Flush();
             AppDomain.CurrentDomain.ProcessExit += Terminate;
          }
-         buffer.Insert( 0, $"{DateTime.Now:u} {ZySimpleMod.ModName} initiated, log level {_LogLevel}, " + ( FlushInterval > 0 ? $"flush every {FlushInterval}s." : "flush on write." ) );
+         if ( _LogLevel == TraceLevel.Off ) return;
+         buffer.Insert( 0, $"{DateTime.Now:u} {ZySimpleMod.ModName} initiated, log level {_LogLevel}, " + ( FlushInterval > 0 ? $"refresh every {FlushInterval}s." : "no buffer." ) );
          Flush();
          flushTimer?.Start();
       } catch ( Exception ) { } }
@@ -254,7 +269,7 @@ namespace ZyMod {
       public void Fine  ( object msg, params object[] arg ) => Write( TraceLevel.Verbose, msg, arg );
       public void Flush () { try {
          string[] buf;
-         lock ( buffer ) { if ( buffer.Count == 0 ) return; buf = buffer.ToArray(); buffer.Clear(); if ( _LogLevel == TraceLevel.Off ) return; }
+         lock ( buffer ) { if ( buffer.Count == 0 || _LogLevel == TraceLevel.Off ) return; buf = buffer.ToArray(); buffer.Clear(); }
          using ( TextWriter f = File.AppendText( LogPath ) ) foreach ( var line in buf ) f.WriteLine( line );
       } catch ( Exception ) { } }
       private void Terminate ( object _, EventArgs __ ) { flushTimer?.Stop(); flushTimer = null; Flush(); AppDomain.CurrentDomain.ProcessExit -= Terminate; }
