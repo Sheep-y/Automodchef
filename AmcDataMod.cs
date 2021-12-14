@@ -222,14 +222,14 @@ namespace Automodchef {
          string file = Path.Combine( RootMod.AppDataDir, "foods.csv" );
          Info( "Exporting food list to {0}", file, foodDumped = true );
          using ( TextWriter f = File.CreateText( file ) ) {
-            Csv( f, "Id", "Name", "Translated", "Process", "Seconds", "Recipe", "Liquids",
+            Csv( f, "Id", "Name", "Process", "Seconds", "Recipe", "Liquids",
                    "Processed", "Grilled", "Fried", "Steamed", "Baked", "Wet", //"Bacterias",
                    "Spoil (sec)", "Ingredients Quota", "Power Quota" );
             foreach ( var mat in Ingredient.GetAll().Union( Dish.GetAll() ) ) {
                Fine( $"#{mat.internalName} = {mat.friendlyName}" );
                float spoil = 0, iQ = 0, pQ = 0;
                if ( mat is Dish dish ) { spoil = dish.timeToBeSpoiled;  iQ = dish.expectedIngredients;  pQ = dish.expectedPower; }
-               Csv( f, mat.internalName, mat.friendlyName, mat.GetFriendlyNameTranslated(), mat.technique.ToString(), mat.timeToBeAssembled + "",
+               Csv( f, mat.internalName, mat.friendlyName, mat.technique.ToString(), mat.timeToBeAssembled + "",
                   mat.recipe == null ? "" : string.Join( " + ", mat.recipe ),
                   mat.recipeLiquidIngredients == null ? "" : string.Join( " + ", mat.recipeLiquidIngredients ),
                   mat.resultProcess, mat.resultGrill, mat.resultFry, mat.resultSteam, mat.resultBake, mat.resultWet,
