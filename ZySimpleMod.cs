@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using static System.Reflection.BindingFlags;
+using static HarmonyLib.HarmonyPatchType;
 
 namespace ZyMod {
    public abstract class ZySimpleMod {
@@ -13,7 +14,6 @@ namespace ZyMod {
       internal static ZySimpleMod instance;
       public static ZyLogger Log { get; private set; }
       internal static string ModName { get { lock ( sync ) return instance?.GetModName() ?? "ZyMod"; } }
-      internal static Type PatchClass { get { lock ( sync ) return instance?.GetPatchClass() ?? typeof( ZySimpleMod ); } }
 
       private static bool ignoreAssembly ( Assembly asm ) => asm.IsDynamic || asm.FullName.StartsWith( "DMDASM." ) || asm.FullName.StartsWith( "HarmonyDTFAssembly" );
       private static bool isTargetAssembly ( Assembly asm ) => asm.FullName.StartsWith( "Assembly-CSharp," );
@@ -70,10 +70,10 @@ namespace ZyMod {
          return _AppDataDir;
       } }
 
-      protected abstract string GetAppDataDir ();
-      protected abstract void OnGameAssemblyLoaded ( Assembly game );
-      protected abstract Type GetPatchClass ();
+      // Override these to change mod name, log dir, what to do on Assembly-CSharp, and where patches are located by Modder.
       protected virtual string GetModName () => GetType().Name;
+      protected abstract string GetAppDataDir (); // Called once on start.  Result will be cached.
+      protected abstract void OnGameAssemblyLoaded ( Assembly game ); // 
    }
 
    [ AttributeUsage( AttributeTargets.Class | AttributeTargets.Field | AttributeTargets.Property ) ]
@@ -151,31 +151,45 @@ namespace ZyMod {
       } catch ( Exception ex ) { Log.Warn( "Cannot create config file: {0}", ex ); } }
    }
 
-   public static class Modder { // Not thread safe.  Patches are assumed to happen on the same thread.
-      private static Harmony harmony;
+   public class Patcher { // Patch classes may inherit from this class for manual patching.  Or you can use Harmony.PatchAll, of course.
+      private Harmony harmony;
 
-      internal static MethodInfo Patch ( Type type, string method, string prefix = null, string postfix = null, string transpiler = null ) =>
+      public class ModPatch {
+         private Harmony harmony;
+         public ModPatch ( Harmony patcher ) { harmony = patcher; }
+         public MethodBase original; public HarmonyMethod prefix, postfix, transpiler;
+         public void Unpatch ( HarmonyPatchType type = All ) {
+            if ( prefix  != null && ( type == All || type == Prefix  ) ) { harmony.Unpatch( original, prefix.method  ); prefix  = null; }
+            if ( postfix != null && ( type == All || type == Postfix ) ) { harmony.Unpatch( original, postfix.method ); postfix = null; }
+            if ( transpiler != null && ( type == All || type == Transpiler ) ) { harmony.Unpatch( original, transpiler.method ); transpiler = null; }
+         }
+      };
+
+      protected ModPatch Patch ( Type type, string method, string prefix = null, string postfix = null, string transpiler = null ) =>
          Patch( type.Method( method ), prefix, postfix, transpiler );
-      internal static MethodInfo Patch ( MethodBase method, string prefix = null, string postfix = null, string transpiler = null ) {
+      protected ModPatch Patch ( MethodBase method, string prefix = null, string postfix = null, string transpiler = null ) {
          if ( harmony == null ) harmony = new Harmony( ZySimpleMod.ModName );
          ZySimpleMod.Log.Fine( "Patching {0} {1} | Pre: {2} | Post: {3} | Trans: {4}", method.DeclaringType, method, prefix, postfix, transpiler );
-         return harmony.Patch( method, ToHarmony( prefix ), ToHarmony( postfix ), ToHarmony( transpiler ) );
+         var patch = new ModPatch( harmony ) { original = method, prefix = ToHarmony( prefix ), postfix = ToHarmony( postfix ), transpiler = ToHarmony( transpiler ) };
+         harmony.Patch( method, patch.prefix, patch.postfix, patch.transpiler );
+         return patch;
       }
 
-      internal static MethodInfo TryPatch ( Type type, string method, string prefix = null, string postfix = null, string transpiler = null ) =>
+      protected ModPatch TryPatch ( Type type, string method, string prefix = null, string postfix = null, string transpiler = null ) =>
          TryPatch( type.Method( method ), prefix, postfix, transpiler );
-      internal static MethodInfo TryPatch ( MethodBase method, string prefix = null, string postfix = null, string transpiler = null ) { try {
+      protected ModPatch TryPatch ( MethodBase method, string prefix = null, string postfix = null, string transpiler = null ) { try {
          return Patch( method, prefix, postfix, transpiler );
       } catch ( Exception ex ) {
-         ZySimpleMod.Log.Warn( "Could not patch {0} {1} | Pre: {2} | Post: {3} | Trans: {4}\n{5}", method?.DeclaringType, method?.Name, prefix, postfix, transpiler, ex );
+         ModHelpers.Warn( "Could not patch {0} {1} | Pre: {2} | Post: {3} | Trans: {4}\n{5}", method?.DeclaringType, method?.Name, prefix, postfix, transpiler, ex );
          return null;
       } }
 
-      internal static MethodInfo Unpatch ( MethodInfo orig ) { if ( orig != null ) harmony?.Unpatch( orig, HarmonyPatchType.All, harmony.Id ); return null; }
+      protected void UnpatchAll () { harmony?.UnpatchSelf(); }
+      protected MethodInfo UnpatchAll ( MethodInfo orig ) { if ( orig != null ) harmony?.Unpatch( orig, HarmonyPatchType.All, harmony.Id ); return null; }
 
-      private static HarmonyMethod ToHarmony ( string name ) {
+      protected HarmonyMethod ToHarmony ( string name ) {
          if ( string.IsNullOrWhiteSpace( name ) ) return null;
-         return new HarmonyMethod( ZySimpleMod.PatchClass?.GetMethod( name, Public | NonPublic | Static ) ?? throw new NullReferenceException( name + " not found" ) );
+         return new HarmonyMethod( GetType().GetMethod( name, Public | NonPublic | Static ) ?? throw new NullReferenceException( name + " not found" ) );
       }
    }
 

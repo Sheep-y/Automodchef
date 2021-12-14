@@ -25,8 +25,7 @@ namespace Automodchef {
          if ( string.IsNullOrEmpty( path ) ) return null;
          return Path.Combine( Directory.GetParent( path ).FullName, "LocalLow", "HermesInteractive", "Automachef" );
       }
-      protected override Type GetPatchClass () => typeof( Patches );
-      protected override void OnGameAssemblyLoaded ( Assembly game ) => Patches.Apply( game );
+      protected override void OnGameAssemblyLoaded ( Assembly game ) => new Patches().Apply( game );
    }
 
    public class Config : IniConfig {
@@ -109,11 +108,13 @@ namespace Automodchef {
       }
    }
 
-   internal static class Patches {
+   internal class Patches : Patcher {
 
-      internal static Config config = new Config();
+      private static Config config = new Config();
+      private static Patches instance;
 
-      internal static void Apply ( Assembly game ) {
+      internal void Apply ( Assembly game ) {
+         instance = this;
          config.Load();
          ApplySystemPatches();
          ApplyUserInterfacePatches();
@@ -121,111 +122,111 @@ namespace Automodchef {
          ApplyMechanicPatches();
       }
 
-      private static void ApplySystemPatches () { try {
+      private void ApplySystemPatches () { try {
          if ( config.skip_intro )
-            Modder.TryPatch( typeof( FaderUIController ), "Awake", nameof( SkipVideoSplashes ) );
+            TryPatch( typeof( FaderUIController ), "Awake", nameof( SkipVideoSplashes ) );
          if ( config.skip_spacebar )
-            Modder.TryPatch( typeof( SplashScreen ), "Update", postfix: nameof( SkipSpacebarSplash ) );
+            TryPatch( typeof( SplashScreen ), "Update", postfix: nameof( SkipSpacebarSplash ) );
          if ( config.disable_analytics ) {
             foreach ( var m in typeof( Analytics ).Methods().Where( e => e.Name == "CustomEvent" || e.Name == "Transaction" || e.Name.StartsWith( "Send" ) ) )
-               Modder.TryPatch( m, nameof( DisableAnalytics ) );
-            Modder.TryPatch( typeof( AutomachefAnalytics ), "Track", nameof( DisableAnalytics ) );
+               TryPatch( m, nameof( DisableAnalytics ) );
+            TryPatch( typeof( AutomachefAnalytics ), "Track", nameof( DisableAnalytics ) );
          }
          if ( config.fix_food_hint_when_paused )
-            Modder.TryPatch( typeof( IngredientTooltip ), "Update", postfix: nameof( FixIngredientHintOnPause ) );
+            TryPatch( typeof( IngredientTooltip ), "Update", postfix: nameof( FixIngredientHintOnPause ) );
          if ( config.dish_ingredient_quota_buffer >= 0 )
-            Modder.TryPatch( typeof( SplashScreen ), "Awake", postfix: nameof( FixDishIngredientQuota ) );
+            TryPatch( typeof( SplashScreen ), "Awake", postfix: nameof( FixDishIngredientQuota ) );
          if ( Non0( config.side__view_angle ) || Non0( config.close_view_angle ) || Non0( config.far_view_angle ) || Non0( config.far_view_height ) )
-            Modder.TryPatch( typeof( CameraMovement ), "Awake", postfix: nameof( OverrideCameraSettings ) );
-         Modder.TryPatch( typeof( ContractsLogic ), "AddNewIncomingContract", nameof( OverrideContracts ), nameof( RestoreContracts ) );
+            TryPatch( typeof( CameraMovement ), "Awake", postfix: nameof( OverrideCameraSettings ) );
+         TryPatch( typeof( ContractsLogic ), "AddNewIncomingContract", nameof( OverrideContracts ), nameof( RestoreContracts ) );
       } catch ( Ex x ) { Err( x ); } }
 
-      private static void ApplyUserInterfacePatches () { try {
+      private void ApplyUserInterfacePatches () { try {
          if ( config.suppress_confirmation ) {
             var orig = typeof( DialogManager ).Methods( "ShowAlert" ).FirstOrDefault( e => e.GetParameters().Length == 7 );
-            if ( orig != null ) Modder.TryPatch( orig, nameof( SuppressConfirmation ) );
+            if ( orig != null ) TryPatch( orig, nameof( SuppressConfirmation ) );
          }
          if ( config.ask_loadgame_on_level_start ) {
-            Modder.TryPatch( typeof( LevelManager ), "Start", postfix: nameof( SetNewLevelTrigger ) );
-            Modder.TryPatch( typeof( SaveLoad ), "Close", nameof( RestorePreLevelScreen ) );
-            Modder.TryPatch( typeof( SaveLoadManager ), "DeleteSave", nameof( ClearPreLevelFlag ) );
-            Modder.TryPatch( typeof( SaveLoadManager ), "LoadAndBuildKitchen", nameof( ClearPreLevelFlag ) );
+            TryPatch( typeof( LevelManager ), "Start", postfix: nameof( SetNewLevelTrigger ) );
+            TryPatch( typeof( SaveLoad ), "Close", nameof( RestorePreLevelScreen ) );
+            TryPatch( typeof( SaveLoadManager ), "DeleteSave", nameof( ClearPreLevelFlag ) );
+            TryPatch( typeof( SaveLoadManager ), "LoadAndBuildKitchen", nameof( ClearPreLevelFlag ) );
          }
          if ( config.stay_open_after_delete_save ) {
-            Modder.TryPatch( typeof( SaveLoadManager ), "DeleteSave", nameof( DisableNextSaveLoadClose ) );
-            Modder.TryPatch( typeof( SaveLoad ), "Close", nameof( CheckSaveLoadCloseDisabled ) );
+            TryPatch( typeof( SaveLoadManager ), "DeleteSave", nameof( DisableNextSaveLoadClose ) );
+            TryPatch( typeof( SaveLoad ), "Close", nameof( CheckSaveLoadCloseDisabled ) );
          }
          if ( config.hide_tutorial_efficiency ) {
-            Modder.TryPatch( typeof( LevelSelection ), "InitializeLevelList", postfix: nameof( HideTutorialMaxEfficiency ) );
-            Modder.TryPatch( typeof( LevelStatus ), "RenderStats", postfix: nameof( HideTutorialEfficiencyStat ) );
+            TryPatch( typeof( LevelSelection ), "InitializeLevelList", postfix: nameof( HideTutorialMaxEfficiency ) );
+            TryPatch( typeof( LevelStatus ), "RenderStats", postfix: nameof( HideTutorialEfficiencyStat ) );
          }
          if ( config.dropdown_toogle_threshold > 1 ) {
             dropdownIcon = new ConditionalWeakTable< MaterialDropdown, DropdownIcon >();
-            Modder.TryPatch( typeof( PartProperties ), "PopulateDropdownForProperty", nameof( TrackDropdownIcon ) );
-            Modder.TryPatch( typeof( MaterialDropdown ), "ShowDropdown", nameof( ToggleDropdown ) );
+            TryPatch( typeof( PartProperties ), "PopulateDropdownForProperty", nameof( TrackDropdownIcon ) );
+            TryPatch( typeof( MaterialDropdown ), "ShowDropdown", nameof( ToggleDropdown ) );
          }
       } catch ( Ex x ) { Err( x ); } }
 
-      private static void ApplyLogPatches () { try {
+      private void ApplyLogPatches () { try {
          if ( config.tooltip_power_usage || config.power_log_rows > 0 ) {
-            Modder.TryPatch( typeof( KitchenPart ).Methods( "ConsumePower" ).FirstOrDefault( e => e.GetParameters().Length > 0 ), nameof( LogPowerUsage ) );
-            Modder.TryPatch( typeof( PowerMeter ), "Reset", nameof( ClearPowerUsage ) );
+            TryPatch( typeof( KitchenPart ).Methods( "ConsumePower" ).FirstOrDefault( e => e.GetParameters().Length > 0 ), nameof( LogPowerUsage ) );
+            TryPatch( typeof( PowerMeter ), "Reset", nameof( ClearPowerUsage ) );
             if ( config.tooltip_power_usage )
-               Modder.TryPatch( typeof( KitchenPart ), "GetTooltipText", postfix: nameof( AppendPowerToTooltip ) );
+               TryPatch( typeof( KitchenPart ), "GetTooltipText", postfix: nameof( AppendPowerToTooltip ) );
          }
          if ( config.tooltip_freshness ) {
-            Modder.TryPatch( typeof( PackagingMachine ), "GetTooltipTextDetails", nameof( SuppressFreshnessTooltip ), nameof( RestoreFreshnessTooltip ) );
-            Modder.TryPatch( typeof( Ingredient ), "GetTooltipText", postfix: nameof( AppendFreshnessTooltip ) );
+            TryPatch( typeof( PackagingMachine ), "GetTooltipTextDetails", nameof( SuppressFreshnessTooltip ), nameof( RestoreFreshnessTooltip ) );
+            TryPatch( typeof( Ingredient ), "GetTooltipText", postfix: nameof( AppendFreshnessTooltip ) );
          }
          if ( config.efficiency_log || config.power_log_rows > 0 ) {
-            Modder.TryPatch( typeof( LevelStatus ), "RenderEvents", postfix: nameof( ForceShowEfficiencyLog ) );
+            TryPatch( typeof( LevelStatus ), "RenderEvents", postfix: nameof( ForceShowEfficiencyLog ) );
             if ( config.efficiency_log ) {
                extraLog = new List<string>();
                if ( config.efficiency_log_breakdown )
-                  if ( Modder.TryPatch( typeof( EfficiencyMeter ), "Reset", nameof( ClearEfficiencyLog ) ) != null ) {
+                  if ( TryPatch( typeof( EfficiencyMeter ), "Reset", nameof( ClearEfficiencyLog ) ) != null ) {
                      orderedDish = new Dictionary<object, int>();
                      cookedDish = new Dictionary<object, int>();
-                     Modder.TryPatch( typeof( EfficiencyMeter ), "AddOrder", nameof( TrackOrdersEfficiency ) );
-                     Modder.TryPatch( typeof( EfficiencyMeter ), "AddDeliveredDish", nameof( TrackDeliveryEfficiency ) );
+                     TryPatch( typeof( EfficiencyMeter ), "AddOrder", nameof( TrackOrdersEfficiency ) );
+                     TryPatch( typeof( EfficiencyMeter ), "AddDeliveredDish", nameof( TrackDeliveryEfficiency ) );
                   }
-               Modder.TryPatch( typeof( EfficiencyMeter ), "GetEfficiency", postfix: nameof( CalculateEfficiency ) );
-               Modder.TryPatch( typeof( KitchenEventsLog ), "ToString", postfix: nameof( AppendEfficiencyLog ) );
+               TryPatch( typeof( EfficiencyMeter ), "GetEfficiency", postfix: nameof( CalculateEfficiency ) );
+               TryPatch( typeof( KitchenEventsLog ), "ToString", postfix: nameof( AppendEfficiencyLog ) );
             }
             if ( config.power_log_rows > 0 )
-               Modder.TryPatch( typeof( KitchenEventsLog ), "ToString", postfix: nameof( AppendPowerLog ) );
+               TryPatch( typeof( KitchenEventsLog ), "ToString", postfix: nameof( AppendPowerLog ) );
          }
       } catch ( Ex x ) { Err( x ); } }
 
-      private static void ApplyMechanicPatches () { try {
+      private void ApplyMechanicPatches () { try {
          if ( config.instant_speed_change )
-            Modder.TryPatch( typeof( Initializer ), "Update", postfix: nameof( InstantGameSpeedUpdate ) );
+            TryPatch( typeof( Initializer ), "Update", postfix: nameof( InstantGameSpeedUpdate ) );
          if ( config.speed2 != 3 || config.speed3 != 5 )
-            Modder.TryPatch( typeof( Initializer ), "Start", nameof( AdjustGameSpeedPresets ) );
+            TryPatch( typeof( Initializer ), "Start", nameof( AdjustGameSpeedPresets ) );
          if ( config.food_processor_idle_power >= 0 )
-            Modder.TryPatch( typeof( Processor ), "FixedUpdate", nameof( SetFoodProcessorPower ) );
+            TryPatch( typeof( Processor ), "FixedUpdate", nameof( SetFoodProcessorPower ) );
          if ( config.packaging_machine_idle_power >= 0 )
-            Modder.TryPatch( typeof( PackagingMachine ), "FixedUpdate", nameof( SetPackagingMachinePower ) );
+            TryPatch( typeof( PackagingMachine ), "FixedUpdate", nameof( SetPackagingMachinePower ) );
          if ( config.packaging_machine_passthrough )
-            Modder.TryPatch( typeof( PackagingMachine ), "FixedUpdate", nameof( PackagingMachinePassThrough ) );
+            TryPatch( typeof( PackagingMachine ), "FixedUpdate", nameof( PackagingMachinePassThrough ) );
          if ( config.smart_packaging_machine ) {
             packMachineCanMake = typeof( PackagingMachine ).Method( "AllIngredientsReady" );
             packMachineConsume = typeof( PackagingMachine ).Method( "ConsumeIngredients" );
             packMachinePackage = typeof( PackagingMachine ).Method( "StartPackaging" );
             packMachineRandom  = new System.Random();
             packMachineLastDish = new ConditionalWeakTable<PackagingMachine, Dish>();
-            Modder.TryPatch( typeof( KitchenPart ), "Reset", postfix: nameof( ClearPackagingMachineLastDish ) );
-            Modder.TryPatch( typeof( PackagingMachine ), "StartPackaging", nameof( LogPackagingMachineLastDish ) );
-            Modder.TryPatch( typeof( PackagingMachine ), "SeeIfSomethingCanBePackaged", nameof( OverridePackagingMachineLogic ) );
+            TryPatch( typeof( KitchenPart ), "Reset", postfix: nameof( ClearPackagingMachineLastDish ) );
+            TryPatch( typeof( PackagingMachine ), "StartPackaging", nameof( LogPackagingMachineLastDish ) );
+            TryPatch( typeof( PackagingMachine ), "SeeIfSomethingCanBePackaged", nameof( OverridePackagingMachineLogic ) );
          }
          if ( config.export_food_csv )
-            Modder.TryPatch( typeof( SplashScreen ), "Awake", nameof( DumpFoodCsv ) );
+            TryPatch( typeof( SplashScreen ), "Awake", nameof( DumpFoodCsv ) );
          if ( config.export_hardware_csv )
-            Modder.TryPatch( typeof( SplashScreen ), "Awake", nameof( DumpHardwareCsv ) );
+            TryPatch( typeof( SplashScreen ), "Awake", nameof( DumpHardwareCsv ) );
          if ( config.export_text_csv )
-            Modder.TryPatch( typeof( LocalizationManager ), "LocalizeAll", postfix: nameof( DumpLanguageCsv ) );
+            TryPatch( typeof( LocalizationManager ), "LocalizeAll", postfix: nameof( DumpLanguageCsv ) );
          if ( config.traditional_chinese ) {
-            Modder.TryPatch( typeof( LanguageSelectionScreen ), "OnShown", nameof( ShowZht ) );
-            Modder.TryPatch( typeof( LocalizationManager ), "CreateCultureForCode", nameof( DetectZh ) );
+            TryPatch( typeof( LanguageSelectionScreen ), "OnShown", nameof( ShowZht ) );
+            TryPatch( typeof( LocalizationManager ), "CreateCultureForCode", nameof( DetectZh ) );
          }
       } catch ( Ex x ) { Err( x ); } }
 
@@ -645,14 +646,14 @@ namespace Automodchef {
          string file = Path.Combine( ZySimpleMod.AppDataDir, "foods.csv" );
          Info( "Exporting food list to {0}", file, foodDumped = true );
          using ( TextWriter f = File.CreateText( file ) ) {
-            f.Csv( "Id", "Name", "Translated", "Process", "Seconds", "Recipe", "Liquids",
+            Csv( f, "Id", "Name", "Translated", "Process", "Seconds", "Recipe", "Liquids",
                    "Processed", "Grilled", "Fried", "Steamed", "Baked", "Wet", //"Bacterias",
                    "Spoil (sec)", "Ingredients Quota", "Power Quota" );
             foreach ( var mat in Ingredient.GetAll().Union( Dish.GetAll() ) ) {
                Fine( $"#{mat.internalName} = {mat.friendlyName}" );
                float spoil = 0, iQ = 0, pQ = 0;
                if ( mat is Dish dish ) { spoil = dish.timeToBeSpoiled;  iQ = dish.expectedIngredients;  pQ = dish.expectedPower; }
-               f.Csv( mat.internalName, mat.friendlyName, mat.GetFriendlyNameTranslated(), mat.technique.ToString(), mat.timeToBeAssembled + "",
+               Csv( f, mat.internalName, mat.friendlyName, mat.GetFriendlyNameTranslated(), mat.technique.ToString(), mat.timeToBeAssembled + "",
                   mat.recipe == null ? "" : string.Join( " + ", mat.recipe ),
                   mat.recipeLiquidIngredients == null ? "" : string.Join( " + ", mat.recipeLiquidIngredients ),
                   mat.resultProcess, mat.resultGrill, mat.resultFry, mat.resultSteam, mat.resultBake, mat.resultWet,
@@ -669,13 +670,13 @@ namespace Automodchef {
          string file = Path.Combine( ZySimpleMod.AppDataDir, "hardwares.csv" );
          Info( "Exporting hardware list to {0}", file, hardwareDumped = true );
          using ( TextWriter f = File.CreateText( file ) ) {
-            f.Csv( "Id", "Name", "Description", "Category", "Price", "Power", "Speed", "Time", "Variant", "Code Class" );
+            Csv( f, "Id", "Name", "Description", "Category", "Price", "Power", "Speed", "Time", "Variant", "Code Class" );
             foreach ( var part in AutomachefResources.KitchenParts.GetList_ReadOnly() ) {
                Fine( "#{0} = {1}", part.internalName, part.partName );
                var speed  = part.GetType().Field( "speed" )?.GetValue( part );
                var rspeed = part.GetType().Field( "rotationSpeed" )?.GetValue( part ) ??  part.GetType().Field( "armRotationSpeed" )?.GetValue( part );
                var pTime  = part.GetType().Field( "timeToProcess" )?.GetValue( part );
-               f.Csv( part.internalName, part.partName, part.description, part.category, part.cost, part.powerInWatts, speed ?? rspeed ?? "", pTime ?? "",
+               Csv( f, part.internalName, part.partName, part.description, part.category, part.cost, part.powerInWatts, speed ?? rspeed ?? "", pTime ?? "",
                       part.nextVariantInternalName, part.GetType().FullName );
             }
             f.Flush();
@@ -692,7 +693,7 @@ namespace Automodchef {
          Info( "{0} game text exported", ___Sources.Count );
       } catch ( Ex x ) { Err( x ); } }
 
-      private static void Csv ( this TextWriter f, params object[] values ) {
+      private static void Csv ( TextWriter f, params object[] values ) {
          foreach ( var val in values ) {
             string v = val?.ToString() ?? "null";
             if ( v.Contains( "," ) || v.Contains( "\"" ) || v.Contains( "\n" ) ) line.Append( '"' ).Append( v.Replace( "\"", "\"\"" ) ).Append( "\"," );
@@ -717,7 +718,7 @@ namespace Automodchef {
          Info( "Game language set to {0}", code );
          if ( code != "zh" ) return;
          zhs2zht = new Dictionary< string, string >();
-         Modder.TryPatch( typeof( LanguageSource ), "TryGetTranslation", postfix: nameof( ToZht ) );
+         instance.TryPatch( typeof( LanguageSource ), "TryGetTranslation", postfix: nameof( ToZht ) );
       } catch ( Ex x ) { Err( x ); } }
 
       private static Dictionary< string, string > zhs2zht;
