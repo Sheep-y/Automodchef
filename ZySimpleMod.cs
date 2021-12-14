@@ -111,8 +111,7 @@ namespace ZyMod {
                if ( DateTime.TryParse( val, null, System.Globalization.DateTimeStyles.RoundtripKind, out DateTime dt ) ) parsed = dt;
                break;
             default :
-               if ( valueType.IsEnum )
-                  parsed = Enum.Parse( valueType, val );
+               if ( valueType.IsEnum ) { parsed = Enum.Parse( valueType, val ); break; }
                if ( logWarnings ) Warn( new NotImplementedException( "Unsupported field type " + valueType.FullName ) );
                break;
          }

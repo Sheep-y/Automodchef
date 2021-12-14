@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Reflection;
 using ZyMod;
 
@@ -42,11 +41,6 @@ namespace Automodchef {
       [ ConfigAttribute( "System", "Disable mission stats analytics.  Default true." ) ]
       public bool disable_analytics = true;
 
-      [ ConfigAttribute( "Bug Fix", "Fix food mouseover hints not showing when game is paused.  Default true." ) ]
-      public bool fix_food_hint_when_paused = true;
-      [ ConfigAttribute( "Bug Fix", "Make sure all dishes that have this much efficiency quota for their ingredients.  Game is inconsistent.  Mod default 1.  0 to fix Double Bypass Meal.  -1 to disable.  When set to 1, this mod will not apply buffer to single ingredient recipes for better balance." ) ]
-      public sbyte dish_ingredient_quota_buffer = 1;
-
       [ ConfigAttribute( "Camera", "Angle of left / right view.  Game default 35.  Set to 0 to not change." ) ]
       public float side__view_angle = 0;
       [ ConfigAttribute( "Camera", "Downward angle of close up view.  Game default 40.  Set to 0 to not change." ) ]
@@ -56,6 +50,8 @@ namespace Automodchef {
       [ ConfigAttribute( "Camera", "Height of far camera.  Game default 20.  Set to 0 to not change." ) ]
       public float far_view_height = 0;
 
+      [ ConfigAttribute( "User Interface", "Fix food mouseover hints not showing when game is paused.  Default true." ) ]
+      public bool fix_food_hint_when_paused = true;
       [ ConfigAttribute( "User Interface", "Suppress yes/no confirmations - save before quit, load game, delete or overwrite save / blueprint / scenario, quit level / game, reset layout.  Default true." ) ]
       public bool suppress_confirmation = true;
       [ ConfigAttribute( "User Interface", "Show load game prompt when entering a level (if any saves).  Loading a game will bypass level goal popup and roboto speech.  Default true." ) ]
@@ -85,6 +81,8 @@ namespace Automodchef {
       [ ConfigAttribute( "Simulation", "Speed of triple time (three arrows).  0-100 integer.  Game default 5.  Mod default 20.  High speed may cause some orders to expire when they would not on slower speeds." ) ]
       public byte speed3 = 20;
 
+      [ ConfigAttribute( "Mechanic", "Make sure all dishes that have this much efficiency quota for their ingredients.  Game is inconsistent.  Mod default 1.  0 to fix Double Bypass Meal.  -1 to disable.  When set to 1, this mod will not apply buffer to single ingredient recipes for better balance." ) ]
+      public sbyte dish_ingredient_quota_buffer = 1;
       [ ConfigAttribute( "Mechanic", "Food processor use less power when not processing.  Game default 800 (no idle mode).  Mod default -1 which does not enable idle mode.  Its belt moves at half speed so 75W can be 'realistic'." ) ]
       public int food_processor_idle_power = -1;
       [ ConfigAttribute( "Mechanic", "This section changes game mechanics. They do not break or brick saves, but may allow non-vanilla solutions.\r\n; Packaging machine use less power when not packaging.  Game default 800 (no idle mode).  Mod default 60 (2x slowest belts).  Set to -1 to not change." ) ]
