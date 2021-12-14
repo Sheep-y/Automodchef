@@ -16,7 +16,7 @@ namespace Automodchef {
    internal class AmcUserInterfaceMod : Automodchef.ModComponent {
       private static AmcUserInterfaceMod instance;
 
-      internal void Apply () { try {
+      internal override void Apply () { try {
          instance = this;
          if ( conf.skip_intro )
             TryPatch( typeof( FaderUIController ), "Awake", nameof( SkipVideoSplashes ) );

@@ -15,7 +15,7 @@ namespace Automodchef {
 
    internal class AmcDataMod : Automodchef.ModComponent {
 
-      internal void Apply () { try {
+      internal override void Apply () { try {
          if ( conf.disable_analytics ) {
             foreach ( var m in typeof( Analytics ).Methods().Where( e => e.Name == "CustomEvent" || e.Name == "Transaction" || e.Name.StartsWith( "Send" ) ) )
                TryPatch( m, nameof( DisableAnalytics ) );

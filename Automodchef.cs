@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using HarmonyLib;
+using System.IO;
+using System.Linq;
 using System.Reflection;
 using ZyMod;
 
@@ -18,13 +20,15 @@ namespace Automodchef {
 
       protected override void OnGameAssemblyLoaded ( Assembly game ) {
          Config.Load();
-         new AmcDataMod().Apply();
-         new AmcMechanicMod().Apply();
-         new AmcUserInterfaceMod().Apply();
+         var mods = new ModComponent[]{ new AmcDataMod(), new AmcMechanicMod(), new AmcUserInterfaceMod() };
+         foreach ( var mod in mods ) mod.Apply();
+         var patches = mods[0].harmony.GetPatchedMethods().Select( e => Harmony.GetPatchInfo( e ) );
+         ModHelpers.Info( "Patched {0} methods with {1} patches.", patches.Count(), patches.Sum( e => e.Prefixes.Count + e.Postfixes.Count + e.Transpilers.Count ) );
       }
 
-      internal class ModComponent : Patcher {
+      internal abstract class ModComponent : Patcher {
          protected static ModConfig conf => Config;
+         internal abstract void Apply();
          protected static bool IsTutorial () => IsTutorial( Initializer.GetInstance().levelManager?.GetLevel() );
          protected static bool IsTutorial ( Level lv ) => lv == null || lv.IsTutorial() || lv.IsOptionalTutorial();
       }

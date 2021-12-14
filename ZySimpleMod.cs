@@ -178,10 +178,10 @@ namespace ZyMod {
    }
 
    public class Patcher { // Patch classes may inherit from this class for manual patching.  Or you can use Harmony.PatchAll, of course.
-      private Harmony harmony;
+      public Harmony harmony { get; private set; }
 
       public class ModPatch {
-         private Harmony harmony;
+         public readonly Harmony harmony;
          public ModPatch ( Harmony patcher ) { harmony = patcher; }
          public MethodBase original; public HarmonyMethod prefix, postfix, transpiler;
          public void Unpatch ( HarmonyPatchType type = All ) {

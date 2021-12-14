@@ -11,7 +11,7 @@ namespace Automodchef {
 
    internal class AmcMechanicMod : Automodchef.ModComponent {
 
-      internal void Apply () { try {
+      internal override void Apply () { try {
          TryPatch( typeof( ContractsLogic ), "AddNewIncomingContract", nameof( OverrideContracts ), nameof( RestoreContracts ) ); // TODO
          if ( conf.instant_speed_change )
             TryPatch( typeof( Initializer ), "Update", postfix: nameof( InstantGameSpeedUpdate ) );
