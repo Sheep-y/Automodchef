@@ -4,26 +4,26 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using UnityEngine;
-using ZyMod;
 using static ZyMod.ModHelpers;
 
 namespace Automodchef {
    using Ex = Exception;
 
-   internal class AmcMechanicMod : ModComponent {
+   internal class AmcMechanicMod : Automodchef.ModComponent {
 
       internal void Apply () { try {
-         if ( config.instant_speed_change )
+         TryPatch( typeof( ContractsLogic ), "AddNewIncomingContract", nameof( OverrideContracts ), nameof( RestoreContracts ) ); // TODO
+         if ( conf.instant_speed_change )
             TryPatch( typeof( Initializer ), "Update", postfix: nameof( InstantGameSpeedUpdate ) );
-         if ( config.speed2 != 3 || config.speed3 != 5 )
+         if ( conf.speed2 != 3 || conf.speed3 != 5 )
             TryPatch( typeof( Initializer ), "Start", nameof( AdjustGameSpeedPresets ) );
-         if ( config.food_processor_idle_power >= 0 )
+         if ( conf.food_processor_idle_power >= 0 )
             TryPatch( typeof( Processor ), "FixedUpdate", nameof( SetFoodProcessorPower ) );
-         if ( config.packaging_machine_idle_power >= 0 )
+         if ( conf.packaging_machine_idle_power >= 0 )
             TryPatch( typeof( PackagingMachine ), "FixedUpdate", nameof( SetPackagingMachinePower ) );
-         if ( config.packaging_machine_passthrough )
+         if ( conf.packaging_machine_passthrough )
             TryPatch( typeof( PackagingMachine ), "FixedUpdate", nameof( PackagingMachinePassThrough ) );
-         if ( config.smart_packaging_machine ) {
+         if ( conf.smart_packaging_machine ) {
             packMachineCanMake = typeof( PackagingMachine ).Method( "AllIngredientsReady" );
             packMachineConsume = typeof( PackagingMachine ).Method( "ConsumeIngredients" );
             packMachinePackage = typeof( PackagingMachine ).Method( "StartPackaging" );
@@ -35,6 +35,28 @@ namespace Automodchef {
          }
       } catch ( Ex x ) { Err( x ); } }
 
+      private static List<Contract> allContracts;
+      private static void OverrideContracts ( ref List<Contract> ___allPossibleContracts, Company ___company ) { // Find BeachBurger contracts for bug fixing.
+         if ( allContracts != null ) allContracts = ___allPossibleContracts;
+         List<Contract> filteredContracts = ___allPossibleContracts
+            .Where( e => e.requiredDishes.Contains( "BeachBurger" ) && e.client.minReputation <= ___company.reputation ).ToList();
+         if ( filteredContracts.Count == 0 ) return;
+         Info( "Filtering {0} down to {1}.", allContracts.Count, filteredContracts.Count );
+         ___allPossibleContracts = filteredContracts;
+         // Client's name and clientName
+         // Client1 The Feedbag
+         // Client2 Heartburns
+         // Client3 Dine 'N Dash
+         // Client4 The Happy Gorger
+         // Client5 Salad Bowl
+         // Client6 Cheesy Does It
+         // Client7 Calorie Cabin
+         // Client8 Lots O' Flavour
+         // Client9 Fresh & Tasty
+         // Client10 Big Taste Inc.
+      }
+      private static void RestoreContracts ( ref List<Contract> ___allPossibleContracts ) => ___allPossibleContracts = allContracts;
+
       private static void InstantGameSpeedUpdate ( float ___targetTimeScale ) { try {
          if ( Time.timeScale != ___targetTimeScale ) Time.timeScale = ___targetTimeScale;
       } catch ( Ex x ) { Err( x ); } }
@@ -42,8 +64,8 @@ namespace Automodchef {
       private static void AdjustGameSpeedPresets ( Initializer __instance ) { try {
          if ( __instance == null || __instance.speeds == null || __instance.speeds.Count < 4 ) return;
          Info( "Setting game speeds to [ {0}x, {1}x, {2}x, {3}x ]", __instance.speeds[0], __instance.speeds[1], __instance.speeds[2], __instance.speeds[3] );
-         __instance.speeds[2] = config.speed2;
-         __instance.speeds[3] = config.speed3;
+         __instance.speeds[2] = conf.speed2;
+         __instance.speeds[3] = conf.speed3;
       } catch ( Ex x ) { Err( x ); } }
 
       #region Packaging Machine and Food Processor
@@ -57,9 +79,9 @@ namespace Automodchef {
 
       private static float fullFPpower, fullPMpower;
       private static void SetFoodProcessorPower ( Processor __instance, float ___processingTime ) =>
-         SetIdlePower( __instance, "Food Processor", ___processingTime > 0, ref fullFPpower, config.food_processor_idle_power );
+         SetIdlePower( __instance, "Food Processor", ___processingTime > 0, ref fullFPpower, conf.food_processor_idle_power );
       private static void SetPackagingMachinePower ( PackagingMachine __instance, bool ___packaging ) =>
-         SetIdlePower( __instance, "Packaging Machine", ___packaging, ref fullPMpower, config.packaging_machine_idle_power );
+         SetIdlePower( __instance, "Packaging Machine", ___packaging, ref fullPMpower, conf.packaging_machine_idle_power );
 
       private static void PackagingMachinePassThrough ( PackagingMachine __instance, List<Ingredient> ___ingredientsInside, KitchenPart.NodeData[] ___ourIngredientNodes ) { try {
          KitchenPart.NodeData exitNode = ___ourIngredientNodes[ 3 ]; // 3 is hardcoded in the game.

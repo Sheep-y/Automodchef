@@ -6,30 +6,36 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using UnityEngine;
+using UnityEngine.Analytics;
 using ZyMod;
 using static ZyMod.ModHelpers;
 
 namespace Automodchef {
    using Ex = Exception;
 
-   internal class AmcDataMod : ModComponent {
+   internal class AmcDataMod : Automodchef.ModComponent {
 
       internal void Apply () { try {
-         if ( config.tooltip_power_usage || config.power_log_rows > 0 ) {
+         if ( conf.disable_analytics ) {
+            foreach ( var m in typeof( Analytics ).Methods().Where( e => e.Name == "CustomEvent" || e.Name == "Transaction" || e.Name.StartsWith( "Send" ) ) )
+               TryPatch( m, nameof( DisableAnalytics ) );
+            TryPatch( typeof( AutomachefAnalytics ), "Track", nameof( DisableAnalytics ) );
+         }
+         if ( conf.tooltip_power_usage || conf.power_log_rows > 0 ) {
             TryPatch( typeof( KitchenPart ).Methods( "ConsumePower" ).FirstOrDefault( e => e.GetParameters().Length > 0 ), nameof( LogPowerUsage ) );
             TryPatch( typeof( PowerMeter ), "Reset", nameof( ClearPowerUsage ) );
-            if ( config.tooltip_power_usage )
+            if ( conf.tooltip_power_usage )
                TryPatch( typeof( KitchenPart ), "GetTooltipText", postfix: nameof( AppendPowerToTooltip ) );
          }
-         if ( config.tooltip_freshness ) {
+         if ( conf.tooltip_freshness ) {
             TryPatch( typeof( PackagingMachine ), "GetTooltipTextDetails", nameof( SuppressFreshnessTooltip ), nameof( RestoreFreshnessTooltip ) );
             TryPatch( typeof( Ingredient ), "GetTooltipText", postfix: nameof( AppendFreshnessTooltip ) );
          }
-         if ( config.efficiency_log || config.power_log_rows > 0 ) {
+         if ( conf.efficiency_log || conf.power_log_rows > 0 ) {
             TryPatch( typeof( LevelStatus ), "RenderEvents", postfix: nameof( ForceShowEfficiencyLog ) );
-            if ( config.efficiency_log ) {
+            if ( conf.efficiency_log ) {
                extraLog = new List<string>();
-               if ( config.efficiency_log_breakdown )
+               if ( conf.efficiency_log_breakdown )
                   if ( TryPatch( typeof( EfficiencyMeter ), "Reset", nameof( ClearEfficiencyLog ) ) != null ) {
                      orderedDish = new Dictionary<object, int>();
                      cookedDish = new Dictionary<object, int>();
@@ -39,16 +45,20 @@ namespace Automodchef {
                TryPatch( typeof( EfficiencyMeter ), "GetEfficiency", postfix: nameof( CalculateEfficiency ) );
                TryPatch( typeof( KitchenEventsLog ), "ToString", postfix: nameof( AppendEfficiencyLog ) );
             }
-            if ( config.power_log_rows > 0 )
+            if ( conf.power_log_rows > 0 )
                TryPatch( typeof( KitchenEventsLog ), "ToString", postfix: nameof( AppendPowerLog ) );
          }
-         if ( config.export_food_csv )
+         if ( conf.dish_ingredient_quota_buffer >= 0 )
+            TryPatch( typeof( SplashScreen ), "Awake", postfix: nameof( FixDishIngredientQuota ) );
+         if ( conf.export_food_csv )
             TryPatch( typeof( SplashScreen ), "Awake", nameof( DumpFoodCsv ) );
-         if ( config.export_hardware_csv )
+         if ( conf.export_hardware_csv )
             TryPatch( typeof( SplashScreen ), "Awake", nameof( DumpHardwareCsv ) );
-         if ( config.export_text_csv )
+         if ( conf.export_text_csv )
             TryPatch( typeof( LocalizationManager ), "LocalizeAll", postfix: nameof( DumpLanguageCsv ) );
       } catch ( Ex x ) { Err( x ); } }
+
+      private static bool DisableAnalytics () { Info( "Analytics Blocked" ); return false; }
 
       #region Power
       private class PowerLog { internal float power; }
@@ -68,8 +78,8 @@ namespace Automodchef {
       } catch ( Ex x ) { Err( x ); } }
 
       private static void AppendPowerLog ( ref string __result ) { try {
-         if ( powerLog == null || ( config.hide_tutorial_efficiency && IsTutorial() ) ) return;
-         Info( "Appending power log (up to {0} lines) to kitchen log.", config.power_log_rows );
+         if ( powerLog == null || ( conf.hide_tutorial_efficiency && IsTutorial() ) ) return;
+         Info( "Appending power log (up to {0} lines) to kitchen log.", conf.power_log_rows );
          float total = 0;
          Dictionary< string, PowerLog > byType = new Dictionary<string, PowerLog>();
          HashSet<KitchenPart> allParts = Initializer.GetInstance().kitchen.GetAllKitchenParts();
@@ -92,8 +102,8 @@ namespace Automodchef {
             total += partPower.power;
          }
          Info( "Found {0} parts in {1} groups totaling {2}", allParts.Count, byType.Count, Wh( total ) );
-         __result += $"\n\nTop {Math.Min(allParts.Count,config.power_log_rows)} power using equipment groups:";
-         __result += "\n" + string.Join( "\n", byType.OrderBy( e => e.Value.power ).Reverse().Take( config.power_log_rows ).Select( e =>
+         __result += $"\n\nTop {Math.Min(allParts.Count,conf.power_log_rows)} power using equipment groups:";
+         __result += "\n" + string.Join( "\n", byType.OrderBy( e => e.Value.power ).Reverse().Take( conf.power_log_rows ).Select( e =>
             $"{AutomachefResources.KitchenParts.CreateNewInstance(e.Key).partName} ... {Wh(e.Value.power,false)} ({e.Value.power*100/total:0.0}%)" ) );
          __result = __result.Trim();
          Fine( __result );
@@ -150,12 +160,12 @@ namespace Automodchef {
 
       // Show modded logs even when kitchen has no events
       private static void ForceShowEfficiencyLog ( LevelStatus __instance, KitchenEventsLog log ) { try {
-         if ( log.GetEventsCount() <= 0 && ( ! config.hide_tutorial_efficiency || ! IsTutorial() ) )
+         if ( log.GetEventsCount() <= 0 && ( ! conf.hide_tutorial_efficiency || ! IsTutorial() ) )
             __instance.eventsLogTextField.text = log.ToString();
       } catch ( Ex x ) { Err( x ); } }
 
       private static void AppendEfficiencyLog ( ref string __result ) { try {
-         if ( extraLog.Count == 0 || ( config.hide_tutorial_efficiency && IsTutorial() ) ) return;
+         if ( extraLog.Count == 0 || ( conf.hide_tutorial_efficiency && IsTutorial() ) ) return;
          Info( "Appending efficiency log ({0} lines) to kitchen log.", extraLog.Count + orderedDish?.Count );
          __result += "\n\n";
          if ( orderedDish?.Count > 0 ) {
@@ -182,6 +192,26 @@ namespace Automodchef {
          if ( prefix && power >= 1000 ) { power /= 1000f; unit = "MWh"; }
          return prefix ? $"{power:0.00}{unit}" : $"{power:0}Wh";
       }
+      #endregion
+
+      #region Bug fixes
+      private static int FindDishMinIngredient ( Dish dish ) { try {
+         return dish.recipe.Select( id => Ingredient.GetByInternalName( id ) ?? Dish.GetByInternalName( id ) ).Sum( e => e is Dish d ? FindDishMinIngredient( d ) : 1 );
+      } catch ( Ex x ) { return Err( x, dish?.recipe?.Count ?? 0 ); } }
+
+      private static void FixDishIngredientQuota () { try {
+         var updated = false;
+         foreach ( var dish in Dish.GetAll() ) {
+            var i = FindDishMinIngredient( dish ) + conf.dish_ingredient_quota_buffer;
+            if ( i == 2 && conf.dish_ingredient_quota_buffer == 1 ) i = 1;
+            if ( i > dish.expectedIngredients ) {
+               Info( "Bumping {0} ingredient quota from {1} to {2}.", dish.GetFriendlyNameTranslated(), dish.expectedIngredients, i );
+               dish.expectedIngredients = i;
+               updated = true;
+            }
+         }
+         if ( updated && conf.dish_ingredient_quota_buffer == 1 ) Info( "Dishes made from single ingredient are not buffed for better game balance." );
+      } catch ( Ex x ) { Err( x ); } }
       #endregion
 
       #region Csv dump

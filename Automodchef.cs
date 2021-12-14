@@ -1,35 +1,33 @@
-﻿using I2.Loc;
-using MaterialUI;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using UnityEngine;
-using UnityEngine.Analytics;
-using UnityEngine.UI;
 using ZyMod;
-using static ZyMod.ModHelpers;
-using static I2.Loc.ScriptLocalization.Warnings;
 
 namespace Automodchef {
-   using Ex = Exception;
 
    public class Automodchef : ZySimpleMod {
+
       public static ModConfig Config { get; } = new ModConfig();
+
       public static void Main () => new Automodchef().Initialize();
+
       protected override string GetAppDataDir () {
          var path = System.Environment.GetFolderPath( System.Environment.SpecialFolder.LocalApplicationData );
          if ( string.IsNullOrEmpty( path ) ) return null;
          return Path.Combine( Directory.GetParent( path ).FullName, "LocalLow", "HermesInteractive", "Automachef" );
       }
+
       protected override void OnGameAssemblyLoaded ( Assembly game ) {
          Config.Load();
          new AmcDataMod().Apply();
          new AmcMechanicMod().Apply();
          new AmcUserInterfaceMod().Apply();
+      }
+
+      internal class ModComponent : Patcher {
+         protected static ModConfig conf => Config;
+         protected static bool IsTutorial () => IsTutorial( Initializer.GetInstance().levelManager?.GetLevel() );
+         protected static bool IsTutorial ( Level lv ) => lv == null || lv.IsTutorial() || lv.IsOptionalTutorial();
       }
    }
 
@@ -113,149 +111,4 @@ namespace Automodchef {
       }
    }
 
-   internal class ModComponent : Patcher {
-
-      protected static ModConfig config => Automodchef.Config;
-      private ModComponent instance;
-
-      private void ApplySystemPatches () { try {
-         if ( config.skip_intro )
-            TryPatch( typeof( FaderUIController ), "Awake", nameof( SkipVideoSplashes ) );
-         if ( config.skip_spacebar )
-            TryPatch( typeof( SplashScreen ), "Update", postfix: nameof( SkipSpacebarSplash ) );
-         if ( config.disable_analytics ) {
-            foreach ( var m in typeof( Analytics ).Methods().Where( e => e.Name == "CustomEvent" || e.Name == "Transaction" || e.Name.StartsWith( "Send" ) ) )
-               TryPatch( m, nameof( DisableAnalytics ) );
-            TryPatch( typeof( AutomachefAnalytics ), "Track", nameof( DisableAnalytics ) );
-         }
-         if ( config.fix_food_hint_when_paused )
-            TryPatch( typeof( IngredientTooltip ), "Update", postfix: nameof( FixIngredientHintOnPause ) );
-         if ( config.dish_ingredient_quota_buffer >= 0 )
-            TryPatch( typeof( SplashScreen ), "Awake", postfix: nameof( FixDishIngredientQuota ) );
-         TryPatch( typeof( ContractsLogic ), "AddNewIncomingContract", nameof( OverrideContracts ), nameof( RestoreContracts ) ); // TODO
-         if ( config.traditional_chinese ) {
-            TryPatch( typeof( LanguageSelectionScreen ), "OnShown", nameof( ShowZht ) );
-            TryPatch( typeof( LocalizationManager ), "CreateCultureForCode", nameof( DetectZh ) );
-         }
-      } catch ( Ex x ) { Err( x ); } }
-
-      #region Skip Splash
-      private static void SkipVideoSplashes ( ref FaderUIController.SplashStateInfo[] ___m_SplashStates ) { try {
-         if ( ___m_SplashStates == null || ___m_SplashStates.Length <= 1 ) return;
-         if ( ! ___m_SplashStates.Any( e => e.m_AnimToPlay == "LoadStartScreen" ) ) return;
-         ___m_SplashStates = ___m_SplashStates.Where( e => e.m_AnimToPlay == "LoadStartScreen" ).ToArray();
-         ___m_SplashStates[0].m_TimeInState = 0.01f;
-         Info( "Skipping Logos and Warnings." );
-         // [ { "Unity, 1, False }, { "HermesInteractive, 2, False }, { "Team 17, 4, True }, { "Legal, 3, False }, { "LoadStartScreen", 2, False } ]
-      } catch ( Ex x ) { Err( x ); } }
-
-      private static void SkipSpacebarSplash ( SplashScreen __instance, ref bool ___m_bProcessedCloseRequest ) { try {
-         if ( ___m_bProcessedCloseRequest || InputWrapper.GetController() == null ) return;
-         ___m_bProcessedCloseRequest = true;
-         typeof( SplashScreen ).TryMethod( "ProceedToMainMenu" )?.Invoke( __instance, Array.Empty<object>() );
-         Info( "Skipped Press Space Splash." );
-      } catch ( Ex ex ) {
-         Error( ex );
-         ___m_bProcessedCloseRequest = false;
-      } }
-      #endregion
-
-      private static bool DisableAnalytics () { Info( "Analytics Blocked" ); return false; }
-
-      #region Bug fixes
-      private static void FixIngredientHintOnPause ( IngredientTooltip __instance, RectTransform ___ourRectTransform ) { try {
-         if ( __instance.canvasGroup.alpha != 0 || ! Initializer.GetInstance().IsSimRunning() ) return;
-         if ( __instance.kitchenBuilder.IsSomethingBeingPlaced() || InputWrapper.IsPointerOverUI( -1 ) ) return;
-         var ray = Camera.main.ScreenPointToRay( InputWrapper.mousePosition );
-         if ( ! Physics.Raycast( ray, out RaycastHit raycastHit, 50 ) ) return;
-         var food = raycastHit.transform.gameObject.GetComponent<Ingredient>();
-         if ( food == null ) return;
-         ___ourRectTransform.anchoredPosition = Camera.main.WorldToScreenPoint( raycastHit.transform.position ) / __instance.GetComponentInParent<Canvas>().scaleFactor;
-         __instance.tooltipText.text = typeof( IngredientTooltip ).Method( "FormatText" ).Invoke( __instance, new object[]{ food.GetTooltipText() } ).ToString();
-         __instance.canvasGroup.alpha = 1f;
-      } catch ( Ex x ) { Err( x ); } }
-
-      private static int FindDishMinIngredient ( Dish dish ) { try {
-         return dish.recipe.Select( id => Ingredient.GetByInternalName( id ) ?? Dish.GetByInternalName( id ) ).Sum( e => e is Dish d ? FindDishMinIngredient( d ) : 1 );
-      } catch ( Ex x ) { return Err( x, dish?.recipe?.Count ?? 0 ); } }
-
-      private static void FixDishIngredientQuota () { try {
-         var updated = false;
-         foreach ( var dish in Dish.GetAll() ) {
-            var i = FindDishMinIngredient( dish ) + config.dish_ingredient_quota_buffer;
-            if ( i == 2 && config.dish_ingredient_quota_buffer == 1 ) i = 1;
-            if ( i > dish.expectedIngredients ) {
-               Info( "Bumping {0} ingredient quota from {1} to {2}.", dish.GetFriendlyNameTranslated(), dish.expectedIngredients, i );
-               dish.expectedIngredients = i;
-               updated = true;
-            }
-         }
-         if ( updated && config.dish_ingredient_quota_buffer == 1 ) Info( "Dishes made from single ingredient are not buffed for better game balance." );
-      } catch ( Ex x ) { Err( x ); } }
-      #endregion
-
-      private static List<Contract> allContracts;
-      private static void OverrideContracts ( ref List<Contract> ___allPossibleContracts, Company ___company ) { // Find BeachBurger contracts for bug fixing.
-         if ( allContracts != null ) allContracts = ___allPossibleContracts;
-         List<Contract> filteredContracts = ___allPossibleContracts
-            .Where( e => e.requiredDishes.Contains( "BeachBurger" ) && e.client.minReputation <= ___company.reputation ).ToList();
-         if ( filteredContracts.Count == 0 ) return;
-         Info( "Filtering {0} down to {1}.", allContracts.Count, filteredContracts.Count );
-         ___allPossibleContracts = filteredContracts;
-         // Client's name and clientName
-         // Client1 The Feedbag
-         // Client2 Heartburns
-         // Client3 Dine 'N Dash
-         // Client4 The Happy Gorger
-         // Client5 Salad Bowl
-         // Client6 Cheesy Does It
-         // Client7 Calorie Cabin
-         // Client8 Lots O' Flavour
-         // Client9 Fresh & Tasty
-         // Client10 Big Taste Inc.
-      }
-      private static void RestoreContracts ( ref List<Contract> ___allPossibleContracts ) => ___allPossibleContracts = allContracts;
-
-      #region Traditional Chinese.  Hooray for Taiwan, Hong Kong, Macau!
-      private static void ShowZht ( List<string> ___languageNames ) { try {
-         for ( var i = ___languageNames.Count - 1 ; i >= 0 ; i-- )
-            if ( ___languageNames[ i ] == "简体中文" ) {
-               ___languageNames[ i ] = "中文";
-               return;
-            }
-      } catch ( Ex x ) { Err( x ); } }
-
-      private static void DetectZh ( string code ) { try {
-         Info( "Game language set to {0}", code );
-         if ( code != "zh" ) return;
-         zhs2zht = new Dictionary< string, string >();
-         instance.TryPatch( typeof( LanguageSource ), "TryGetTranslation", postfix: nameof( ToZht ) );
-      } catch ( Ex x ) { Err( x ); } }
-
-      private static Dictionary< string, string > zhs2zht;
-
-      private static void ToZht ( string term, ref string Translation, bool __result ) { if ( ! __result ) return; try {
-         if ( zhs2zht.TryGetValue( term, out string zht ) ) { Translation = zht; return; }
-         zht = new String( ' ', Translation.Length );
-         LCMapString( LOCALE_SYSTEM_DEFAULT, LCMAP_TRADITIONAL_CHINESE, Translation, Translation.Length, zht, zht.Length );
-         Fine( "ZH {0} ({1} chars)", term, ( zht = FixZht( zht ) ).Length );
-         zhs2zht.Add( term, Translation = zht );
-      } catch ( Ex x ) { Err( x ); } }
-
-      private static string FixZht ( string zht ) {
-         zht = zht.Replace( "任務目標", "任務" ).Replace( "菜肴", "餐點" ).Replace( "美食評論家", "食評家" )
-            .Replace( "已上餐點", "上菜" ).Replace( "電力消耗", "耗電" ).Replace( "使用的食材", "食材" );
-         return zht;
-      }
-
-      [ DllImport( "kernel32", CharSet = CharSet.Unicode, SetLastError = true ) ]
-      private static extern int LCMapString ( int Locale, int dwMapFlags, string lpSrcStr, int cchSrc, [Out] string lpDestStr, int cchDest );
-      private const int LOCALE_SYSTEM_DEFAULT = 0x0800;
-      private const int LCMAP_SIMPLIFIED_CHINESE = 0x02000000;
-      private const int LCMAP_TRADITIONAL_CHINESE = 0x04000000;
-      #endregion
-
-      protected static bool IsTutorial () => IsTutorial( Initializer.GetInstance().levelManager?.GetLevel() );
-      protected static bool IsTutorial ( Level lv ) => lv == null || lv.IsTutorial() || lv.IsOptionalTutorial();
-   }
 }
