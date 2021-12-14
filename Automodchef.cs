@@ -118,7 +118,7 @@ namespace Automodchef {
          config.Load();
          ApplySystemPatches();
          ApplyUserInterfacePatches();
-         ApplyLogPatches();
+         ApplyDataPatches();
          ApplyMechanicPatches();
       }
 
@@ -138,7 +138,11 @@ namespace Automodchef {
             TryPatch( typeof( SplashScreen ), "Awake", postfix: nameof( FixDishIngredientQuota ) );
          if ( Non0( config.side__view_angle ) || Non0( config.close_view_angle ) || Non0( config.far_view_angle ) || Non0( config.far_view_height ) )
             TryPatch( typeof( CameraMovement ), "Awake", postfix: nameof( OverrideCameraSettings ) );
-         TryPatch( typeof( ContractsLogic ), "AddNewIncomingContract", nameof( OverrideContracts ), nameof( RestoreContracts ) );
+         TryPatch( typeof( ContractsLogic ), "AddNewIncomingContract", nameof( OverrideContracts ), nameof( RestoreContracts ) ); // TODO
+         if ( config.traditional_chinese ) {
+            TryPatch( typeof( LanguageSelectionScreen ), "OnShown", nameof( ShowZht ) );
+            TryPatch( typeof( LocalizationManager ), "CreateCultureForCode", nameof( DetectZh ) );
+         }
       } catch ( Ex x ) { Err( x ); } }
 
       private void ApplyUserInterfacePatches () { try {
@@ -167,7 +171,7 @@ namespace Automodchef {
          }
       } catch ( Ex x ) { Err( x ); } }
 
-      private void ApplyLogPatches () { try {
+      private void ApplyDataPatches () { try {
          if ( config.tooltip_power_usage || config.power_log_rows > 0 ) {
             TryPatch( typeof( KitchenPart ).Methods( "ConsumePower" ).FirstOrDefault( e => e.GetParameters().Length > 0 ), nameof( LogPowerUsage ) );
             TryPatch( typeof( PowerMeter ), "Reset", nameof( ClearPowerUsage ) );
@@ -195,6 +199,12 @@ namespace Automodchef {
             if ( config.power_log_rows > 0 )
                TryPatch( typeof( KitchenEventsLog ), "ToString", postfix: nameof( AppendPowerLog ) );
          }
+         if ( config.export_food_csv )
+            TryPatch( typeof( SplashScreen ), "Awake", nameof( DumpFoodCsv ) );
+         if ( config.export_hardware_csv )
+            TryPatch( typeof( SplashScreen ), "Awake", nameof( DumpHardwareCsv ) );
+         if ( config.export_text_csv )
+            TryPatch( typeof( LocalizationManager ), "LocalizeAll", postfix: nameof( DumpLanguageCsv ) );
       } catch ( Ex x ) { Err( x ); } }
 
       private void ApplyMechanicPatches () { try {
@@ -217,16 +227,6 @@ namespace Automodchef {
             TryPatch( typeof( KitchenPart ), "Reset", postfix: nameof( ClearPackagingMachineLastDish ) );
             TryPatch( typeof( PackagingMachine ), "StartPackaging", nameof( LogPackagingMachineLastDish ) );
             TryPatch( typeof( PackagingMachine ), "SeeIfSomethingCanBePackaged", nameof( OverridePackagingMachineLogic ) );
-         }
-         if ( config.export_food_csv )
-            TryPatch( typeof( SplashScreen ), "Awake", nameof( DumpFoodCsv ) );
-         if ( config.export_hardware_csv )
-            TryPatch( typeof( SplashScreen ), "Awake", nameof( DumpHardwareCsv ) );
-         if ( config.export_text_csv )
-            TryPatch( typeof( LocalizationManager ), "LocalizeAll", postfix: nameof( DumpLanguageCsv ) );
-         if ( config.traditional_chinese ) {
-            TryPatch( typeof( LanguageSelectionScreen ), "OnShown", nameof( ShowZht ) );
-            TryPatch( typeof( LocalizationManager ), "CreateCultureForCode", nameof( DetectZh ) );
          }
       } catch ( Ex x ) { Err( x ); } }
 
@@ -326,6 +326,45 @@ namespace Automodchef {
          // Client10 Big Taste Inc.
       }
       private static void RestoreContracts ( ref List<Contract> ___allPossibleContracts ) => ___allPossibleContracts = allContracts;
+
+      #region Traditional Chinese.  Hooray for Taiwan, Hong Kong, Macau!
+      private static void ShowZht ( List<string> ___languageNames ) { try {
+         for ( var i = ___languageNames.Count - 1 ; i >= 0 ; i-- )
+            if ( ___languageNames[ i ] == "简体中文" ) {
+               ___languageNames[ i ] = "中文";
+               return;
+            }
+      } catch ( Ex x ) { Err( x ); } }
+
+      private static void DetectZh ( string code ) { try {
+         Info( "Game language set to {0}", code );
+         if ( code != "zh" ) return;
+         zhs2zht = new Dictionary< string, string >();
+         instance.TryPatch( typeof( LanguageSource ), "TryGetTranslation", postfix: nameof( ToZht ) );
+      } catch ( Ex x ) { Err( x ); } }
+
+      private static Dictionary< string, string > zhs2zht;
+
+      private static void ToZht ( string term, ref string Translation, bool __result ) { if ( ! __result ) return; try {
+         if ( zhs2zht.TryGetValue( term, out string zht ) ) { Translation = zht; return; }
+         zht = new String( ' ', Translation.Length );
+         LCMapString( LOCALE_SYSTEM_DEFAULT, LCMAP_TRADITIONAL_CHINESE, Translation, Translation.Length, zht, zht.Length );
+         Fine( "ZH {0} ({1} chars)", term, ( zht = FixZht( zht ) ).Length );
+         zhs2zht.Add( term, Translation = zht );
+      } catch ( Ex x ) { Err( x ); } }
+
+      private static string FixZht ( string zht ) {
+         zht = zht.Replace( "任務目標", "任務" ).Replace( "菜肴", "餐點" ).Replace( "美食評論家", "食評家" )
+            .Replace( "已上餐點", "上菜" ).Replace( "電力消耗", "耗電" ).Replace( "使用的食材", "食材" );
+         return zht;
+      }
+
+      [ DllImport( "kernel32", CharSet = CharSet.Unicode, SetLastError = true ) ]
+      private static extern int LCMapString ( int Locale, int dwMapFlags, string lpSrcStr, int cchSrc, [Out] string lpDestStr, int cchDest );
+      private const int LOCALE_SYSTEM_DEFAULT = 0x0800;
+      private const int LCMAP_SIMPLIFIED_CHINESE = 0x02000000;
+      private const int LCMAP_TRADITIONAL_CHINESE = 0x04000000;
+      #endregion
 
       #region Pre-level load dialogue
       private static LevelManager currentLevel;
@@ -703,45 +742,6 @@ namespace Automodchef {
          f.Write( line.Append( "\r\n" ) );
          line.Length = 0;
       }
-      #endregion
-
-      #region Traditional Chinese.  Hooray for Taiwan, Hong Kong, Macau!
-      private static void ShowZht ( List<string> ___languageNames ) { try {
-         for ( var i = ___languageNames.Count - 1 ; i >= 0 ; i-- )
-            if ( ___languageNames[ i ] == "简体中文" ) {
-               ___languageNames[ i ] = "中文";
-               return;
-            }
-      } catch ( Ex x ) { Err( x ); } }
-
-      private static void DetectZh ( string code ) { try {
-         Info( "Game language set to {0}", code );
-         if ( code != "zh" ) return;
-         zhs2zht = new Dictionary< string, string >();
-         instance.TryPatch( typeof( LanguageSource ), "TryGetTranslation", postfix: nameof( ToZht ) );
-      } catch ( Ex x ) { Err( x ); } }
-
-      private static Dictionary< string, string > zhs2zht;
-
-      private static void ToZht ( string term, ref string Translation, bool __result ) { if ( ! __result ) return; try {
-         if ( zhs2zht.TryGetValue( term, out string zht ) ) { Translation = zht; return; }
-         zht = new String( ' ', Translation.Length );
-         LCMapString( LOCALE_SYSTEM_DEFAULT, LCMAP_TRADITIONAL_CHINESE, Translation, Translation.Length, zht, zht.Length );
-         Fine( "ZH {0} ({1} chars)", term, ( zht = FixZht( zht ) ).Length );
-         zhs2zht.Add( term, Translation = zht );
-      } catch ( Ex x ) { Err( x ); } }
-
-      private static string FixZht ( string zht ) {
-         zht = zht.Replace( "任務目標", "任務" ).Replace( "菜肴", "餐點" ).Replace( "美食評論家", "食評家" )
-            .Replace( "已上餐點", "上菜" ).Replace( "電力消耗", "耗電" ).Replace( "使用的食材", "食材" );
-         return zht;
-      }
-
-      [ DllImport( "kernel32", CharSet = CharSet.Unicode, SetLastError = true ) ]
-      private static extern int LCMapString ( int Locale, int dwMapFlags, string lpSrcStr, int cchSrc, [Out] string lpDestStr, int cchDest );
-      private const int LOCALE_SYSTEM_DEFAULT = 0x0800;
-      private const int LCMAP_SIMPLIFIED_CHINESE = 0x02000000;
-      private const int LCMAP_TRADITIONAL_CHINESE = 0x04000000;
       #endregion
 
       private static bool IsTutorial () => IsTutorial( Initializer.GetInstance().levelManager?.GetLevel() );
