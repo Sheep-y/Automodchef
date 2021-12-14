@@ -210,7 +210,7 @@ namespace Automodchef {
                updated = true;
             }
          }
-         if ( updated && conf.dish_ingredient_quota_buffer == 1 ) Info( "Dishes made from single ingredient are not buffed for better game balance." );
+         if ( updated && conf.dish_ingredient_quota_buffer == 1 ) Info( "Dishes made from single ingredient are not buffed for game balance." );
       } catch ( Ex x ) { Err( x ); } }
       #endregion
 
