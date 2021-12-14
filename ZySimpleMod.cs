@@ -88,67 +88,75 @@ namespace ZyMod {
       public static PropertyInfo Property ( this Type type, string name ) => type?.GetProperty( name, Public | NonPublic | Instance | Static );
    }
 
-   public class IniConfig { // Load and save INI to and from class.
-      public void Load () => Load ( Path.Combine( ZySimpleMod.AppDataDir, ZySimpleMod.ModName + ".ini" ) );
-      public virtual void Load ( string path ) { try {
+   public class IniConfig { // Load and save INI to and from a config object.  All public instant fields (not properties) will be loaded and saved.
+      public virtual void Load ( string path = "" ) => Read( this, path );
+      public void Save ( string path ) => Write( this, path );
+
+      public static void Read ( object config, string path = "" ) { try {
+         if ( string.IsNullOrEmpty( path ) ) path = Path.Combine( ZySimpleMod.AppDataDir, ZySimpleMod.ModName + ".ini" );
+         var type = path.GetType();
          if ( ! File.Exists( path ) ) {
-            Create( path );
+            Write( config, path );
          } else {
-            ModHelpers.Info( "Loading {0}", path );
+            ModHelpers.Info( "Loading {0} into {1}", path, type.FullName );
             foreach ( var line in File.ReadAllLines( path ) ) {
                var split = line.Split( new char[]{ '=' }, 2 );
                if ( split.Length != 2 || line.StartsWith( ";" ) ) continue;
-               var prop = GetType().GetField( split[ 0 ].Trim() );
-               if ( prop == null ) { ModHelpers.Warn( "Unknown field: {0}", split[ 0 ] ); continue; }
+               var prop = type.GetField( split[ 0 ].Trim() );
+               if ( prop == null ) { ModHelpers.Warn( "Unknown field: {0}", split[ 0 ] ); continue; } // Legacy fields are expected to be kept in config class as [Obsolete].
                var val = split[1].Trim();
                if ( val.Length > 1 && val.StartsWith( "\"" ) && val.EndsWith( "\"" ) ) val = val.Substring( 1, val.Length - 2 );
+               if ( string.IsNullOrWhiteSpace( val ) && prop.FieldType != typeof( string ) ) continue;
                switch ( prop.FieldType.FullName ) {
-                  case "System.SByte"  : if ( SByte .TryParse( val, out sbyte  bval ) ) prop.SetValue( this, bval ); break;
-                  case "System.Int16"  : if ( Int16 .TryParse( val, out short  sval ) ) prop.SetValue( this, sval ); break;
-                  case "System.Int32"  : if ( Int32 .TryParse( val, out int    ival ) ) prop.SetValue( this, ival ); break;
-                  case "System.Int64"  : if ( Int64 .TryParse( val, out long   lval ) ) prop.SetValue( this, lval ); break;
-                  case "System.Byte"   : if ( Byte  .TryParse( val, out byte   Bval ) ) prop.SetValue( this, Bval ); break;
-                  case "System.UInt16" : if ( UInt16.TryParse( val, out ushort Sval ) ) prop.SetValue( this, Sval ); break;
-                  case "System.UInt32" : if ( UInt32.TryParse( val, out uint   Ival ) ) prop.SetValue( this, Ival ); break;
-                  case "System.UInt64" : if ( UInt64.TryParse( val, out ulong  Lval ) ) prop.SetValue( this, Lval ); break;
-                  case "System.Single" : if ( Single.TryParse( val, out float  fval ) ) prop.SetValue( this, fval ); break;
-                  case "System.Double" : if ( Double.TryParse( val, out double dval ) ) prop.SetValue( this, dval ); break;
-                  case "System.String" : prop.SetValue( this, val ); break;
+                  case "System.SByte"  : if ( SByte .TryParse( val, out sbyte  bval ) ) prop.SetValue( config, bval ); break;
+                  case "System.Int16"  : if ( Int16 .TryParse( val, out short  sval ) ) prop.SetValue( config, sval ); break;
+                  case "System.Int32"  : if ( Int32 .TryParse( val, out int    ival ) ) prop.SetValue( config, ival ); break;
+                  case "System.Int64"  : if ( Int64 .TryParse( val, out long   lval ) ) prop.SetValue( config, lval ); break;
+                  case "System.Byte"   : if ( Byte  .TryParse( val, out byte   Bval ) ) prop.SetValue( config, Bval ); break;
+                  case "System.UInt16" : if ( UInt16.TryParse( val, out ushort Sval ) ) prop.SetValue( config, Sval ); break;
+                  case "System.UInt32" : if ( UInt32.TryParse( val, out uint   Ival ) ) prop.SetValue( config, Ival ); break;
+                  case "System.UInt64" : if ( UInt64.TryParse( val, out ulong  Lval ) ) prop.SetValue( config, Lval ); break;
+                  case "System.Single" : if ( Single.TryParse( val, out float  fval ) ) prop.SetValue( config, fval ); break;
+                  case "System.Double" : if ( Double.TryParse( val, out double dval ) ) prop.SetValue( config, dval ); break;
+                  case "System.String" : prop.SetValue( config, val ); break;
                   case "System.Boolean" :
                      val = val.ToLowerInvariant();
-                     if ( val == "yes" || val == "1" || val == "true" ) prop.SetValue( this, true );
-                     else if ( val == "no" || val == "0" || val == "false" ) prop.SetValue( this, false );
+                     if ( val == "yes" || val == "1" || val == "true" ) prop.SetValue( config, true );
+                     else if ( val == "no" || val == "0" || val == "false" ) prop.SetValue( config, false );
                      break;
-                  default :
-                     ModHelpers.Warn( "Unexpected field type {0} of {1}", prop.FieldType, split[ 0 ] );
+                  case "System.DateTime" :
+                     if ( val == "null ") prop.SetValue( config, null );
+                     else if ( DateTime.TryParse( val, null, System.Globalization.DateTimeStyles.RoundtripKind, out DateTime dt ) ) prop.SetValue( config, dt );
                      break;
+                  default : ModHelpers.Warn( "Unexpected field type {0} of {1}", prop.FieldType, split[ 0 ] ); break;
                }
             }
          }
-         foreach ( var prop in GetType().GetFields() ) ModHelpers.Info( "Config {0} = {1}", prop.Name, prop.GetValue( this ) );
+         foreach ( var prop in type.GetFields() ) ModHelpers.Info( "Config {0} = {1}", prop.Name, prop.GetValue( config ) );
       } catch ( Exception ex ) { ModHelpers.Warn( ex ); } }
 
-      private string lastSection = "";
-
-      public virtual void Create ( string ini ) { try {
-         ModHelpers.Info( "Creating {0}", ini );
-         using ( TextWriter tw = File.CreateText( ini ) ) {
-            var attr = GetType().GetCustomAttribute<ConfigAttribute>();
+      public static void Write ( object config, string path = "" ) { try {
+         var lastSection = "";
+         var type = config.GetType();
+         if ( string.IsNullOrEmpty( path ) ) path = Path.Combine( ZySimpleMod.AppDataDir, ZySimpleMod.ModName + ".ini" );
+         ModHelpers.Info( "Creating {0} from {1}", path, type.FullName );
+         using ( TextWriter tw = File.CreateText( path ) ) {
+            var attr = type.GetCustomAttribute<ConfigAttribute>();
             if ( ! string.IsNullOrWhiteSpace( attr?.Comment ) ) tw.Write( $"{attr.Comment}\r\n" );
-            var fields = GetType().GetFields();
+            var fields = type.GetFields();
             if ( fields.Any( e => e.GetCustomAttribute<ConfigAttribute>() != null ) )
                fields = fields.Where( e => e.GetCustomAttribute<ConfigAttribute>() != null ).ToArray();
-            foreach ( var f in fields ) {
+            foreach ( var f in fields.Where( e => e.GetCustomAttribute<ObsoleteAttribute>() == null ) ) {
                if ( ! f.IsPublic || f.IsStatic ) continue;
                if ( ( attr = f.GetCustomAttribute<ConfigAttribute>() ) != null ) {
                   if ( ! string.IsNullOrWhiteSpace( attr.Section ) && attr.Section != lastSection ) tw.Write( $"\r\n[{lastSection = attr.Section}]\r\n" );
                   if ( ! string.IsNullOrWhiteSpace( attr.Comment ) ) tw.Write( $"; {attr.Comment}\r\n" );
                }
-               tw.Write( f.Name + " = " + f.GetValue( this ) + "\r\n" );
+               tw.Write( f.Name + " = " + f.GetValue( config ) + "\r\n" );
             }
             tw.Flush();
          }
-         if ( File.Exists( ini ) ) ModHelpers.Fine( "{0} bytes written", new FileInfo( ini ).Length );
+         if ( File.Exists( path ) ) ModHelpers.Fine( "{0} bytes written", new FileInfo( path ).Length );
          else ModHelpers.Warn( "Config file not written." );
       } catch ( Exception ex ) { ModHelpers.Warn( "Cannot create config file: {0}", ex ); } }
    }

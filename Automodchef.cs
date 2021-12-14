@@ -103,11 +103,11 @@ namespace Automodchef {
       [ ConfigAttribute( "Misc", "Change Simplified Chinese to Traditional Chinese with improved translations.  No effect on other langauges." ) ]
       public bool traditional_chinese = true;
 
-      public override void Load ( string path ) {
+      public override void Load ( string path = "" ) {
          base.Load( path );
          if ( config_version >= 20211206 ) return;
          config_version = 20211206;
-         Create( path );
+         Save( path );
       }
    }
 
