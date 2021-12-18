@@ -225,7 +225,7 @@ namespace Automodchef {
                 "Processed", "Grilled", "Fried", "Steamed", "Baked", "Wet", //"Bacterias",
                 "Spoil (sec)", "Ingredients Quota", "Power Quota" );
          foreach ( var mat in Ingredient.GetAll().Union( Dish.GetAll() ) ) {
-            Fine( $"#{mat.internalName} = {mat.friendlyName}" );
+            Fine( "FOOD {0} = {1}", mat.internalName, mat.friendlyName );
             float spoil = 0, iQ = 0, pQ = 0;
             if ( mat is Dish dish ) { spoil = dish.timeToBeSpoiled;  iQ = dish.expectedIngredients;  pQ = dish.expectedPower; }
             line.AppendCsvLine( mat.internalName, mat.friendlyName, mat.technique.ToString(), mat.timeToBeAssembled + "",
@@ -246,7 +246,7 @@ namespace Automodchef {
          Info( "Exporting hardware list to {0}", file, hardwareDumped = true );
          var line = new StringBuilder( 12 * 1024 ).AppendCsvLine( "Id", "Name", "Description", "Category", "Price", "Power", "Speed", "Time", "Variant", "Code Class" );
          foreach ( var part in AutomachefResources.KitchenParts.GetList_ReadOnly() ) {
-            Fine( "#{0} = {1}", part.internalName, part.partName );
+            Fine( "HW {0} = {1}", part.internalName, part.partName );
             var speed  = part.GetType().Field( "speed" )?.GetValue( part );
             var rspeed = part.GetType().Field( "rotationSpeed" )?.GetValue( part ) ??  part.GetType().Field( "armRotationSpeed" )?.GetValue( part );
             var pTime  = part.GetType().Field( "timeToProcess" )?.GetValue( part );
@@ -263,7 +263,7 @@ namespace Automodchef {
             var file = Path.Combine( RootMod.AppDataDir, "text" + ( i == 0 ? "" : $"{i}" ) + ".csv" );
             Info( "Exporting game text to {0}", file, textDumped = true );
             var data = ___Sources[ i ].Export_CSV( null );
-            Task.Run( () => { try { File.WriteAllText( file, data, Encoding.UTF8 ); Info( "{0} game text exported", ___Sources.Count ); } catch ( Exception ) { } } );
+            Task.Run( () => { try { File.WriteAllText( file, data, Encoding.UTF8 ); Info( "{0} game text exported", ___Sources[0].GetTermsList().Count ); } catch ( Exception ) { } } );
          }
       } catch ( Ex x ) { Err( x ); } }
       #endregion
