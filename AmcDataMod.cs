@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Analytics;
 using ZyMod;
@@ -216,69 +217,55 @@ namespace Automodchef {
 
       #region Csv dump
       private static bool foodDumped, hardwareDumped, textDumped;
-      private static readonly StringBuilder line = new StringBuilder();
 
       private static void DumpFoodCsv () { if ( foodDumped ) return; try {
          string file = Path.Combine( RootMod.AppDataDir, "foods.csv" );
          Info( "Exporting food list to {0}", file, foodDumped = true );
-         using ( TextWriter f = File.CreateText( file ) ) {
-            Csv( f, "Id", "Name", "Process", "Seconds", "Recipe", "Liquids",
-                   "Processed", "Grilled", "Fried", "Steamed", "Baked", "Wet", //"Bacterias",
-                   "Spoil (sec)", "Ingredients Quota", "Power Quota" );
-            foreach ( var mat in Ingredient.GetAll().Union( Dish.GetAll() ) ) {
-               Fine( $"#{mat.internalName} = {mat.friendlyName}" );
-               float spoil = 0, iQ = 0, pQ = 0;
-               if ( mat is Dish dish ) { spoil = dish.timeToBeSpoiled;  iQ = dish.expectedIngredients;  pQ = dish.expectedPower; }
-               Csv( f, mat.internalName, mat.friendlyName, mat.technique.ToString(), mat.timeToBeAssembled + "",
-                  mat.recipe == null ? "" : string.Join( " + ", mat.recipe ),
-                  mat.recipeLiquidIngredients == null ? "" : string.Join( " + ", mat.recipeLiquidIngredients ),
-                  mat.resultProcess, mat.resultGrill, mat.resultFry, mat.resultSteam, mat.resultBake, mat.resultWet,
-                  //mat.bacteria == null ? "" : string.Join( " & ", mat.bacteria.Select( e => e.friendlyName ) ),
-                  spoil == 0 ? "" : spoil.ToString(), iQ == 0 ? "" : iQ.ToString(), pQ == 0 ? "" : pQ.ToString()
-                  );
-            }
-            f.Flush();
+         var line = new StringBuilder( 24 * 1024 ).AppendCsvLine( "Id", "Name", "Process", "Seconds", "Recipe", "Liquids",
+                "Processed", "Grilled", "Fried", "Steamed", "Baked", "Wet", //"Bacterias",
+                "Spoil (sec)", "Ingredients Quota", "Power Quota" );
+         foreach ( var mat in Ingredient.GetAll().Union( Dish.GetAll() ) ) {
+            Fine( $"#{mat.internalName} = {mat.friendlyName}" );
+            float spoil = 0, iQ = 0, pQ = 0;
+            if ( mat is Dish dish ) { spoil = dish.timeToBeSpoiled;  iQ = dish.expectedIngredients;  pQ = dish.expectedPower; }
+            line.AppendCsvLine( mat.internalName, mat.friendlyName, mat.technique.ToString(), mat.timeToBeAssembled + "",
+               mat.recipe == null ? "" : string.Join( " + ", mat.recipe ),
+               mat.recipeLiquidIngredients == null ? "" : string.Join( " + ", mat.recipeLiquidIngredients ),
+               mat.resultProcess, mat.resultGrill, mat.resultFry, mat.resultSteam, mat.resultBake, mat.resultWet,
+               //mat.bacteria == null ? "" : string.Join( " & ", mat.bacteria.Select( e => e.friendlyName ) ),
+               spoil == 0 ? "" : spoil.ToString(), iQ == 0 ? "" : iQ.ToString(), pQ == 0 ? "" : pQ.ToString()
+               );
          }
-         Info( "Food list exported" );
+         var data = line.ToString();
+         line.Clear();
+         Task.Run( () => { try { File.WriteAllText( file, data, Encoding.UTF8 ); Info( "Food list exported" ); } catch ( Exception ) { } } );
       } catch ( Ex x ) { Err( x ); } }
 
       private static void DumpHardwareCsv () { if ( hardwareDumped ) return; try {
          string file = Path.Combine( RootMod.AppDataDir, "hardwares.csv" );
          Info( "Exporting hardware list to {0}", file, hardwareDumped = true );
-         using ( TextWriter f = File.CreateText( file ) ) {
-            Csv( f, "Id", "Name", "Description", "Category", "Price", "Power", "Speed", "Time", "Variant", "Code Class" );
-            foreach ( var part in AutomachefResources.KitchenParts.GetList_ReadOnly() ) {
-               Fine( "#{0} = {1}", part.internalName, part.partName );
-               var speed  = part.GetType().Field( "speed" )?.GetValue( part );
-               var rspeed = part.GetType().Field( "rotationSpeed" )?.GetValue( part ) ??  part.GetType().Field( "armRotationSpeed" )?.GetValue( part );
-               var pTime  = part.GetType().Field( "timeToProcess" )?.GetValue( part );
-               Csv( f, part.internalName, part.partName, part.description, part.category, part.cost, part.powerInWatts, speed ?? rspeed ?? "", pTime ?? "",
-                      part.nextVariantInternalName, part.GetType().FullName );
-            }
-            f.Flush();
+         var line = new StringBuilder( 12 * 1024 ).AppendCsvLine( "Id", "Name", "Description", "Category", "Price", "Power", "Speed", "Time", "Variant", "Code Class" );
+         foreach ( var part in AutomachefResources.KitchenParts.GetList_ReadOnly() ) {
+            Fine( "#{0} = {1}", part.internalName, part.partName );
+            var speed  = part.GetType().Field( "speed" )?.GetValue( part );
+            var rspeed = part.GetType().Field( "rotationSpeed" )?.GetValue( part ) ??  part.GetType().Field( "armRotationSpeed" )?.GetValue( part );
+            var pTime  = part.GetType().Field( "timeToProcess" )?.GetValue( part );
+            line.AppendCsvLine( part.internalName, part.partName, part.description, part.category, part.cost, part.powerInWatts,
+                  speed ?? rspeed ?? "", pTime ?? "", part.nextVariantInternalName, part.GetType().FullName );
          }
-         Info( "Hardware list exported" );
+         var data = line.ToString();
+         line.Clear();
+         Task.Run( () => { try { File.WriteAllText( file, data, Encoding.UTF8 ); Info( "Hardware list exported" ); } catch ( Exception ) { } } );
       } catch ( Ex x ) { Err( x ); } }
 
       private static void DumpLanguageCsv ( List<LanguageSource> ___Sources ) { if ( textDumped || ___Sources == null ) return; try {
          for ( var i = 0 ; i < ___Sources.Count ; i++ ) {
-            var file = Path.Combine( RootMod.AppDataDir, $"text-{i}.csv" );
+            var file = Path.Combine( RootMod.AppDataDir, "text" + ( i == 0 ? "" : $"{i}" ) + ".csv" );
             Info( "Exporting game text to {0}", file, textDumped = true );
-            using ( var fw = File.CreateText( file ) ) fw.Write( ___Sources[ i ].Export_CSV( null ) );
+            var data = ___Sources[ i ].Export_CSV( null );
+            Task.Run( () => { try { File.WriteAllText( file, data, Encoding.UTF8 ); Info( "{0} game text exported", ___Sources.Count ); } catch ( Exception ) { } } );
          }
-         Info( "{0} game text exported", ___Sources.Count );
       } catch ( Ex x ) { Err( x ); } }
-
-      private static void Csv ( TextWriter f, params object[] values ) {
-         foreach ( var val in values ) {
-            string v = val?.ToString() ?? "null";
-            if ( v.Contains( "," ) || v.Contains( "\"" ) || v.Contains( "\n" ) ) line.Append( '"' ).Append( v.Replace( "\"", "\"\"" ) ).Append( "\"," );
-            else line.Append( v ).Append( ',' );
-         }
-         --line.Length;
-         f.Write( line.Append( "\r\n" ) );
-         line.Length = 0;
-      }
       #endregion
    }
 }

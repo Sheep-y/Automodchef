@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using static System.Reflection.BindingFlags;
 using static HarmonyLib.HarmonyPatchType;
 
@@ -119,6 +120,17 @@ namespace ZyMod {
          }
          return parsed != null;
       } catch ( ArgumentException ) { if ( logWarnings ) Warn( "Invalid value for {0}: {1}", valueType.FullName, val ); return false; } }
+
+      public static StringBuilder AppendCsvLine ( this StringBuilder buf, params object[] values ) {
+         if ( buf.Length > 0 ) buf.Append( "\r\n" );
+         foreach ( var val in values ) {
+            string v = val?.ToString() ?? "null";
+            if ( v.IndexOfAny( new char[] { ',', '"', '\n', '\r' } ) >= 0 ) buf.Append( '"' ).Append( v.Replace( "\"", "\"\"" ) ).Append( "\"," );
+            else buf.Append( v ).Append( ',' );
+         }
+         --buf.Length;
+         return buf;
+      }
    }
 
    public class IniConfig { // Load and save INI to and from a config object.  Public instant fields (not properties) will be loaded and saved, may be filtered by attributes.
