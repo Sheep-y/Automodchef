@@ -64,15 +64,15 @@ namespace Automodchef {
       [ ConfigAttribute( "User Interface", "Hide efficiency of tutorial levels.  Default true." ) ]
       public bool hide_tutorial_efficiency = true;
 
-      [ ConfigAttribute( "Log", "Show real-time power usage in mouseover tooltips.  Default true." ) ]
+      [ ConfigAttribute( "Info", "Show real-time power usage in mouseover tooltips.  Default true." ) ]
       public bool tooltip_power_usage = true;
-      [ ConfigAttribute( "Log", "Show food freshness in mouseover tooltips.  Default true." ) ]
+      [ ConfigAttribute( "Info", "Show food freshness in mouseover tooltips.  Default true." ) ]
       public bool tooltip_freshness = true;
-      [ ConfigAttribute( "Log", "Add efficiency calculation to kitchen log.  Default true." ) ]
+      [ ConfigAttribute( "Info", "Add efficiency calculation to kitchen log.  Default true." ) ]
       public bool efficiency_log = true;
-      [ ConfigAttribute( "Log", "Breakdown efficiency quotas by dishes.  Default true." ) ]
+      [ ConfigAttribute( "Info", "Breakdown efficiency quotas by dishes.  Default true." ) ]
       public bool efficiency_log_breakdown = true;
-      [ ConfigAttribute( "Log", "Show top X power consuming part types in kitchen log.  Default 5.  0 to disable." ) ]
+      [ ConfigAttribute( "Info", "Show top X power consuming part types in kitchen log.  Default 5.  0 to disable." ) ]
       public byte power_log_rows = 5;
 
       [ ConfigAttribute( "Simulation", "Change game speed instantaneously.  Default true." ) ]
