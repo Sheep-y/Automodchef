@@ -2,13 +2,15 @@
 using MaterialUI;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.UI;
-using static ZyMod.ModHelpers;
 using static I2.Loc.ScriptLocalization.Warnings;
-using System.Runtime.InteropServices;
+using static ZyMod.ModHelpers;
 
 namespace Automodchef {
    using Ex = Exception;
@@ -50,8 +52,8 @@ namespace Automodchef {
          if ( conf.fix_food_hint_when_paused )
             TryPatch( typeof( IngredientTooltip ), "Update", postfix: nameof( FixIngredientHintOnPause ) );
          if ( conf.traditional_chinese ) {
-            TryPatch( typeof( LanguageSelectionScreen ), "OnShown", nameof( ShowZht ) );
             TryPatch( typeof( LocalizationManager ), "CreateCultureForCode", nameof( DetectZh ) );
+            TryPatch( typeof( LanguageSelectionScreen ), "OnShown", nameof( ShowZht ) );
          }
       } catch ( Ex x ) { Err( x ); } }
 
@@ -220,24 +222,32 @@ namespace Automodchef {
          Info( "Game language set to {0}", code );
          if ( code != "zh" ) return;
          zhs2zht = new Dictionary< string, string >();
-         instance.TryPatch( typeof( LanguageSource ), "TryGetTranslation", postfix: nameof( ToZht ) );
+         if ( instance.TryPatch( typeof( LanguageSource ), "GetTermData", nameof( TrackZht ) ) != null )
+            instance.TryPatch( typeof( SpecializationManager ), "GetSpecializedText", postfix: nameof( ToZht ) );
+         var csv = Path.Combine( Path.GetDirectoryName( new Uri( Assembly.GetExecutingAssembly().CodeBase ).LocalPath ), "zht.csv" );
+         if ( ! File.Exists( csv ) ) return;
+         Info( "Importing zh text from {0}", csv );
+         using ( var r = new StreamReader( csv ) )
+            while ( r.TryReadCsvRow( out var row ) ) {
+               var cells = row.ToArray();
+               if ( cells.Length >= 2 && ! string.IsNullOrWhiteSpace( cells[ 0 ] ) ) zhs2zht[ cells[ 0 ] ] = cells[ 1 ];
+            }
+         Info( "{0} text imported", zhs2zht.Count );
+         // TODO: Patch PlatformInterface.SetOverrideLocaleCode
       } catch ( Ex x ) { Err( x ); } }
 
+      private static string lastTerm;
       private static Dictionary< string, string > zhs2zht;
 
-      private static void ToZht ( string term, ref string Translation, bool __result ) { if ( ! __result ) return; try {
-         if ( zhs2zht.TryGetValue( term, out string zht ) ) { Translation = zht; return; }
-         zht = new String( ' ', Translation.Length );
-         LCMapString( LOCALE_SYSTEM_DEFAULT, LCMAP_TRADITIONAL_CHINESE, Translation, Translation.Length, zht, zht.Length );
-         Fine( "ZH {0} ({1} chars)", term, ( zht = FixZht( zht ) ).Length );
-         zhs2zht.Add( term, Translation = zht );
-      } catch ( Ex x ) { Err( x ); } }
+      private static void TrackZht ( string term ) => lastTerm = term;
 
-      private static string FixZht ( string zht ) {
-         zht = zht.Replace( "任務目標", "任務" ).Replace( "菜肴", "餐點" ).Replace( "美食評論家", "食評家" )
-            .Replace( "已上餐點", "上菜" ).Replace( "電力消耗", "耗電" ).Replace( "使用的食材", "食材" );
-         return zht;
-      }
+      private static void ToZht ( ref string __result ) { try {
+         if ( lastTerm != null && zhs2zht.TryGetValue( lastTerm, out string zht ) ) { __result = zht; return; }
+         zht = new string( ' ', __result.Length );
+         LCMapString( LOCALE_SYSTEM_DEFAULT, LCMAP_TRADITIONAL_CHINESE, __result, __result.Length, zht, zht.Length );
+         Fine( "ZH {0} ({1} chars)", lastTerm ?? __result, zht.Length );
+         if ( lastTerm != null ) zhs2zht.Add( lastTerm, __result = zht );
+      } catch ( Ex x ) { Err( x ); } }
 
       [ DllImport( "kernel32", CharSet = CharSet.Unicode, SetLastError = true ) ]
       private static extern int LCMapString ( int Locale, int dwMapFlags, string lpSrcStr, int cchSrc, [Out] string lpDestStr, int cchDest );

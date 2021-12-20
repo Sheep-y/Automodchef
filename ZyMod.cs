@@ -65,7 +65,7 @@ namespace ZyMod {
                Directory.CreateDirectory( _AppDataDir );
                if ( ! Directory.Exists( _AppDataDir ) ) _AppDataDir = "";
             }
-         } catch ( Exception _ ) { _AppDataDir = ""; }
+         } catch ( Exception ) { _AppDataDir = ""; }
          return _AppDataDir;
       } }
 
@@ -130,6 +130,49 @@ namespace ZyMod {
          }
          --buf.Length;
          return buf;
+      }
+
+      /* Try read a csv row from StreamReader or StringReader. Linebreaks will be converted to \n */
+      public static bool TryReadCsvRow ( this TextReader source, out IEnumerable<string> row, StringBuilder quoteBuffer = null )
+         => ( row = ReadCsvRow( source, quoteBuffer ) ) != null;
+
+      /* Read a csv row from StreamReader or StringReader. Return null if no more rows. Linebreaks will be converted to \n */
+      public static IEnumerable<string> ReadCsvRow ( this TextReader source, StringBuilder quoteBuffer = null ) {
+         var line = source.ReadLine();
+         return line == null ? null : ReadCsvCells( source, line, quoteBuffer );
+      }
+
+      private static IEnumerable<string> ReadCsvCells ( TextReader source, string line, StringBuilder buf ) {
+         for ( var pos = 0 ; line?.Length >= pos ; ) yield return ReadCsvCell( source, ref line, ref pos, buf );
+      }
+
+      private static string ReadCsvCell ( TextReader source, ref string line, ref int pos, StringBuilder buf ) {
+         var len = line.Length;
+         if ( pos >= len ) { pos = len + 1; return ""; }
+         if ( line[ pos ] != '"' ) { // Unquoted cell.
+            int end = line.IndexOf( ',', pos ), head = pos;
+            if ( end < 0 ) { pos = len + 1; return line.Substring( head ); }
+            if ( end == pos ) { pos++; return ""; }
+            pos = end + 1;
+            return line.Substring( head, end - head );
+         }
+         if ( buf == null ) buf = new StringBuilder(); else buf.Clear();
+         var start = ++pos; // Drop initial quote.
+         while ( true ) {
+            int end = pos < len ? line.IndexOf( '"', pos ) : -1, next = end + 1;
+            if ( end < 0 ) { // End of line.  Append and read next line.
+               buf.Append( line, start, len - start ).Append( "\n" );
+               if ( ( line = source.ReadLine() ) == null ) return buf.ToString();
+               start = pos = 0; len = line.Length;
+            } else if ( next == len || line[ next ] == ',' ) { // End of cell.
+               pos = end + 2;
+               return buf.Append( line, start, end - start ).ToString();
+            } else if ( line[ next ] == '"' ) { // Double quote.
+               buf.Append( line, start, end - start + 1 );
+               pos = start = end + 2;
+            } else // Single quote not followed by EOL or comma.
+               pos++;
+         }
       }
    }
 
