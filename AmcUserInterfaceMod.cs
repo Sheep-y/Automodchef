@@ -222,8 +222,7 @@ namespace Automodchef {
          Info( "Game language set to {0}", code );
          if ( code != "zh" ) return;
          zhs2zht = new Dictionary< string, string >();
-         if ( instance.TryPatch( typeof( LanguageSource ), "GetTermData", nameof( TrackZht ) ) != null )
-            instance.TryPatch( typeof( SpecializationManager ), "GetSpecializedText", postfix: nameof( ToZht ) );
+         if ( instance.TryPatch( typeof( TermData ), "GetTranslation", postfix: nameof( ToZht ) ) == null ) return;
          var csv = Path.Combine( Path.GetDirectoryName( new Uri( Assembly.GetExecutingAssembly().CodeBase ).LocalPath ), "zht.csv" );
          if ( ! File.Exists( csv ) ) return;
          Info( "Importing zh text from {0}", csv );
@@ -236,17 +235,15 @@ namespace Automodchef {
          // TODO: Patch PlatformInterface.SetOverrideLocaleCode
       } catch ( Ex x ) { Err( x ); } }
 
-      private static string lastTerm;
       private static Dictionary< string, string > zhs2zht;
 
-      private static void TrackZht ( string term ) => lastTerm = term;
-
-      private static void ToZht ( ref string __result ) { try {
-         if ( lastTerm != null && zhs2zht.TryGetValue( lastTerm, out string zht ) ) { __result = zht; return; }
+      private static void ToZht ( string ___Term, ref string __result ) { try {
+         if ( ___Term == null || string.IsNullOrEmpty( __result ) ) return;
+         if ( zhs2zht.TryGetValue( ___Term, out string zht ) ) { __result = zht; return; }
          zht = new string( ' ', __result.Length );
          LCMapString( LOCALE_SYSTEM_DEFAULT, LCMAP_TRADITIONAL_CHINESE, __result, __result.Length, zht, zht.Length );
-         Fine( "ZH {0} ({1} chars)", lastTerm ?? __result, zht.Length );
-         if ( lastTerm != null ) zhs2zht.Add( lastTerm, __result = zht );
+         Fine( "ZH {0} ({1} chars)", ___Term, zht.Length );
+         if ( ___Term != null ) zhs2zht.Add( ___Term, __result = zht );
       } catch ( Ex x ) { Err( x ); } }
 
       [ DllImport( "kernel32", CharSet = CharSet.Unicode, SetLastError = true ) ]
