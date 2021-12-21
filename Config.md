@@ -325,6 +325,13 @@ Specifically, the localization key and the text from current game language will 
 The dump is done by the game's internationaliztion engine, not by this mod.  Some values may be misaligned.
 
 
+*fix_epic_locale_override*
+
+When true, the game will no longer try to force Epic Game to change its language.
+
+I can set the platform's language on my own, thanks.  Please don't change it for me, and Epic please don't automatically assume Chinese must be Simplified.
+
+
 *traditional_chinese*
 
 When true, and when game language is set to Chinese, a new Traditional Chinese translation will be used.

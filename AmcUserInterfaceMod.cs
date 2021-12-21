@@ -51,6 +51,8 @@ namespace Automodchef {
          }
          if ( conf.fix_food_hint_when_paused )
             TryPatch( typeof( IngredientTooltip ), "Update", postfix: nameof( FixIngredientHintOnPause ) );
+         if ( conf.fix_epic_locale_override )
+            TryPatch( typeof( BasePCPlatform ).Assembly.GetType( "BaseEpicPlatform" ), "SetSocialOverlayLocale", nameof( Disable ) );
          if ( conf.traditional_chinese ) {
             TryPatch( typeof( LocalizationManager ), "CreateCultureForCode", nameof( DetectZh ) );
             TryPatch( typeof( LanguageSelectionScreen ), "OnShown", nameof( ShowZht ) );
@@ -209,6 +211,8 @@ namespace Automodchef {
          __instance.canvasGroup.alpha = 1f;
       } catch ( Ex x ) { Err( x ); } }
 
+      private static bool Disable () => false;
+
       #region Traditional Chinese.  Hooray for Taiwan, Hong Kong, Macau!
       private static void ShowZht ( List<string> ___languageNames ) { try {
          for ( var i = ___languageNames.Count - 1 ; i >= 0 ; i-- )
@@ -232,7 +236,6 @@ namespace Automodchef {
                if ( cells.Length >= 2 && ! string.IsNullOrWhiteSpace( cells[ 0 ] ) ) zhs2zht[ cells[ 0 ] ] = cells[ 1 ];
             }
          Info( "{0} text imported", zhs2zht.Count );
-         // TODO: Patch PlatformInterface.SetOverrideLocaleCode
       } catch ( Ex x ) { Err( x ); } }
 
       private static Dictionary< string, string > zhs2zht;
