@@ -15,9 +15,10 @@ Main features:
 * Fix game bugs.
 * Efficiency and power report in kitchen log.
 * Improved packaging machines, with passthrough.
-* Option to load game and bypass Roboto speech.
+* Startup load on all levels and bypass Roboto speech.
 * Higher camera (bird view possible), faster speeds, expanded tooltips.
-* And more.  See config.md or config.txt for details.
+* Traditional Chinese translation.
+* And more.
 
 
 = Installation =
@@ -38,7 +39,7 @@ The mod has no special requirements.  It runs as part of the game.
 
 = Configuration =
 
-On first launch, the mod will create `automodchef.ini` and `automodchef.log` in the game's save folder,
+On first launch, the mod will create `automodchef.ini` and `automodchef.log` in the game's user data folder,
 i.e. %AppData%\..\LocalLow\HermesInteractive\Automachef\
 
 You can edit the ini file to turn on/off mod features.
@@ -51,16 +52,16 @@ You may want to google how to see file extensions.
 
 = Compatibility =
 
-The mod is developed and tested on Automachef version , Epic Game Store.
+The mod is developed and tested on Automachef version 1.1.0, Epic Game Store.
 It works only on the Microsoft .Net build of the game, i.e. on Windows or Wine.
 
-It should be compatible with Steam version, and is expectec to be broadly compatible with future game versions.
+It should be compatible with Steam version, and is expected to be broadly compatible with future game versions.
 It can survive normal game updates, but Steam's Verify File may remove the mod.
 
 The mod does not change saves in any way.
 But because of the mod's tweaks, some vanilla layouts may yield a higher efficiency.
-Conversely, a layout that can clear the level with this mod may fails to do so in vanilla.
-The save is unchanged; it is on-the-fly changes to Packaging Machine and Efficiency that causes the differences.
+Conversely, a layout that can clear a level with this mod may fails to do so in vanilla.
+The save is the same; it is on-the-fly mechanical changes that cause the differences.
 
 As the first known DLL mod for Automachef, it does not have other mods to be compatible with.
 Newer mods can use their own method to "play nice" with this mod.  This one's on them.
@@ -70,17 +71,9 @@ Newer mods can use their own method to "play nice" with this mod.  This one's on
 
 If Unity and other logos were not skipped and you didn't explictly disable skip_intro,
 the mod is not being loaded.  Check `version.dll` and `doorstop_config.ini` are in game root and non-empty,
-and the Mod folder exists with at least 7 dlls.
+and the Mod folder exists with at least 8 files.
 
-If a restart and reinstall does not solve it, you can manually inject the mod with
-[Minjector](https://github.com/EquiFox/MInjector).
-[MonoJunkie](https://github.com/wledfor2/MonoJunkie) may also work.
-
-    Namespace: Automodchef
-    Class: Automodchef
-    Method: Main
-
-Otherwise, if most feature works, but the game was broken in some way, check automodchef.log for errors.
+Otherwise, if most features work, but the game was broken in some way, check automodchef.log for errors.
 You can then disable the relevant feature(s) (see above) to try to fix the game.
 
 I have cleared the game, so don't count on future development or support.
@@ -94,10 +87,3 @@ To remove the mod, delete `version.dll`, `doorstop_config.ini`, and the `Mod` fo
 The mod does not modify any game files, so there is normally no need to Verify files.
 
 You may also move / rename version.dll to temporary disable the mod.
-
-
-= Disclaimer =
-
-This mod contains no code or assets from the game.
-
-Do note that all DLL games mods are inherently unsafe.  Please exercise caution.
