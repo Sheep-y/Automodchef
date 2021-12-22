@@ -19,7 +19,7 @@ Buttons/MAIN MENU,主選單
 Buttons/MY BUSINESS,業務報告
 Buttons/NEW,新
 Buttons/NO,否
-Buttons/OKAY,好的
+Buttons/OKAY,確定
 Buttons/OPEN CODE EDITOR,打開源碼編輯器
 Buttons/PURCHASE,購置
 Buttons/QUIT,離開
@@ -30,8 +30,8 @@ Buttons/SIMULATE ORDER,模擬訂單
 Buttons/START,開始
 Buttons/STOP,停止
 Buttons/SUBMIT DESIGN,提交設計
-Buttons/SWITCH TO CODE,切換至源碼
-Buttons/SWITCH TO VISUAL LOGIC EDITOR,切換至視覺化編輯器
+Buttons/SWITCH TO CODE,文本編輯器
+Buttons/SWITCH TO VISUAL LOGIC EDITOR,視覺化編輯器
 Buttons/YES,是
 Contracts/Cash,現金
 Contracts/Client,客戶
@@ -77,7 +77,7 @@ Contracts/Objective DeliverDishesRushHour,配送{[NUMBER]}份高峰時段的訂�
 Contracts/Objective FoodCritic, 配送1分食評家的訂單
 Contracts/Objective Ingredients,使用不超過{[NUMBER]}份食材
 Contracts/Objective NoDisasters,別讓任何災難發生
-Contracts/Objective Power,耗電不超過{[NUMBER]}瓦時
+Contracts/Objective Power,耗電不超過{[NUMBER]}Wh
 Contracts/Payment,付款：${[PAYMENT]}
 Contracts/Reputation,聲望
 Contracts/Required Reputation,所需聲望
@@ -215,7 +215,7 @@ HowToPlay/EfficiencyBody,"廚房效率取決於多項指數：完成和未完成
 
 -如果多份料理都需要同一種食材，你可以用*設定成偵測多種料理的訂單讀取機*配發這種食材，並將其送往相應的流水線，減少重複的機器。"
 HowToPlay/EfficiencyTitle,效率
-HowToPlay/LiquidsBody,"*液體*設施專門用於在廚房中添加或運輸醬汁等液體。關卡開始時，液體已經預存在缸裡，可以直接送到高級組合機，也可能要先送入液體混合機，與其他液體混合成新的醬汁。
+HowToPlay/LiquidsBody,"*液體*設施專門用於在廚房中加添或運輸醬汁等液體。關卡開始時，液體已經預存在缸裡，可以直接送到高級組合機，也可能要先送入液體混合機，與其他液體混合成新的醬汁。
 
 液體只能用管道運輸，必需使用泵機推動。不管來源是缸還是混合機，都必須使用泵機輸送到所連結的機器。"
 HowToPlay/LiquidsTitle,機器 - 液體
@@ -433,7 +433,7 @@ Level Titles/Level-C5,家族時光
 Level Titles/Level-CN1,就醬剛好
 Level Titles/Level-CN2,美妙餡實！
 Level Titles/Level-CN3,大炒特炒
-Level Titles/Level-Contract,合約
+Level Titles/Level-Contract,廚房設計合約
 Level Titles/Level-S1,統統失靈！
 Level Titles/Level-S2,目不見海！
 Level Titles/Level-S3,火火火！
@@ -573,7 +573,7 @@ Main Menu/Demo Level,試玩版中不可用。
 Main Menu/How To Play,玩法說明
 Main Menu/Last Edited,上次編輯：{[DATE]}
 Main Menu/Level Objectives,""配送{[ORDERS]}餐。
-耗電維持在{[POWER]}瓦時以下。
+耗電維持在{[POWER]}Wh以下。
 配發的食材不超過{[INGREDIENTS]}份。"
 Main Menu/Load Saved Game,載入遊戲存檔
 Main Menu/Loading,正在載入……請稍候……
@@ -597,7 +597,7 @@ Main UI/Achieved Gold Award,你達成了金獎！
 Main UI/Achieved Main Objectives,你達成了本關卡的任務！
 Main UI/Achieved Silver Award,你達成了銀獎！
 Main UI/Average Time,平均完成時間：
-Main UI/Blackout Condition,用電維持在{[POWER]}瓦以下！
+Main UI/Blackout Condition,用電維持在{[POWER]}W以下！
 Main UI/Blueprint Cost,花費: 
 Main UI/Blueprint Name,藍圖名稱
 Main UI/Blueprint Parts,機器: 
@@ -680,10 +680,10 @@ Main UI/NumberOfBlueprints,（剩餘 #NUM# 欄）
 Main UI/Order Simulation,正在模擬一份''{[DISH]}''訂單
 Main UI/Orders Fulfilled,已配送訂單
 Main UI/Orders Fulfilled:,已配送訂單：
-Main UI/Power,{[NUMBER]}瓦時
+Main UI/Power,{[NUMBER]}Wh
 Main UI/Power Consumption,電力消耗
-Main UI/Power Level Condition,耗電必須少於{[NUMBER]}瓦時
-Main UI/Power Usage Level Condition,用電量必須維持在{[NUMBER]}瓦以下，以防斷電。[i2p_Zero]無限
+Main UI/Power Level Condition,耗電必須少於{[NUMBER]}Wh
+Main UI/Power Usage Level Condition,用電量必須維持在{[NUMBER]}W以下，以防斷電。[i2p_Zero]無限
 Main UI/Power Used:,耗電：
 Main UI/Rating,評分
 Main UI/Recipe For,請選擇食譜：
@@ -720,7 +720,7 @@ Main UI/Total Energy Used,總耗電
 Main UI/Workshop Error Publishing,嘗試將您的實驗場發布至Steam創意工坊時發生錯誤。請稍後再試。
 Main UI/Workshop Overwrite,您之前似乎已經將這個實驗場上傳到了創意工坊。是否要更新當前已發布的實驗場？如不更新，此實驗場會作為新實驗場發布。
 Main UI/Workshop Publish,是否要將此實驗場發布到Steam創意工坊，供整個玩家社區下載遊玩？
-Main UI/Workshop Publish Success,實驗場已成功發布至Steam創意工坊！別忘了前往工坊添加一些屏幕截圖，方便玩家辨認它。
+Main UI/Workshop Publish Success,實驗場已成功發布至Steam創意工坊！別忘了前往工坊加入屏幕截圖，方便玩家辨認它。
 Main UI/Workshop Uploading,正在將實驗場上傳至Steam創意工坊，可能需要一定時間，請稍候…………
 Main UI/Yes,是
 Mods/Dishes,料理
@@ -749,17 +749,17 @@ Mods/Workshop Could Not Load,未能載入Steam創意工坊內容
 Mods/Workshop Description,模組描述
 Mods/Workshop Description Detail,請輸入模組描述…………
 Mods/Workshop Error Publishing,嘗試將您的模組發布至Steam創意工坊時發生錯誤。請稍後再試。
-Mods/Workshop Image,如果想要對您模組在創意工坊顯示的圖標進行自定義，請打開儲存模組的文件夾，添加一個512 x 512像素的PNG文件，請使用模組名作為文件名，並使用“.png”作為文件擴展名。
+Mods/Workshop Image,如果想要對您模組在創意工坊顯示的圖標進行自定義，請打開儲存模組的文件夾，放入一幅512 x 512像素的PNG文件，請使用模組名作為文件名，並使用“.png”作為文件擴展名。
 Mods/Workshop Name,模組名稱
 Mods/Workshop Name Detail,為您的模組選擇一個清楚易發現的名稱
 Mods/Workshop Need To Accept,提示：為了向公眾發布你的模組，您需要接受Steam創意工坊的服務條款。在您關閉此窗口後，Steam界面會自動打開，供您核對您的模組，並接受服務條款（如果尚未接受）。
-Mods/Workshop Overwrite,您之前似乎已經將這個模組上傳到了創意工坊。是否要更新當前已發布的模組？如果選擇不更新，則會作為新模組發布。
+Mods/Workshop Overwrite,您之前似乎已經將這個模組上傳到了創意工坊。是否要更新當前已發布的模組？選擇不更新，則會作為新模組發布。
 Mods/Workshop Progress Committing,狀態：正在確認更改…………
 Mods/Workshop Progress Idle,狀態：空閒
 Mods/Workshop Progress Preparing,狀態：正在準備內容…………
 Mods/Workshop Progress Uploading,狀態：正在上傳內容…………
 Mods/Workshop Publish,是否要將此模組發布到Steam創意工坊，供整個玩家社區下載遊玩？
-Mods/Workshop Publish Success,模組已成功發布至Steam創意工坊！別忘了前往工坊添加一些屏幕截圖，方便玩家找到模組。
+Mods/Workshop Publish Success,模組已成功發布至Steam創意工坊！別忘了前往工坊加入屏幕截圖，方便玩家找到模組。
 Mods/Workshop Terms,提交此物品，則代表您已接受Steam創意工坊的服務條款。
 Mods/Workshop Uploading,正在將模組上傳至Steam創意工坊，可能需要一定時間，請稍候…………
 Part Properties/1L1R,1 左 - 1 右（50-50 %）
@@ -795,13 +795,13 @@ Part Properties/Long Range Pick Up,拾取距離
 Part Properties/Manufacturing Time,製作時間：
 Part Properties/None,無
 Part Properties/Normal,正常
-Part Properties/Off when order count,待處理訂單數大於<color=#c18c26>X</color>時關閉
-Part Properties/Off when pending,有訂單待處理時關閉
+Part Properties/Off when order count,待處理訂單數大於<color=#c18c26>X</color>時停機
+Part Properties/Off when pending,有訂單待處理時停機
 Part Properties/On when exactly,數量剛好為<color=#c18c26>X</color>時啟動
 Part Properties/On when less,數量少於<color=#c18c26>X</color>時啟動
 Part Properties/On when more,數量多於<color=#c18c26>X</color>時啟動
-Part Properties/On when off,輸出啟動裝態時關閉
-Part Properties/On when on,輸出啟動裝態時啟動
+Part Properties/On when off,反轉模式（啟動時停機）
+Part Properties/On when on,正常模式（啟動時啟動）
 Part Properties/On when order count,待處理訂單數大於<color=#c18c26>X</color>時啟動
 Part Properties/On when pending,有訂單待處理時啟動
 Part Properties/Operation Mode,操作模式
@@ -817,8 +817,8 @@ Part Properties/Processing Time,處理時間：
 Part Properties/Pump Amount,供給泵機的液體數量（mL）
 Part Properties/Pump Interval,泵機行動間的秒數
 Part Properties/Recipe to Follow,要參照的食譜
-Part Properties/Repeater Inverted,輸入關閉時啟動（反向）
-Part Properties/Repeater Standard,輸入啟動時啟動（標準）
+Part Properties/Repeater Inverted,反向模式（停機時啟動）
+Part Properties/Repeater Standard,正常模式（啟動時啟動）
 Part Properties/Restaurant,餐館
 Part Properties/Reverse,逆轉
 Part Properties/Right,右
@@ -832,10 +832,10 @@ Part Properties/Spoiled Filter Spoiled,僅已變質的食物
 Part Properties/Straight,前
 Part Properties/Take Out,外賣
 Part Properties/Time Between Ingredients,食材時間間隔（秒）
-Part Properties/Turn off for X seconds,收到新訂單時關閉<color=#c18c26>X</color>秒
+Part Properties/Turn off for X seconds,收到新訂單時停機<color=#c18c26>X</color>秒
 Part Properties/Turn on for X seconds,收到新訂單時啟動<color=#c18c26>X</color>秒
 Part Properties/Value for X,X的取值
-ProgrammingReference/AC-16-Intro,"AC-16是一款時代尖端的可編程電腦，可以同時控制最多四台其他機器（名稱從O0到O3）。電腦啟動或重置時，所有輸出均默認設為關閉。此電腦內置四個16位暫存器（名稱從V0到V3）。它們在本指南手冊中會被稱為變量，可以儲存-32,768到32,767之間的整數。
+ProgrammingReference/AC-16-Intro,"AC-16是一款時代尖端的可編程電腦，可以同時控制最多四台其他機器（名稱從O0到O3）。電腦啟動或重置時，所有輸出均默認設為停機（OFF）。此電腦內置四個16位暫存器（名稱從V0到V3）。它們在本指南手冊中會被稱為變量，可以儲存-32,768到32,767之間的整數。
 
 某些廚房機器支持讀取其總行動次數，比如食材閘門、組裝機與機械臂等。要知道已連接的機器的行動次數，可以讀取I0至I3。I0為連接到O0的機器的總行動次數，I1對應O1，以此類推。不支持行動次數的機器（比如輸送帶等）的值永遠為0。
 
@@ -845,7 +845,7 @@ ProgrammingReference/AC-16-Intro,"AC-16是一款時代尖端的可編程電腦�
 
 電腦內置的訂單讀取機還可以區分不同來源的訂單，如汽車訂餐或外賣訂餐等。為此，你可以對R0至R3變量增添以下後綴："
 ProgrammingReference/AC-16-Title,AC-16可編程電腦指南
-ProgrammingReference/AC-32-Intro,"AC-32是一款時代尖端的可編程電腦，可以同時控制最多四台其他裝置（名稱從O0到O3）。電腦啟動或重置時，所有輸出均默認設為關閉。此電腦內置八個16位暫存器（名稱從V0到V7）。它們在本指南手冊中會被稱為變量，可以儲存-32,768到32,767之間的整數。
+ProgrammingReference/AC-32-Intro,"AC-32是一款時代尖端的可編程電腦，可以同時控制最多四台其他裝置（名稱從O0到O3）。電腦啟動或重置時，所有輸出均默認設為停機（OFF）。此電腦內置八個16位暫存器（名稱從V0到V7）。它們在本指南手冊中會被稱為變量，可以儲存-32,768到32,767之間的整數。
 
 某些廚房機器支持讀取其總行動次數，比如食材閘門、組裝機與機械臂等。要知道已連接的機器的行動次數，可以讀取I0至I3。I0為連接到O0的機器的總行動次數，I1對應O1，以此類推。不支持行動次數的機器（比如輸送帶等）的值永遠為0。
 
@@ -898,7 +898,7 @@ ProgrammingReference/Example22,out O2 V3
 ProgrammingReference/Example23,ret
 ProgrammingReference/Example24,sub V1 15 V1
 ProgrammingReference/Example25,sub V2 V3 V0
-ProgrammingReference/ExampleDescription01,這個範例程序會將連接至O1的設備啟動一秒，然後關閉一秒，如此往復。
+ProgrammingReference/ExampleDescription01,這個範例程序會將連接至O1的設備啟動一秒，然後停機一秒，如此往復。
 ProgrammingReference/ExampleDescription02,這個範例程序會在收到5個訂單後啟動連接至O2的設備。
 ProgrammingReference/ExampleDescription03,這個範例程序每收到一個新訂單，就會令連接至O0的設備持續啟動5秒。此程序的一大用是，在每次收到一個新訂單時，讓配發器配發一份食材。注意，此程序也會熱機四秒，以便收到訂單時立即配發食材，為你的顧客節省寶貴的時間！普通的訂單讀取機可做不到這一點，對吧？
 ProgrammingReference/ExampleDescription04,這個複雜的範例程序會從兩個不同的訂單讀取模塊（R0和R1）讀入數值，在處理後並輸出O0，O1和O2。這一程序的目的，就是在R0或R1收到訂單時啟動O0和O1三秒鐘，但在R1收到訂單時僅啟動O2。此程序的一大用處就是，將O0連接至生漢堡扒配發器，將O1連接至漢堡麵包配發器，並將O2連接至起司配發器，然後讓R0處理普通漢堡，讓R1處理起司漢堡。這一指令還會給配發器熱機兩秒。
@@ -1026,7 +1026,7 @@ ProgrammingReference/ExampleTitle04,範例程序4
 ProgrammingReference/LabelsDescription,標籤能標記出源碼的特定位置，可以與jump (jmp/jne/jeq/jgt/jlt)指令配合，更改程序流程。標籤僅可包含英文字母，長度必須為1-10字，最後必須用分號結尾。
 ProgrammingReference/LabelsTitle,標籤
 ProgrammingReference/LanguageReference,遊戲語言
-ProgrammingReference/OutDescription,out指令會控制連接至指定輸出接口的機器，設定它的狀態。如果第二個參數(operand2)為0，機器則會關閉。若第二個參數為0以外的值，都會設定成啟動。
+ProgrammingReference/OutDescription,out指令會控制連接至指定輸出接口的機器，設定它的狀態。如果第二個參數(operand2)為0，機器則會停機。若第二個參數為0以外的值，都會設定成啟動。
 ProgrammingReference/Syntax,語法
 ProgrammingReference/Syntax01,"add <operand1> <operand2> <operand3> 
 
@@ -1076,7 +1076,7 @@ ProgrammingReference/Syntax09,"out <operand1><operand2>
 
 <operand1>必須是輸出。
 
-<operand2>可以是變量，也可以是整數。0代表關閉，其他數字代表啟動。"
+<operand2>可以是變量，也可以是整數。0代表停機，其他數字代表啟動。"
 ProgrammingReference/Syntax10,"sub <operand1> <operand2> <operand3> 
 
 <operand1>可以是變量，也可以是整數。
@@ -1085,23 +1085,23 @@ ProgrammingReference/Syntax10,"sub <operand1> <operand2> <operand3>
 
 <operand3>必須是變量。"
 ProgrammingReference/SystemArchitecture,系統架構
-ProgrammingReference/VLE AC-16-Intro,"AC-16是一款時代尖端的可編程電腦，可以同時控制最多四台其他機器（名稱從O0到O3）。電腦啟動或重置時，所有輸出均默認設為關閉。此電腦內置四個16位暫存器（名稱從V0到V3）。它們可以儲存-32,768到32,767之間的整數。
+ProgrammingReference/VLE AC-16-Intro,"AC-16是一款時代尖端的可編程電腦，可以同時控制最多四台其他機器（名稱從O0到O3）。電腦啟動或重置時，所有輸出均默認設為停機（OFF）。此電腦內置四個16位暫存器（名稱從V0到V3）。它們可以儲存-32,768到32,767之間的整數。
 
 某些廚房機器支持讀取其總行動次數，比如食材閘門、組裝機與機械臂等（名稱從I0到I3）。不支持行動次數的機器（比如輸送帶等）的值永遠為0。
 
 這台電腦的程序記憶體足以容納32行AC匯編語言。整個程序每秒運行30次，方便程序精準計時。
 
 本電腦還包含一組四個特別的唯讀暫存器，連接到內置的訂單讀取機（名稱從R0到R3）。只要讀取這些暫存器，就可以在收到新訂單時根據條件行動。電腦內置的訂單讀取機還可以區分不同來源的訂單，如汽車訂餐或外賣訂餐等。"
-ProgrammingReference/VLE AC-32-Intro,"AC-32是一款時代尖端的可編程電腦，可以同時控制最多四台其他裝置（名稱從O0到O3）。電腦啟動或重置時，所有輸出均默認設為關閉。此電腦內置八個16位暫存器（名稱從V0到V7）。它們可以儲存-32,768到32,767之間的整數。
+ProgrammingReference/VLE AC-32-Intro,"AC-32是一款時代尖端的可編程電腦，可以同時控制最多四台其他裝置（名稱從O0到O3）。電腦啟動或重置時，所有輸出均默認設為停機（OFF）。此電腦內置八個16位暫存器（名稱從V0到V7）。它們可以儲存-32,768到32,767之間的整數。
 
 某些廚房機器支持讀取其總行動次數，比如食材閘門、組裝機與機械臂等（名稱從I0到I3）。不支持行動次數的機器（比如輸送帶等）的值永遠為0。
 
 這台電腦的主程序記憶體足以容納32行AC匯編語言。同時，本電腦配備了四個額外程序頁，每頁都可以容納32行源碼。整個程序每秒運行30次，方便程序精準計時。
 
 本電腦還包含一組四個特別的唯讀暫存器，連接到內置的訂單讀取機（名稱從R0到R3）。只要讀取這些暫存器，就可以在收到新訂單時根據條件行動。電腦內置的訂單讀取機還可以區分不同來源的訂單，如汽車訂餐或外賣訂餐等。"
-ProgrammingReference/VLE Add,加（數字+變量）
+ProgrammingReference/VLE Add,加（數值）
 ProgrammingReference/VLE Add Description,將一個變量增加固定整數。舉例：“添加 50 至 V2”。
-ProgrammingReference/VLE Add Variables,添加（變量+變量）
+ProgrammingReference/VLE Add Variables,加（變量）
 ProgrammingReference/VLE Add Variables Description,將一個變量的值加至另一個變量。來源變量的內容不變。舉例：“添加 V3 至 V1”。
 ProgrammingReference/VLE Dec,減1
 ProgrammingReference/VLE Dec Description,將一個變量的值減少1。指令會在它到達0時自動停止，不會令變量變為負值。舉例：“將 V3 減少 1”。
@@ -1123,14 +1123,14 @@ ProgrammingReference/VLE Mov Variables Description,將變量的值複制到另�
 ProgrammingReference/VLE Not,反轉變量
 ProgrammingReference/VLE Not Description,反轉變量值。若原值為0，則將其變為1。若原值不為0，則將其變為0。舉例：“反轉 V3”。
 ProgrammingReference/VLE Out,輸出
-ProgrammingReference/VLE Out Description,打開或關閉一台連接至電腦的機器。舉例：“啟動 O3”。
+ProgrammingReference/VLE Out Description,啟動或停機一台連接至電腦的機器。舉例：“輸出 O3 啟動”。
 ProgrammingReference/VLE Read Input,讀取行動次數
 ProgrammingReference/VLE Read Input Description,讀取已連接的機器（如組合機或機械臂）從源碼開始執行後的行動次數，並將其複制到一個變量。舉例：“將 I3 進行的行動次數複制到 V1”。
 ProgrammingReference/VLE Ret,完成執行
 ProgrammingReference/VLE Ret Description,完成本次循環內程序﹐停止執行。33毫秒後會重新執行。
-ProgrammingReference/VLE Sub,減（數字-變量）
+ProgrammingReference/VLE Sub,減（數值）
 ProgrammingReference/VLE Sub Description,將一個變量的值減去固定整數。舉例：“將 V2 減去 10”。
-ProgrammingReference/VLE Sub Variables,減（變量-變量）
+ProgrammingReference/VLE Sub Variables,減（變量）
 ProgrammingReference/VLE Sub Variables Description,將一個變量的值減去另一個變量的值。舉例：“將 V1 減去 V2”。
 ProgrammingReference/VLE Title,可視化編輯器
 ProgrammingReference/cmp,cmp指令
@@ -1147,7 +1147,7 @@ ProgrammingReference/not,not指令
 ProgrammingReference/notDescription,not指令會切換變量的值。若值為0，則變為1；其他值皆則變為0。
 ProgrammingReference/out,out指令
 ProgrammingReference/ret,ret指令
-ProgrammingReference/retDescription,ret （代表返回）指令會完成當前33毫秒時鐘周期中源碼的執行。該指令相當於跳轉至源碼最後一行的標籤。此指令沒有任何參數
+ProgrammingReference/retDescription,ret 指令會完成當前33毫秒時鐘周期中源碼的執行。該指令相當於跳轉至源碼最後一行的標籤。此指令沒有任何參數
 ProgrammingReference/sub,sub指令
 ProgrammingReference/subDescription,sub 指令會計算兩個值之間的差別，並將結果存入第三個參數指定的變量中。記住，暫存器都是16位大小，所以結果必須在-32768到32767之間，否則便會發生錯誤。基本來說，它會進行''operand1 - operand2''並將結果存入operand3指定的變量中。
 Robot Dialogues/FireDisasterIntro,*着火啦*！……既然已經成功吸引到了你的注意力，我就可以告訴你，現在已經可以使用*灑水器*和*滅火器*了。如果食材在烹飪機器中停留太久，就會發生火災！
@@ -1386,7 +1386,7 @@ Scenarios/Custom Scenarios,自定義場景
 Scenarios/Description,描述
 Scenarios/Dish Number,料理{[NUMBER]}
 Scenarios/Dishes,料理
-Scenarios/Dishes Info,設置場景中可用的料理。你也可以對主菜添加可選項，提升場景的難度。設置可選項也會解鎖相關的關卡任務，可在任務目標頁中使用。
+Scenarios/Dishes Info,設置場景中可用的料理。你也可以給主菜添加可選項，提升場景的難度。設置可選項也會解鎖相關的關卡任務，可在任務目標頁中使用。
 Scenarios/Enter Description,在這裡輸入廚房描述！
 Scenarios/Failure,你尚未達成場景的任務目標。
 Scenarios/Food Critic Order,食評家訂單
@@ -1409,7 +1409,7 @@ Scenarios/Objective DeliverDishesRushHour,配送<color=#c18c26>X</color>份高�
 Scenarios/Objective FoodCritic,配送給食評家
 Scenarios/Objective Ingredients,使用不超過<color=#c18c26>X</color>份食材
 Scenarios/Objective NoDisasters,別讓任何災難發生
-Scenarios/Objective Power,耗電不超過<color=#c18c26>X</color>千瓦時。
+Scenarios/Objective Power,耗電不超過<color=#c18c26>X</color>kWh。
 Scenarios/Objectives Fulfilled,恭喜，你完成了場景的全部任務！這意味着你現在可以向其他玩家分享此場景了！
 Scenarios/Objectives Info,設置決定場景難度的任務目標，然後設定玩家需要遵守的預算。啟用高峰時段會提升訂單數量，提升難度。
 Scenarios/Off,關閉
@@ -1767,8 +1767,8 @@ Tutorial Texts/PowerUsage-Step06-01,我要先幫你移除一些機器，然後�
 Tutorial Texts/PowerUsage-Step07-01,接下來，我們就可以開始重建廚房了。首先，在機器列表中選擇*配發器*，並將其放置在高亮的位置。
 Tutorial Texts/PowerUsage-Step08-01,打開*配發器*的屬性界面，將其設定為配發*生漢堡扒*。
 Tutorial Texts/PowerUsage-Step08-01-Switch,打開*配發器*的屬性界面，將其設定為配發*生漢堡扒*。
-Tutorial Texts/PowerUsage-Step09-01,下一步，在高亮顯示的位置添加一台*機械臂（簡單）*……
-Tutorial Texts/PowerUsage-Step10-01,然後再往高亮顯示的位置添加一個*烤架*……
+Tutorial Texts/PowerUsage-Step09-01,下一步，在高亮顯示的位置加置一台*機械臂（簡單）*……
+Tutorial Texts/PowerUsage-Step10-01,然後再往高亮顯示的位置加置一台*烤架*……
 Tutorial Texts/PowerUsage-Step11-01,最後，在標記的位置放置*兩台**機械臂（智能）*！不要忘了進行旋轉，讓它們朝向正確的位置。
 Tutorial Texts/PowerUsage-Step12-01,打開第一台*機械臂（智能）*的屬性視窗，將其設定為僅拾取*熟漢堡扒*……
 Tutorial Texts/PowerUsage-Step12-01-Switch,打開第一台*機械臂（智能）*的屬性視窗，將其設定為僅拾取*熟漢堡扒*……
@@ -1780,16 +1780,16 @@ Tutorial Texts/PowerUsage-Step14-01-Switch,按下[StartSimulation]，看看我�
 Tutorial Texts/PowerUsage-Step15-01,好極了！就來看看效果到底如何吧！
 Tutorial Texts/PowerUsage-Step16-01,真棒！我們成功避免了斷電！真是合作無間啊！
 Tutorial Texts/PowerUsage-Step17-01,這下，我就可以去給沙灘上那片場地交定金了！
-Visual Logic Editor/Add New Command,添加新命令
+Visual Logic Editor/Add New Command,加入新命令
 Visual Logic Editor/Additional Code Page,附加源碼頁 #
 Visual Logic Editor/Main Code Page,主源碼頁
 Visual Logic Editor/VisualCodeToolCommandAdd,加（數字+變量）
 Visual Logic Editor/VisualCodeToolCommandAddVariables,添加（變量+變量）
 Visual Logic Editor/VisualCodeToolCommandCopy,複制數值
 Visual Logic Editor/VisualCodeToolCommandDec,減少1
-Visual Logic Editor/VisualCodeToolCommandIf,如果（比較變量）
+Visual Logic Editor/VisualCodeToolCommandIf,如果（比較變量及數字）
 Visual Logic Editor/VisualCodeToolCommandIfOrderReader,如果（收到新訂單）
-Visual Logic Editor/VisualCodeToolCommandIfVariables,如果（比較兩個變量 )
+Visual Logic Editor/VisualCodeToolCommandIfVariables,如果（比較兩個變量)
 Visual Logic Editor/VisualCodeToolCommandJmp,跳轉至標籤
 Visual Logic Editor/VisualCodeToolCommandLabel,標籤
 Visual Logic Editor/VisualCodeToolCommandMov,設定數值
@@ -1815,7 +1815,7 @@ Visual Logic Editor/read,複制操作次數 操作執行者為：
 Visual Logic Editor/reduce,減少
 Visual Logic Editor/set,設定
 Visual Logic Editor/to,至
-Visual Logic Editor/turn,切換至
+Visual Logic Editor/turn,設定輸出
 Warnings/About To Load Game,是否要讀取存檔？當前的廚房佈局將被替代。
 Warnings/Already Connected Computer,這台電腦已經連接至該機器。
 Warnings/Already Connected Counting Machine,這台點算機已經連接至該機器。
@@ -1864,6 +1864,6 @@ Warnings/VLE Errors In Code,源碼有錯。如果繼續關閉可編程電腦，�
 Warnings/VLE Incompatible,抱歉，此源碼與視覺邏輯編輯器不兼容！
 Warnings/VLE Main Page,視覺邏輯編輯器僅可用於主源碼頁。
 Warnings/VLE Syntax Error,更換為視覺編輯器之前，需要先修復語法錯誤。
-Warnings/VLE Too Many,由於此命令會導致編譯後的源碼超過32行限制，你無法添加此命令。
+Warnings/VLE Too Many,由於此命令會導致編譯後的源碼超過32行限制，你無法加入此命令。
 Warnings/VLE Too Many Instructions,指令過多，無法儲存。如果繼續關閉可編程電腦，會失去所做的變更。
 Warnings/Warning,警告
