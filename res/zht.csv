@@ -9,7 +9,7 @@ Buttons/CONTRACTS,合約
 Buttons/DELETE,刪除
 Buttons/EDIT,編輯
 Buttons/EDIT KITCHEN,編輯廚房
-Buttons/EXIT TO MAIN MENU,回到主選單
+Buttons/EXIT TO MAIN MENU,離開廚房
 Buttons/FORFEIT,放棄
 Buttons/GO TO THE STORE,前往商店
 Buttons/LANGUAGE REFERENCE,語言偏好
@@ -25,7 +25,7 @@ Buttons/PURCHASE,購置
 Buttons/QUIT,離開
 Buttons/RESET KITCHEN,重置廚房
 Buttons/RETRY,重試
-Buttons/SAVE,保存
+Buttons/SAVE,儲存
 Buttons/SIMULATE ORDER,模擬訂單
 Buttons/START,開始
 Buttons/STOP,停止
@@ -167,7 +167,7 @@ HowToPlay/AssemblersBody,"*組合機*可以製作單一種料理。使用機械�
 HowToPlay/AssemblersTitle,機器 - 組合
 HowToPlay/BlackoutsBody,如果廚房在運行時出現*用電限制*，即意味着當廚房的耗電量超過限制，則會立刻斷電，導致失敗。當耗電量接近用電限制時，屏幕上會出現提示。微控機器的開關、調整機器的速度設定，都可以節約用電。特別注意傳送器等耗電機器，它們在運作時會耗用大量電力。
 HowToPlay/BlackoutsTitle,斷電
-HowToPlay/BlueprintsBody,"藍圖可以保存一組機器的佈局，以便在其他關卡中重用。藍圖會保留機器的設定。
+HowToPlay/BlueprintsBody,"藍圖可以儲存一組機器的佈局，以便在其他關卡中重用。藍圖會保留機器的設定。
 
 要創建藍圖，首先在機器列表頂部切換到藍圖列表，然後點擊*＋新藍圖*按鈕，即可畫出選取框，圈選想要加入到新藍圖的機器。
 
@@ -613,11 +613,11 @@ Main UI/Click To Select Move,點擊選取要移動的機器，準備好時，按
 Main UI/Click To Start,點擊這兒開始……
 Main UI/Click to Connect Pipe,點擊另一台有閒置管道接口的機器，即可用管道將它們連接起來。
 Main UI/Click to continue,點擊這兒繼續……
-Main UI/Click to return to the main menu,點擊返回主選單
+Main UI/Click to return to the main menu,點擊回到主選單
 Main UI/Company Cash,資金：${[NUMBER]}
 Main UI/Contract Objectives,合約目標：
 Main UI/Cost,花費
-Main UI/Create New Contract,+ 新建合約模式存檔
+Main UI/Create New Contract,+ 開設新公司
 Main UI/Create New Test Site,+ 新建廚房
 Main UI/Creating New Blueprint,創建新藍圖
 Main UI/Current Energy Usage,耗電
@@ -629,7 +629,7 @@ Main UI/Demo Follow Social Switch,感謝您遊玩《Automachef》，衷心希望
 Main UI/Demo Full Version Available,現已登陸Steam商店！
 Main UI/Demo Full Version Available Switch,現已登陸Nintendo eShop！
 Main UI/Demo Head to Store,前往Steam商店
-Main UI/Demo Return To Campaign,返回劇情模式
+Main UI/Demo Return To Campaign,回到關卡列表
 Main UI/Demo Thanks For Playing,感謝您遊玩《Automachef》，衷心希望您能喜歡！
 Main UI/Dishes,{[NUMBER]}份料理
 Main UI/Empty Slot,空欄位
@@ -686,7 +686,7 @@ Main UI/Power Level Condition,耗電必須少於{[NUMBER]}瓦時
 Main UI/Power Usage Level Condition,用電量必須維持在{[NUMBER]}瓦以下，以防斷電。[i2p_Zero]無限
 Main UI/Power Used:,耗電：
 Main UI/Rating,評分
-Main UI/Recipe For,食譜可用於：
+Main UI/Recipe For,請選擇食譜：
 Main UI/Recipes,食譜
 Main UI/Reputation,聲望
 Main UI/Reputation Condition,如果降到0，遊戲就會結束！
@@ -696,7 +696,7 @@ Main UI/Risks Breakdowns,故障
 Main UI/Risks Fires,火災
 Main UI/Risks Insects,蟲災
 Main UI/Risks None,無
-Main UI/Save Game,保存遊戲
+Main UI/Save Game,儲存遊戲
 Main UI/Saving Game,正在儲存遊戲
 Main UI/Seconds,{[NUMBER]}秒
 Main UI/Silver Award,--- 銀獎條件 ---
@@ -784,7 +784,7 @@ Part Properties/Finished Left,將成品放在左側
 Part Properties/Finished Right,將成品放在右側
 Part Properties/High Power,高速
 Part Properties/Ingredient,配發食材
-Part Properties/Ingredient Filter,食材篩選器
+Part Properties/Ingredient Filter,食材篩選
 Part Properties/Initial Contents,盛載
 Part Properties/Initial Contents Liters,開局時存有{[LITERS]}升{[INGREDIENT]}。
 Part Properties/Initial Percentage,初始存量（%）
@@ -805,7 +805,7 @@ Part Properties/On when on,輸出啟動裝態時啟動
 Part Properties/On when order count,待處理訂單數大於<color=#c18c26>X</color>時啟動
 Part Properties/On when pending,有訂單待處理時啟動
 Part Properties/Operation Mode,操作模式
-Part Properties/Order Source,要監視的訂單來源
+Part Properties/Order Source,要監視的訂單
 Part Properties/Order to Detect,要偵測的訂單
 Part Properties/Origin Teleporter,起點傳送器
 Part Properties/Output Mode,輸出模式（要將完成的料理放在何處）
@@ -822,13 +822,13 @@ Part Properties/Repeater Standard,輸入啟動時啟動（標準）
 Part Properties/Restaurant,餐館
 Part Properties/Reverse,逆轉
 Part Properties/Right,右
-Part Properties/Short Range,近程（1方格）
+Part Properties/Short Range,近程（1格）
 Part Properties/Speed Setting,速度設定
 Part Properties/Splitting Ratio,分離比例
-Part Properties/Spoiled Filter,篩除已變質的食物
-Part Properties/Spoiled Filter All,分流全部食物
-Part Properties/Spoiled Filter Not Spoiled,僅拾取未變質的食物
-Part Properties/Spoiled Filter Spoiled,僅拾取已變質的食物
+Part Properties/Spoiled Filter,品質篩選
+Part Properties/Spoiled Filter All,任何品質
+Part Properties/Spoiled Filter Not Spoiled,僅未變質的食物
+Part Properties/Spoiled Filter Spoiled,僅已變質的食物
 Part Properties/Straight,前
 Part Properties/Take Out,外賣
 Part Properties/Time Between Ingredients,食材時間間隔（秒）
@@ -1582,7 +1582,7 @@ Tutorial Texts/Basic-Step03-01-Switch,好極了！現在高亮選中*組合機*�
 Tutorial Texts/Basic-Step04-01,放置其他機器之前，我們先來看看食譜，看一下我們需要甚麼食材。點擊*食譜按鈕*，查看普通漢堡的食譜。
 Tutorial Texts/Basic-Step04-01-Switch,放置其他機器之前，我們先來看看食譜，檢查一下我們都需要甚麼。按下[ToggleRecipes]，查看普通漢堡的食譜。
 Tutorial Texts/Basic-Step04-02,接下來，點擊*確定*關閉屬性視窗。
-Tutorial Texts/Basic-Step04-02-Switch,現在，選擇*確定*關閉屬性視窗，保存更改。
+Tutorial Texts/Basic-Step04-02-Switch,現在，選擇*確定*關閉屬性視窗，儲存變更。
 Tutorial Texts/Basic-Step05-01,唔，這個漢堡看起來很不錯！我的味覺傳感器……啊，我是說''味蕾''已經蠢蠢欲動了！按照食譜，我們需要一個*漢堡麵包*，還有一個*生漢堡扒*，然後要把它弄1熟……
 Tutorial Texts/Basic-Step05-02,這裡有一些機器，可以用於配發、烹飪和運輸食材。點擊*好的*按鈕即可關閉食譜標籤。
 Tutorial Texts/Basic-Step05-02-Switch,這裡有一些機器，可以用於配發、烹飪和運輸食材。按下[ToggleRecipes]即可關閉食譜標籤。
@@ -1632,7 +1632,7 @@ Tutorial Texts/Disasters-Step09-01,選擇*閒置*展開選項，然後將選項�
 Tutorial Texts/Disasters-Step09-01-Switch,選擇*閒置*展開選項，然後滾動選項，將其設定為*收到新訂單時進行1次行動*。
 Tutorial Texts/Disasters-Step09B-01,這樣就可以確保*輸送帶烤架*不會收到比需要數量更多的*生漢堡扒*。
 Tutorial Texts/Disasters-Step09C-01,接下來關閉*訂單讀取機*屬性視窗。
-Tutorial Texts/Disasters-Step09C-01-Switch,現在，選擇*確定*關閉屬性視窗，保存更改。
+Tutorial Texts/Disasters-Step09C-01-Switch,現在，選擇*確定*關閉屬性視窗，儲存變更。
 Tutorial Texts/Disasters-Step10-01,點擊*開始*按鈕，看看裝置的運行情況吧！
 Tutorial Texts/Disasters-Step10-01-Switch,按下[StartSimulation]，看看我們這小小裝置的運行情況吧！
 Tutorial Texts/Disasters-Step11-01,好極了！就來看看效果到底如何吧！
@@ -1826,7 +1826,7 @@ Warnings/Bacteria,有帶菌的料理被配送！
 Warnings/Blackout,注意用電量，你即將觸發斷電！
 Warnings/Bonus Level,如果你尚未完成所有教程，此獎勵關卡可能會太難。確定要繼續嗎？
 Warnings/Breakdown,有機器出現故障！
-Warnings/Cancel Changes,確定要取消嗎？所做的更改將會丟失。
+Warnings/Cancel Changes,確定要取消嗎？會失去所做的變更。
 Warnings/Cannot Accept More Contracts,你的公司當前無法接受更多合約。請先完成或放棄一個合約。
 Warnings/Cannot Connect Computer,你已無法將更多機器連接至此電腦。
 Warnings/Cannot Connect Counting Machine,你已無法將更多機器連接至此點算機。
@@ -1835,7 +1835,7 @@ Warnings/Cannot Connect New Pipe,你已無法將更多管道連接至此機器�
 Warnings/Cannot Connect Order Reader,你已無法將更多機器連接至此訂單讀取機。
 Warnings/Cannot Connect Repeater,你已無法將更多機器連接至此中繼器。
 Warnings/ControllerDisconnect,控制器已斷開連接
-Warnings/ControllerDisconnectPC,控制器已斷開。請重新連接控制器，或返回主選單更改控制方式。返回主選單時，所有未保存的數據都將丟失。
+Warnings/ControllerDisconnectPC,控制器已斷開。請重新連接控制器，或回到主選單更改控制方式。回到主選單時，會失去未儲存的進度。
 Warnings/Craze,{[DISH]}狂熱即將開始！
 Warnings/Delete Blueprint Confirmation,是否刪除此藍圖？此操作無法復原！
 Warnings/Delete Game,是否刪除此遊戲存檔？此操作無法復原！
@@ -1853,17 +1853,17 @@ Warnings/Overwrite Game,是否確定要覆蓋此遊戲存檔？
 Warnings/Pipe Port Occupied,管道連接口已被佔用。
 Warnings/Power Quota,超過了耗電上限！
 Warnings/Quit Confirmation,確定要離開嗎？
-Warnings/Quit Confirmation In Game,確定要離開嗎？未保存的進度將會丟失。
+Warnings/Quit Confirmation In Game,確定要離開嗎？將會失去未儲存的進度。
 Warnings/Reset Kitchen,確定要將廚房重設至初始狀態嗎？此操作無法復原！
 Warnings/Rush Hour End,高峰時段已結束！
 Warnings/Rush Hour Start,高峰時段已開始！
-Warnings/Save Before Quitting,要在返回主選單前保存廚房佈局嗎？
+Warnings/Save Before Quitting,要在回到主選單前儲存廚房佈局嗎？
 Warnings/Spoiled Food,配送區出現變質的料理！
 Warnings/VLE Errors,出現錯誤，請進行修復。
-Warnings/VLE Errors In Code,源碼有錯。如果繼續關閉可編程電腦，將會丟失所做的更改。
+Warnings/VLE Errors In Code,源碼有錯。如果繼續關閉可編程電腦，會失去所做的變更。
 Warnings/VLE Incompatible,抱歉，此源碼與視覺邏輯編輯器不兼容！
 Warnings/VLE Main Page,視覺邏輯編輯器僅可用於主源碼頁。
 Warnings/VLE Syntax Error,更換為視覺編輯器之前，需要先修復語法錯誤。
 Warnings/VLE Too Many,由於此命令會導致編譯後的源碼超過32行限制，你無法添加此命令。
-Warnings/VLE Too Many Instructions,指令過多，無法儲存。如果繼續關閉可編程電腦，將會丟失所做的更改。
+Warnings/VLE Too Many Instructions,指令過多，無法儲存。如果繼續關閉可編程電腦，會失去所做的變更。
 Warnings/Warning,警告
