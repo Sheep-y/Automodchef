@@ -9,20 +9,20 @@ Buttons/CONTRACTS,合約
 Buttons/DELETE,刪除
 Buttons/EDIT,編輯
 Buttons/EDIT KITCHEN,編輯廚房
-Buttons/EXIT TO MAIN MENU,退出至主選單
+Buttons/EXIT TO MAIN MENU,回到主選單
 Buttons/FORFEIT,放棄
 Buttons/GO TO THE STORE,前往商店
 Buttons/LANGUAGE REFERENCE,語言偏好
 Buttons/LOAD,載入
 Buttons/MACHINES,機器
 Buttons/MAIN MENU,主選單
-Buttons/MY BUSINESS,我的業務
+Buttons/MY BUSINESS,業務報告
 Buttons/NEW,新
 Buttons/NO,否
 Buttons/OKAY,好的
 Buttons/OPEN CODE EDITOR,打開源碼編輯器
 Buttons/PURCHASE,購置
-Buttons/QUIT,退出
+Buttons/QUIT,離開
 Buttons/RESET KITCHEN,重置廚房
 Buttons/RETRY,重試
 Buttons/SAVE,保存
@@ -45,20 +45,20 @@ Contracts/ClientName07,卡路里小屋
 Contracts/ClientName08,美味空間
 Contracts/ClientName09,清新美食
 Contracts/ClientName10,尚味企業
-Contracts/Completed Contracts,已完成的合約
+Contracts/Completed Contracts,完成了的合約
 Contracts/Contract Overview,合約概覽
 Contracts/DifficultyEasy,難度：簡單
 Contracts/DifficultyHard,難度：困難
 Contracts/DifficultyMedium,難度：中等
 Contracts/Easy,簡單
 Contracts/Hard,困難
-Contracts/In Progress,已承接的合約
+Contracts/In Progress,進行中的合約
 Contracts/Info Deposit,預付定金
 Contracts/Info Difficulty,難度
 Contracts/Info Efficiency Bonus,效率獎金
 Contracts/Info Efficiency Target,效率目標
 Contracts/Info Net Result,合計
-Contracts/Info Payment,付款
+Contracts/Info Payment,合約金額
 Contracts/Info Reputation Change,聲望
 Contracts/MachineCostToUnlock,解鎖費
 Contracts/MachinePowerUsage,用電量
@@ -90,7 +90,7 @@ Contracts/Running FoodCritic,食評家訂單
 Contracts/Running Ingredients,使用食材
 Contracts/Running NoDisasters,災難事件
 Contracts/Running Power,耗電
-Contracts/Select Difficulty,選擇難度
+Contracts/Select Difficulty,請選擇難度
 Contracts/StatAverageEfficiency,平均效率
 Contracts/StatCompletedContracts,完成合約
 Contracts/StatCompletedEasyContracts,- 簡單難度
@@ -1852,8 +1852,8 @@ Warnings/Overwrite Blueprint,已存在具有相同名稱的藍圖。是否要將
 Warnings/Overwrite Game,是否確定要覆蓋此遊戲存檔？
 Warnings/Pipe Port Occupied,管道連接口已被佔用。
 Warnings/Power Quota,超過了耗電上限！
-Warnings/Quit Confirmation,確定要退出嗎？
-Warnings/Quit Confirmation In Game,確定要退出嗎？未保存的進度將會丟失。
+Warnings/Quit Confirmation,確定要離開嗎？
+Warnings/Quit Confirmation In Game,確定要離開嗎？未保存的進度將會丟失。
 Warnings/Reset Kitchen,確定要將廚房重設至初始狀態嗎？此操作無法復原！
 Warnings/Rush Hour End,高峰時段已結束！
 Warnings/Rush Hour Start,高峰時段已開始！
