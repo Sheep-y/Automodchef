@@ -12,6 +12,7 @@ namespace Automodchef {
    internal class AmcMechanicMod : Automodchef.ModComponent {
 
       internal override void Apply () { try {
+         TryPatch( typeof( ContractsLogic ), "LoadSavedGame", nameof( DumpContracts ) ); // TODO
          TryPatch( typeof( ContractsLogic ), "AddNewIncomingContract", nameof( OverrideContracts ), nameof( RestoreContracts ) ); // TODO
          if ( conf.instant_speed_change )
             TryPatch( typeof( Initializer ), "Update", postfix: nameof( InstantGameSpeedUpdate ) );
@@ -43,19 +44,25 @@ namespace Automodchef {
          if ( filteredContracts.Count == 0 ) return;
          Info( "Filtering {0} down to {1}.", allContracts.Count, filteredContracts.Count );
          ___allPossibleContracts = filteredContracts;
-         // Client's name and clientName
-         // Client1 The Feedbag
-         // Client2 Heartburns
-         // Client3 Dine 'N Dash
-         // Client4 The Happy Gorger
-         // Client5 Salad Bowl
-         // Client6 Cheesy Does It
-         // Client7 Calorie Cabin
-         // Client8 Lots O' Flavour
-         // Client9 Fresh & Tasty
-         // Client10 Big Taste Inc.
+         // Id = clientName
+         // Client1 = The Feedbag
+         // Client2 = Heartburns
+         // Client3 = Dine 'N Dash
+         // Client4 = The Happy Gorger
+         // Client5 = Salad Bowl
+         // Client6 = Cheesy Does It
+         // Client7 = Calorie Cabin
+         // Client8 = Lots O' Flavour
+         // Client9 = Fresh & Tasty
+         // Client10 = Big Taste Inc.
       }
       private static void RestoreContracts ( ref List<Contract> ___allPossibleContracts ) => ___allPossibleContracts = allContracts;
+
+      private static void DumpContracts ( List<Contract> ___allPossibleContracts ) {
+         foreach ( var c in ___allPossibleContracts ) {
+            Info( c.uniqueContractId, c.client.clientName, c.contractType, string.Join( " + ", c.requiredDishes ), string.Join( " + ", c.sideDishes ) );
+         }
+      }
 
       private static void InstantGameSpeedUpdate ( float ___targetTimeScale ) { try {
          if ( Time.timeScale != ___targetTimeScale ) Time.timeScale = ___targetTimeScale;
