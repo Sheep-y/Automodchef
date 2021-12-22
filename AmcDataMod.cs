@@ -75,7 +75,7 @@ namespace Automodchef {
       private static void AppendPowerToTooltip ( KitchenPart __instance, ref string __result ) { try {
          if ( ! Initializer.GetInstance().IsSimRunning() || __instance.powerInWatts <= 0 || powerLog == null ) return;
          powerLog.TryGetValue( __instance, out PowerLog log );
-         __result += $"\n{PowerMeter.GetInstance().GetLastPowerUsage( __instance )}W >> {Wh(log?.power??0)}";
+         __result += $"\n{PowerMeter.GetInstance().GetLastPowerUsage( __instance )}W >> {kWh(log?.power??0)}";
       } catch ( Ex x ) { Err( x ); } }
 
       private static void AppendPowerLog ( ref string __result ) { try {
@@ -95,20 +95,25 @@ namespace Automodchef {
                case "ConvectionFryer"     : key = "Fryer"; break;
                case "ConveyorGrill"       : key = "Grill"; break;
                case "HighSpeedDispenser"  : key = "Dispenser"; break;
-               case "LargeStorageUnit"    : key = "StackingRobotArm"; break;
+               case "LargeStorageUnit"    : key = "StorageUnit"; break;
                case "LongRobotArm" : case "RobotArm" : case "StackingRobotArm" : key = "DumbRobotArm"; break;
             }
             if ( byType.TryGetValue( key, out PowerLog log ) ) log.power += partPower.power;
             else byType.Add( key, new PowerLog { power = partPower.power } );
             total += partPower.power;
          }
-         Info( "Found {0} parts in {1} groups totaling {2}", allParts.Count, byType.Count, Wh( total ) );
-         __result += $"\n\nTop {Math.Min(allParts.Count,conf.power_log_rows)} power using equipment groups:";
-         __result += "\n" + string.Join( "\n", byType.OrderBy( e => e.Value.power ).Reverse().Take( conf.power_log_rows ).Select( e =>
-            $"{AutomachefResources.KitchenParts.CreateNewInstance(e.Key).partName} ... {Wh(e.Value.power,false)} ({e.Value.power*100/total:0.0}%)" ) );
+         Info( "Found {0} parts in {1} groups totaling {2}", allParts.Count, byType.Count, kWh( total ) );
+         __result += ModText.Format( "Power/Header", Math.Min( allParts.Count, conf.power_log_rows ) ) + string.Join( "\n",
+            byType.OrderByDescending( e => e.Value.power ).Take( conf.power_log_rows ).Select( e =>
+               string.Format( "{0} ... {1} ({2:0.0}%)", GetPartTypeName( e.Key ), kWh( e.Value.power ), e.Value.power * 100 / total ) ) );
          __result = __result.Trim();
          Fine( __result );
       } catch ( Ex x ) { Err( x ); } }
+
+      private static string GetPartTypeName ( string type ) {
+         var txt = ModText.Get( "Group/" + type );
+         return txt == $"Group/{type}" ? AutomachefResources.KitchenParts.CreateNewInstance( type ).partName.ToString() : txt;
+      }
       #endregion
 
       #region Freshness
@@ -125,14 +130,14 @@ namespace Automodchef {
             if ( part != null ) {
                if ( ! init.levelManager.PartsWithInsects.Contains( part ) ) {
                   float timer = __instance.GetInsectTime(), spawn = part.GetComponent< InsectsSpawner >()?.stationaryTimeBeforeSpawning ?? 0;
-                  if ( timer != 0 && spawn != 0 ) __result += $"\nGreen for {spawn-timer:0.0}s";
+                  if ( timer != 0 && spawn != 0 ) __result += ModText.Format( "Hint/FoodFreshness", spawn-timer );
                } else
-                  __result += "\n(Insects nearby)";
+                  __result += ModText.Get( "Hint/Insects" );
             }
          }
          if ( __instance is Dish dish ) {
             float spoil = dish.timeToBeSpoiled - __instance.GetAge();
-            if ( spoil > 0 ) __result += $"\nFresh for {spoil:0.0}s";
+            if ( spoil > 0 ) __result += ModText.Format( "Hint/DishFreshness", spoil );
          }
       } catch ( Ex x ) { Err( x ); } }
       #endregion
@@ -154,9 +159,9 @@ namespace Automodchef {
          float iMark = Mathf.Clamp01( ___expectedIngredientsUsage / iUsed ), pMark = Mathf.Clamp01( ___expectedPowerUsage / pUsed );
          float mark = ( iMark + pMark ) / 2f;
          extraLog.Clear();
-         extraLog.Add( $"Ingredients Quota {___expectedIngredientsUsage} / {iUsed} Spent = {iMark:0.00}" );
-         extraLog.Add( $"Power Quota {___expectedPowerUsage}Wh / {pUsed}Wh Spent = {pMark:0.00}" );
-         extraLog.Add( $"( Average {mark:0.00}" + ( allGoalsFulfilled ? "" : " - 0.1 goal failed" ) + $" )² = Final {__result/100f:0.00}" );
+         extraLog.Add( ModText.Format( "Efficiency/Ingredient", ___expectedIngredientsUsage, iUsed, iMark ) );
+         extraLog.Add( ModText.Format( "Efficiency/Power", Wh( ___expectedPowerUsage ), Wh( pUsed ), pMark ) );
+         extraLog.Add( ModText.Format( "Efficiency/Formula", mark, allGoalsFulfilled ? "" : ModText.Get( "Efficiency/Penalty" ), __result ) );
       } catch ( Ex x ) { Err( x ); } }
 
       // Show modded logs even when kitchen has no events
@@ -170,7 +175,7 @@ namespace Automodchef {
          Info( "Appending efficiency log ({0} lines) to kitchen log.", extraLog.Count + orderedDish?.Count );
          __result += "\n\n";
          if ( orderedDish?.Count > 0 ) {
-            __result += "Delivered / Ordered Dish ... Quota Contribution\n";
+            __result += ModText.Get( "Efficiency/Header" );
             foreach ( var key in orderedDish.Keys ) {
                var dish = key as Dish;
                cookedDish.TryGetValue( dish, out int delivered );
@@ -178,7 +183,7 @@ namespace Automodchef {
                int missedPowerPenalty = ( dish.expectedPower - dish.expectedPower / 3 ) * missed;
                //__result += $"Quota\\{dish.friendlyName} = {eI} mats & {eP}Wh each\n";
                //__result += $"  {ordered-missed}/{ordered} done = {eI*ordered-missed} mats & {eP*ordered-missedPowerPenalty}Wh\n";
-               __result += $"{ordered-missed}/{ordered} {dish.friendlyName} ... {eI*ordered-missed} mats & {eP*ordered-missedPowerPenalty}Wh\n";
+               __result += ModText.Format( "Efficiency/Breakdown", ordered-missed, ordered, dish.friendlyName, eI*ordered-missed, Wh( eP*ordered-missedPowerPenalty ) );
             }
          }
          __result += "\n" + string.Join( "\n", extraLog.ToArray() );
@@ -186,13 +191,15 @@ namespace Automodchef {
          Fine( __result );
       } catch ( Ex x ) { Err( x ); } }
 
-      private static string Wh ( float wh, bool prefix = true ) {
-         var power = CachedData.fixedDeltaTime * wh / 3600f;
-         var unit = "Wh";
-         if ( prefix && power >= 1000 ) { power /= 1000f; unit = "kWh"; }
-         if ( prefix && power >= 1000 ) { power /= 1000f; unit = "MWh"; }
-         return prefix ? $"{power:0.00}{unit}" : $"{power:0}Wh";
+      private static string kWh ( float wh ) {
+         var power = CachedData.fixedDeltaTime == 0 ? wh : CachedData.fixedDeltaTime * wh / 3600f;
+         var unit = "Power/wh";
+         if ( power >= 1000 ) { power /= 1000f; unit = "Power/kwh"; }
+         if ( power >= 1000 ) { power /= 1000f; unit = "Power/mwh"; }
+         return $"{power:0.00}" + ModText.Get( unit );
       }
+
+      private static string Wh ( float wh ) => wh + ModText.Get( "Power/wh" );
       #endregion
 
       #region Bug fixes

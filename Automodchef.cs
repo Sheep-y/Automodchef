@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Reflection;
 using ZyMod;
 
@@ -82,8 +83,8 @@ namespace Automodchef {
       [ ConfigAttribute( "Simulation", "Speed of triple time (three arrows).  0-100 integer.  Game default 5.  Mod default 20.  High speed may cause some orders to expire when they would not on slower speeds." ) ]
       public byte speed3 = 20;
 
-      [ ConfigAttribute( "Mechanic", "Make sure all dishes that have this much efficiency quota for their ingredients.  Game is inconsistent.  Mod default 1.  0 to fix Double Bypass Meal.  -1 to disable.  When set to 1, this mod will not apply buffer to single ingredient recipes for better balance." ) ]
-      public sbyte dish_ingredient_quota_buffer = 1;
+      [ ConfigAttribute( "Mechanic", "Make sure all dishes that have this much efficiency quota for their ingredients.  Mod default 0, which fixes Double Bypass Meal.  -1 to disable.  When set to 1, this mod will ignore single ingredient recipes for better balance." ) ]
+      public sbyte dish_ingredient_quota_buffer = 0;
       [ ConfigAttribute( "Mechanic", "Food processor use less power when not processing.  Game default 800 (no idle mode).  Mod default -1 which does not enable idle mode.  Its belt moves at half speed so 75W can be 'realistic'." ) ]
       public int food_processor_idle_power = -1;
       [ ConfigAttribute( "Mechanic", "This section changes game mechanics. They do not break or brick saves, but may allow non-vanilla solutions.\r\n; Packaging machine use less power when not packaging.  Game default 800 (no idle mode).  Mod default 60 (2x slowest belts).  Set to -1 to not change." ) ]
@@ -99,9 +100,9 @@ namespace Automodchef {
       public bool export_hardware_csv = false;
       [ ConfigAttribute( "Misc", "Export text from current language to text-0.csv on game launch.  Default false.  Ditto." ) ]
       public bool export_text_csv = false;
-      [ ConfigAttribute( "Misc", "Prevent the game from overriding Epic Game Store's language preference (e.g. in overlay)." ) ]
+      [ ConfigAttribute( "Misc", "Prevent the game from overriding Epic Game Store's language preference (e.g. in overlay).  Default true." ) ]
       public bool fix_epic_locale_override = true;
-      [ ConfigAttribute( "Misc", "Change Simplified Chinese to Traditional Chinese with improved translations.  No effect on other langauges." ) ]
+      [ ConfigAttribute( "Misc", "Change Simplified Chinese to Traditional Chinese with improved translations.  No effect on other langauges.  Default true." ) ]
       public bool traditional_chinese = true;
 
       public override void Load ( string path = "" ) {
@@ -112,4 +113,49 @@ namespace Automodchef {
       }
    }
 
+
+   internal static class ModText {
+      internal static string Format ( string key, params object[] augs ) => string.Format( Get( key ), augs );
+      internal static Func< string, string > Get = GetTextEn;
+
+      internal static string GetTextZh ( string key ) { switch ( key ) {
+         case "Power/Header" : return "\n\n最耗電的{0}類機器：\n";
+         case "Power/wh" : return "Wh";
+         case "Power/kwh" : return "kWh";
+         case "Power/mwh" : return "MWh";
+         case "Group/Computer"  : return "電腦";
+         case "Group/Fryer" : return "油炸機";
+         case "Group/DumbRobotArm" : return "機械臂";
+         case "Efficiency/Ingredient" : return "食材預算 {0} / 實耗 {1} = {2:0.00}";
+         case "Efficiency/Power" : return "耗電預算 {0} / 實耗 {1} = {2:0.00}";
+         case "Efficiency/Formula" : return "( 平均 {0:0.00}{1} )² = 總分 {2:0.00}";
+         case "Efficiency/Penalty" : return " - 0.1 任務失敗";
+         case "Efficiency/Header" : return "已配送 / 訂單數 ... 獲得預算\n";
+         case "Efficiency/Breakdown" : return "{0}/{1} {2} ... {3} 食材 & {4}\n";
+         case "Hint/FoodFreshness" : return "\n保鮮 {0:0.0}秒";
+         case "Hint/Insects" : return "\n（附近有蟲！）";
+         case "Hint/DishFreshness" : return "\n保質 {0:0.0}秒";
+         default: return key;
+      } }
+
+      internal static string GetTextEn ( string key ) { switch ( key ) {
+         case "Power/Header" : return "\n\nTop {0} power using equipment groups:\n";
+         case "Power/wh" : return "Wh";
+         case "Power/kwh" : return "kWh";
+         case "Power/mwh" : return "MWh";
+         case "Group/Computer"  : return "Computer";
+         case "Group/Fryer" : return "Fryer";
+         case "Group/DumbRobotArm" : return "Robot Arm";
+         case "Efficiency/Ingredient" : return "Ingredients Quota {0} / {1} Spent = {2:0.00}";
+         case "Efficiency/Power" : return "Power Quota {0} / {1} Spent = {2:0.00}";
+         case "Efficiency/Formula" : return "( Average {0:0.00}{1} )² = Final {2:0.00}";
+         case "Efficiency/Penalty" : return " - 0.1 goal failed";
+         case "Efficiency/Header" : return "Delivered / Ordered Dish ... Quota Gained\n";
+         case "Efficiency/Breakdown" : return "{0}/{1} {2} ... {3} mats & {4}\n";
+         case "Hint/FoodFreshness" : return "\nGreen for {0:0.0}s";
+         case "Hint/Insects" : return "\n(Insects nearby)";
+         case "Hint/DishFreshness" : return "\nFresh for {0:0.0}s";
+         default: return key;
+      } }
+   }
 }

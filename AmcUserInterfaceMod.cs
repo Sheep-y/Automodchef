@@ -225,6 +225,7 @@ namespace Automodchef {
       private static void DetectZh ( string code ) { try {
          Info( "Game language set to {0}", code );
          if ( code != "zh" ) return;
+         ModText.Get = ModText.GetTextZh;
          zhs2zht = new Dictionary< string, string >();
          if ( instance.TryPatch( typeof( TermData ), "GetTranslation", postfix: nameof( ToZht ) ) == null ) return;
          var csv = Path.Combine( Path.GetDirectoryName( new Uri( Assembly.GetExecutingAssembly().CodeBase ).LocalPath ), "zht.csv" );

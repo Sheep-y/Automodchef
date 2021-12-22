@@ -12,7 +12,6 @@ namespace Automodchef {
    internal class AmcMechanicMod : Automodchef.ModComponent {
 
       internal override void Apply () { try {
-         TryPatch( typeof( ContractsLogic ), "LoadSavedGame", nameof( DumpContracts ) ); // TODO
          TryPatch( typeof( ContractsLogic ), "AddNewIncomingContract", nameof( OverrideContracts ), nameof( RestoreContracts ) ); // TODO
          if ( conf.instant_speed_change )
             TryPatch( typeof( Initializer ), "Update", postfix: nameof( InstantGameSpeedUpdate ) );
@@ -39,7 +38,7 @@ namespace Automodchef {
       private static List<Contract> allContracts;
       private static void OverrideContracts ( ref List<Contract> ___allPossibleContracts, Company ___company ) { // Find BeachBurger contracts for bug fixing.
          if ( allContracts != null ) allContracts = ___allPossibleContracts;
-         List<Contract> filteredContracts = ___allPossibleContracts
+         var filteredContracts = ___allPossibleContracts
             .Where( e => e.requiredDishes.Contains( "BeachBurger" ) && e.client.minReputation <= ___company.reputation ).ToList();
          if ( filteredContracts.Count == 0 ) return;
          Info( "Filtering {0} down to {1}.", allContracts.Count, filteredContracts.Count );
@@ -57,12 +56,6 @@ namespace Automodchef {
          // Client10 = Big Taste Inc.
       }
       private static void RestoreContracts ( ref List<Contract> ___allPossibleContracts ) => ___allPossibleContracts = allContracts;
-
-      private static void DumpContracts ( List<Contract> ___allPossibleContracts ) {
-         foreach ( var c in ___allPossibleContracts ) {
-            Info( c.uniqueContractId, c.client.clientName, c.contractType, string.Join( " + ", c.requiredDishes ), string.Join( " + ", c.sideDishes ) );
-         }
-      }
 
       private static void InstantGameSpeedUpdate ( float ___targetTimeScale ) { try {
          if ( Time.timeScale != ___targetTimeScale ) Time.timeScale = ___targetTimeScale;
