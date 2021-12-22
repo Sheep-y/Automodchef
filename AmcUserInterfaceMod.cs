@@ -26,10 +26,10 @@ namespace Automodchef {
             TryPatch( typeof( SplashScreen ), "Update", postfix: nameof( SkipSpacebarSplash ) );
          if ( Non0( conf.side__view_angle ) || Non0( conf.close_view_angle ) || Non0( conf.far_view_angle ) || Non0( conf.far_view_height ) )
             TryPatch( typeof( CameraMovement ), "Awake", postfix: nameof( OverrideCameraSettings ) );
-         if ( conf.suppress_confirmation ) {
-            var orig = typeof( DialogManager ).Methods( "ShowAlert" ).FirstOrDefault( e => e.GetParameters().Length == 7 );
-            if ( orig != null ) TryPatch( orig, nameof( SuppressConfirmation ) );
-         }
+         if ( conf.suppress_confirmation )
+            foreach ( var m in typeof( DialogManager ).Methods( "ShowAlert" ) )
+               if ( m.GetParameters().Length == 5 ) TryPatch( m, nameof( SuppressConfirmation5 ) );
+               else if ( m.GetParameters().Length == 7 ) TryPatch( m, nameof( SuppressConfirmation7 ) );
          if ( conf.ask_loadgame_on_level_start ) {
             TryPatch( typeof( LevelManager ), "Start", postfix: nameof( SetNewLevelTrigger ) );
             TryPatch( typeof( SaveLoad ), "Close", nameof( RestorePreLevelScreen ) );
@@ -44,11 +44,8 @@ namespace Automodchef {
             TryPatch( typeof( LevelSelection ), "InitializeLevelList", postfix: nameof( HideTutorialMaxEfficiency ) );
             TryPatch( typeof( LevelStatus ), "RenderStats", postfix: nameof( HideTutorialEfficiencyStat ) );
          }
-         if ( conf.dropdown_toogle_threshold > 1 ) {
-            dropdownIcon = new ConditionalWeakTable< MaterialDropdown, DropdownIcon >();
-            TryPatch( typeof( PartProperties ), "PopulateDropdownForProperty", nameof( TrackDropdownIcon ) );
+         if ( conf.dropdown_toogle_threshold > 1 )
             TryPatch( typeof( MaterialDropdown ), "ShowDropdown", nameof( ToggleDropdown ) );
-         }
          if ( conf.fix_food_hint_when_paused )
             TryPatch( typeof( IngredientTooltip ), "Update", postfix: nameof( FixIngredientHintOnPause ) );
          if ( conf.fix_epic_locale_override )
@@ -151,24 +148,17 @@ namespace Automodchef {
       private static bool CheckSaveLoadCloseDisabled () => ( ! bypassNextSaveLoad ) || ( bypassNextSaveLoad = false );
       #endregion
 
-      #region Dropdown Toggle
-      private static ConditionalWeakTable< MaterialDropdown, DropdownIcon > dropdownIcon;
-
-      private static void TrackDropdownIcon ( MaterialDropdown dropdown, KitchenPartProperty prop, DropdownIcon icon ) { try {
-         Fine( "Tracking dropdown {0} icon for kitchen part prop {1}", dropdown.GetHashCode(), prop.name );
-         dropdownIcon.Remove( dropdown ); if ( icon != null ) dropdownIcon.Add( dropdown, icon );
-      } catch ( Ex x ) { Err( x ); } }
-
-      private static bool ToggleDropdown ( MaterialDropdown __instance, ref int ___m_CurrentlySelected, OptionDataList ___m_OptionDataList ) { try {
+      private static bool ToggleDropdown ( MaterialDropdown __instance, ref int ___m_CurrentlySelected, OptionDataList ___m_OptionDataList, MaterialDropdown.MaterialDropdownEvent ___m_OnItemSelected ) { try {
          //if ( IsTutorial() ) return true;
          int max_options = ___m_OptionDataList?.options.Count ?? 0, new_selection = ___m_CurrentlySelected + 1;
          if ( max_options <= 1 || max_options > conf.dropdown_toogle_threshold ) return true;
-         Fine( "Toggle dropdown {0} of from {1} to {2} (or 0 if {3})", __instance.GetHashCode(), ___m_CurrentlySelected, new_selection, max_options );
-         __instance.Select( new_selection >= max_options ? 0 : new_selection );
-         if ( dropdownIcon.TryGetValue( __instance, out DropdownIcon icon ) ) icon?.UpdateIcon();
+         if ( new_selection >= max_options ) new_selection = 0;
+         Fine( "Toggle dropdown {0} of from {1} to {2} (max {3})", __instance.GetHashCode(), ___m_CurrentlySelected, new_selection, max_options );
+         __instance.Select( new_selection );
+         ___m_OnItemSelected.Invoke( new_selection );
+         ___m_OptionDataList.options[ new_selection ].onOptionSelected?.Invoke();
          return false;
       } catch ( Ex x ) { return Err( x, true ); } }
-      #endregion
 
       private static void HideTutorialMaxEfficiency ( List<Level> ___levelsList, Dictionary<string, GameObject> ___levelObjectMapping ) { try {
          foreach ( var level in ___levelsList.Where( IsTutorial ) ) {
@@ -183,14 +173,18 @@ namespace Automodchef {
          if ( IsTutorial() ) ___statsEfficiencyValueUI.text = "n/a";
       } catch ( Ex x ) { Err( x ); } }
 
-      private static bool SuppressConfirmation ( string bodyText, Action onAffirmativeButtonClicked, Action onDismissiveButtonClicked ) { try {
-         foreach ( var msg in new string[] { About_To_Load_Game, Bonus_Level, Delete_Blueprint_Confirmation, Delete_Game,
-                  Overwrite_Game, Overwrite_Blueprint, Quit_Confirmation, Quit_Confirmation_In_Game, Reset_Kitchen } )
-            if ( bodyText == msg ) {
+      private static bool SuppressConfirmation5 ( string bodyText, Action onAffirmativeButtonClicked ) { try {
+         if ( new string[] { About_To_Load_Game, Bonus_Level, Delete_Blueprint_Confirmation, Delete_Game,
+                  Overwrite_Game, Overwrite_Blueprint, Quit_Confirmation, Quit_Confirmation_In_Game, Reset_Kitchen }.Contains( bodyText ) ) {
                Info( "Assuming yes for {0}", bodyText );
                onAffirmativeButtonClicked();
                return false;
             }
+         return true;
+      } catch ( Ex x ) { return Err( x, true ); } }
+
+      private static bool SuppressConfirmation7 ( string bodyText, Action onAffirmativeButtonClicked, Action onDismissiveButtonClicked ) { try {
+         if ( ! SuppressConfirmation5( bodyText, onAffirmativeButtonClicked ) ) return false;
          if ( bodyText == Save_Before_Quitting ) {
             Info( "Assuming no for {0}", bodyText );
             onDismissiveButtonClicked();
@@ -211,7 +205,7 @@ namespace Automodchef {
          __instance.canvasGroup.alpha = 1f;
       } catch ( Ex x ) { Err( x ); } }
 
-      private static bool DisablePlatformLangSwitch () { Info( "Plaftorm language override disabled." ); return false; }
+      private static bool DisablePlatformLangSwitch () { Info( "Platform language override disabled." ); return false; }
 
       #region Traditional Chinese.  Hooray for Taiwan, Hong Kong, Macau!
       private static void ShowZht ( List<string> ___languageNames ) { try {

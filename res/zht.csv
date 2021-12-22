@@ -60,11 +60,11 @@ Contracts/Info Efficiency Target,效率目標
 Contracts/Info Net Result,合計
 Contracts/Info Payment,合約金額
 Contracts/Info Reputation Change,聲望
-Contracts/MachineCostToUnlock,解鎖費
+Contracts/MachineCostToUnlock,研發費
 Contracts/MachinePowerUsage,用電量
 Contracts/MachineUnitCost,單價
-Contracts/Machines Help Text,使用資金解鎖更先進的機器，提升你的廚房設計。
-Contracts/Machines Unlocked,已解鎖機器：{[NUMBER]}/39種
+Contracts/Machines Help Text,使用資金研發更先進的機器，提升你的廚房設計。
+Contracts/Machines Unlocked,已研發機器：{[NUMBER]}/39種
 Contracts/Medium,中等
 Contracts/My Business,我的業務
 Contracts/New,新！
@@ -99,7 +99,7 @@ Contracts/StatCompletedMediumContracts,- 中等難度
 Contracts/StatDisasters,災難事件
 Contracts/StatFavouriteClient,偏愛的客戶
 Contracts/StatForfeitContracts,放棄合約
-Contracts/StatMachinesUnlocked,機器解鎖
+Contracts/StatMachinesUnlocked,機器研發
 Contracts/StatMoneyMade,利潤
 Contracts/Stats,統計數據
 Contracts/Title In Progress,待辦合約
@@ -175,11 +175,11 @@ HowToPlay/BlueprintsBody,"藍圖可以儲存一組機器的佈局，以便在其
 HowToPlay/BlueprintsTitle,藍圖
 HowToPlay/ContractsBody,"合約模式給予你一個營運自己的廚房設計公司的機會，你可以挑選並承接連鎖餐館的合約，設計出符合要求的廚房。你可以用公司的資金投資新機器，以利完成合約。
 
-一開始只能用基礎的機器。在機器界面使用公司的資金解鎖進階機器，就可以在設計廚房時購置它們。
+一開始只能用基礎的機器。在機器界面使用公司的資金研發進階機器，就可以在設計廚房時購置它們。
 
 合約提案會送到收件箱，而難度也可以在接受合約之前調整：合約難度越高，完成的回報也就越高！如果你能滿足（甚至超額完成）客戶提出的效率目標，客戶還會提供效率獎勵。
 
-即使資金為負數（負債）也可以製作廚房，但會無法解鎖新機器。"
+即使資金為負數（負債）也可以製作廚房，但會無法研發新機器。"
 HowToPlay/ContractsTitle,合約模式
 HowToPlay/ControlBody,"你可以設置*總機*，令其在接到訂單時對所有連接的機器下達開關指令。
 
@@ -579,7 +579,7 @@ Main Menu/Load Saved Game,載入遊戲存檔
 Main Menu/Loading,正在載入……請稍候……
 Main Menu/Mods,模組
 Main Menu/No Description,無描述
-Main Menu/Not Unlocked Yet,尚未解鎖
+Main Menu/Not Unlocked Yet,尚未研發
 Main Menu/Optional,（可選）
 Main Menu/Orders To Fulfill,配送{[ORDERS]}份訂單
 Main Menu/QUIT,離開
@@ -811,7 +811,7 @@ Part Properties/Origin Teleporter,起點傳送器
 Part Properties/Output Mode,輸出模式（要將完成的料理放在何處）
 Part Properties/Perform action,收到新訂單時行動<color=#c18c26>X</color>次
 Part Properties/Perform action top,訂單到達序列頂部時行動<color=#c18c26>X</color>次
-Part Properties/Pipe to,管道輸送至
+Part Properties/Pipe to,管道連接到
 Part Properties/Power Saving,節能
 Part Properties/Processing Time,處理時間：
 Part Properties/Pump Amount,供給泵機的液體數量（mL）
@@ -1391,7 +1391,7 @@ Scenarios/Enter Description,在這裡輸入廚房描述！
 Scenarios/Failure,你尚未達成場景的任務目標。
 Scenarios/Food Critic Order,食評家訂單
 Scenarios/Machines,機器
-Scenarios/Machines Info,解鎖/封鎖可供玩家使用的機器。
+Scenarios/Machines Info,允許/限制可供玩家使用的機器。
 Scenarios/Modifiers,可選項
 Scenarios/Name,名稱
 Scenarios/New Scenario,新場景
@@ -1784,7 +1784,7 @@ Visual Logic Editor/Add New Command,加入新命令
 Visual Logic Editor/Additional Code Page,附加源碼頁 #
 Visual Logic Editor/Main Code Page,主源碼頁
 Visual Logic Editor/VisualCodeToolCommandAdd,加（數字+變量）
-Visual Logic Editor/VisualCodeToolCommandAddVariables,添加（變量+變量）
+Visual Logic Editor/VisualCodeToolCommandAddVariables,加（變量+變量）
 Visual Logic Editor/VisualCodeToolCommandCopy,複制數值
 Visual Logic Editor/VisualCodeToolCommandDec,減少1
 Visual Logic Editor/VisualCodeToolCommandIf,如果（比較變量及數字）
@@ -1800,7 +1800,7 @@ Visual Logic Editor/VisualCodeToolCommandRet,完成執行
 Visual Logic Editor/VisualCodeToolCommandSub,減（數字-變量）
 Visual Logic Editor/VisualCodeToolCommandSubVariables,減（變量-變量）
 Visual Logic Editor/add,加
-Visual Logic Editor/by,數量為
+Visual Logic Editor/by,的值
 Visual Logic Editor/by one,數量為1
 Visual Logic Editor/copy,複制
 Visual Logic Editor/decrement,減少
@@ -1811,7 +1811,7 @@ Visual Logic Editor/into,進入
 Visual Logic Editor/invert,反轉
 Visual Logic Editor/jump,跳至
 Visual Logic Editor/label,標籤
-Visual Logic Editor/read,複制操作次數 操作執行者為：
+Visual Logic Editor/read,讀取行動次數：
 Visual Logic Editor/reduce,減少
 Visual Logic Editor/set,設定
 Visual Logic Editor/to,至
