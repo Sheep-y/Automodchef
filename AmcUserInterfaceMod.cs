@@ -52,7 +52,7 @@ namespace Automodchef {
          if ( conf.fix_food_hint_when_paused )
             TryPatch( typeof( IngredientTooltip ), "Update", postfix: nameof( FixIngredientHintOnPause ) );
          if ( conf.fix_epic_locale_override )
-            TryPatch( typeof( BasePCPlatform ).Assembly.GetType( "BaseEpicPlatform" ), "SetSocialOverlayLocale", nameof( Disable ) );
+            TryPatch( typeof( BasePCPlatform ).Assembly.GetType( "BaseEpicPlatform" ), "SetSocialOverlayLocale", nameof( DisablePlatformLangSwitch ) );
          if ( conf.traditional_chinese ) {
             TryPatch( typeof( LocalizationManager ), "CreateCultureForCode", nameof( DetectZh ) );
             TryPatch( typeof( LanguageSelectionScreen ), "OnShown", nameof( ShowZht ) );
@@ -211,7 +211,7 @@ namespace Automodchef {
          __instance.canvasGroup.alpha = 1f;
       } catch ( Ex x ) { Err( x ); } }
 
-      private static bool Disable () => false;
+      private static bool DisablePlatformLangSwitch () { Info( "Plaftorm language override disabled." ); return false; }
 
       #region Traditional Chinese.  Hooray for Taiwan, Hong Kong, Macau!
       private static void ShowZht ( List<string> ___languageNames ) { try {
