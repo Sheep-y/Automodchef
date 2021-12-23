@@ -21,7 +21,7 @@ Buttons/NEW,新
 Buttons/NO,否
 Buttons/OKAY,確定
 Buttons/OPEN CODE EDITOR,打開源碼編輯器
-Buttons/PURCHASE,購置
+Buttons/PURCHASE,研發
 Buttons/QUIT,離開
 Buttons/RESET KITCHEN,重置廚房
 Buttons/RETRY,重試
@@ -77,15 +77,15 @@ Contracts/Objective DeliverDishesRushHour,配送{[NUMBER]}份高峰時段的訂�
 Contracts/Objective FoodCritic, 配送1分食評家的訂單
 Contracts/Objective Ingredients,使用不超過{[NUMBER]}份食材
 Contracts/Objective NoDisasters,別讓任何災難發生
-Contracts/Objective Power,耗電不超過{[NUMBER]}Wh
+Contracts/Objective Power,耗電 {[NUMBER]}Wh 以內
 Contracts/Payment,付款：${[PAYMENT]}
 Contracts/Reputation,聲望
 Contracts/Required Reputation,所需聲望
 Contracts/Research New Machines,研發新機器
-Contracts/Running DeliverDishes,已配送料理
-Contracts/Running DeliverDishesCraze,已配送狂熱料理
-Contracts/Running DeliverDishesOfType,（{[DISH]}）已配送
-Contracts/Running DeliverDishesRushHour,高峰時段的已配送
+Contracts/Running DeliverDishes,配送料理
+Contracts/Running DeliverDishesCraze,配送狂熱訂單
+Contracts/Running DeliverDishesOfType,配送{[DISH]}
+Contracts/Running DeliverDishesRushHour,配送高峰時段訂單
 Contracts/Running FoodCritic,食評家訂單
 Contracts/Running Ingredients,使用食材
 Contracts/Running NoDisasters,災難事件
@@ -572,7 +572,7 @@ Main Menu/Demo Feature,抱歉，此功能在《Automachef》試玩版中無法�
 Main Menu/Demo Level,試玩版中不可用。
 Main Menu/How To Play,玩法說明
 Main Menu/Last Edited,上次編輯：{[DATE]}
-Main Menu/Level Objectives,""配送{[ORDERS]}餐。
+Main Menu/Level Objectives,"配送{[ORDERS]}餐。
 耗電維持在{[POWER]}Wh以下。
 配發的食材不超過{[INGREDIENTS]}份。"
 Main Menu/Load Saved Game,載入遊戲存檔
@@ -620,9 +620,9 @@ Main UI/Cost,花費
 Main UI/Create New Contract,+ 開設新公司
 Main UI/Create New Test Site,+ 新建廚房
 Main UI/Creating New Blueprint,創建新藍圖
-Main UI/Current Energy Usage,耗電
-Main UI/Cycle Variants,按下{PartChangeVariant}鍵在此機器的不同種類間循環切換。
-Main UI/Cycle Variants Switch,按下 [TogglePartVariant] 在此機器的不同種類間循環切換。
+Main UI/Current Energy Usage,用電量
+Main UI/Cycle Variants,按下{PartChangeVariant}以切換分線器的方向。
+Main UI/Cycle Variants Switch,按下 [TogglePartVariant] 以切換分線器的方向
 Main UI/Defeat Customers Left,有顧客未能及時收到食物！
 Main UI/Demo Follow Social,您現在已經可以在Steam上購買《Automachef》。請在Facebook和Twitter平台關注我們，獲取更多關信息。
 Main UI/Demo Follow Social Switch,感謝您遊玩《Automachef》，衷心希望您能喜歡！請在Facebook和Twitter平台關注我們，獲取更多關信息。

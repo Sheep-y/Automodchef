@@ -34,7 +34,7 @@ namespace Automodchef {
 
    public class ModConfig : IniConfig {
       [ ConfigAttribute( "To change log level, create new file Automochef-log.conf with the first line saying Off, Error, Warning, Info, or Verbose.\r\n; Version of this Automodchef config file.  Don't touch!" ) ]
-      public int config_version = 20211206;
+      public int config_version = 20211222;
 
       [ ConfigAttribute( "System", "Skip Unity, Hermes, Team 17, and Autosave screens.  Default true." ) ]
       public bool skip_intro = true;
@@ -93,6 +93,8 @@ namespace Automodchef {
       public bool packaging_machine_passthrough = true;
       [ ConfigAttribute( "Mechanic", "Packaging machine's sub-recipes have lowest priority (Fries < Bacon Fries < Loaded Cheese Fries), last processed recipe have lower priority, and random for remaining ties.  Default true." ) ]
       public bool smart_packaging_machine = true;
+      //[ ConfigAttribute( "Mechanic", "Customers who received a spoiled / infected dish will leave, removing their order, preventing Advanced Order Reader from stucking on it.  Default true." ) ]
+      //public bool remove_spoiled_order = true;
 
       [ ConfigAttribute( "Misc", "Export foods to foods.csv on game launch.  Default false.  Neglectable speed impact, disabled because most players don't need the data." ) ]
       public bool export_food_csv = false;
@@ -107,8 +109,8 @@ namespace Automodchef {
 
       public override void Load ( string path = "" ) {
          base.Load( path );
-         if ( config_version >= 20211206 ) return;
-         config_version = 20211206;
+         if ( config_version >= 20211222 ) return;
+         config_version = 20211222;
          Save( path );
       }
    }

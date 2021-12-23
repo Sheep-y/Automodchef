@@ -222,7 +222,7 @@ namespace Automodchef {
          ModText.Get = ModText.GetTextZh;
          zhs2zht = new Dictionary< string, string >();
          if ( instance.TryPatch( typeof( TermData ), "GetTranslation", postfix: nameof( ToZht ) ) == null ) return;
-         var csv = Path.Combine( Path.GetDirectoryName( new Uri( Assembly.GetExecutingAssembly().CodeBase ).LocalPath ), "zht.csv" );
+         var csv = Path.Combine( Path.GetDirectoryName( new Uri( Assembly.GetExecutingAssembly().CodeBase ).LocalPath ), "zht.dat" );
          if ( ! File.Exists( csv ) ) return;
          Info( "Importing zh text from {0}", csv );
          using ( var r = new StreamReader( csv ) )

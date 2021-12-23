@@ -6,17 +6,6 @@ Main config file is `Automodchef.ini`, in the game's app data folder at
 If not exists, the file will be created when launching the modded game,
 
 
-= Logging Level =
-
-To control logging level, create a text file `Automochef-log.conf` in the same folder as `Automodchef.ini`.
-This file is not automatically created.
-
-First line controls the log level, which may be Off, Error, Warning, Info (default), or Verbose.
-Second line controls write interval in seconds.  A non zero value will buffer log entries and write to disk in the background.  Default 2.
-
-Log level requires a different file from main config because logging starts at bootstrap, before config file is parsed.
-
-
 = Main Config =
 
 The main config file is a standard ini.
@@ -342,3 +331,16 @@ This game has the best Chinese translation I have seen for an Indie, make no mis
 So I conveted the original text and rewrote most lines.  Need to make a stand, leave a mark before our cultures are wiped by a... determinated force.
 
 Any new text added later will fallback to a win32 coversion api.  Literally a few lines of work.
+
+
+= Logging Level =
+
+To control logging level, create a text file `Automochef-log.conf` in the same folder as `Automodchef.ini`.
+This file is not automatically created.
+
+First line controls the log level, which may be Off, Error, Warning, Info (default), or Verbose.
+Second line controls write interval in seconds.  A non zero value will buffer log entries and write to disk in the background.  Default 2.
+
+Log level requires a different file from main config because logging starts at bootstrap, before config file is parsed.
+
+

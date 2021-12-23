@@ -12,7 +12,6 @@ namespace Automodchef {
    internal class AmcMechanicMod : Automodchef.ModComponent {
 
       internal override void Apply () { try {
-         TryPatch( typeof( ContractsLogic ), "AddNewIncomingContract", nameof( OverrideContracts ), nameof( RestoreContracts ) ); // TODO
          if ( conf.instant_speed_change )
             TryPatch( typeof( Initializer ), "Update", postfix: nameof( InstantGameSpeedUpdate ) );
          if ( conf.speed2 != 3 || conf.speed3 != 5 )
@@ -33,29 +32,16 @@ namespace Automodchef {
             TryPatch( typeof( PackagingMachine ), "StartPackaging", nameof( LogPackagingMachineLastDish ) );
             TryPatch( typeof( PackagingMachine ), "SeeIfSomethingCanBePackaged", nameof( OverridePackagingMachineLogic ) );
          }
+         /*
+         if ( conf.remove_spoiled_order ) {
+            TryPatch( typeof( FoodDisplayCase ), "ManualFixedUpdate", nameof( TrackDisplayCase ) );
+            TryPatch( typeof( OrderQueue ), "ContainsRequestFor", nameof( TrackOrderSource ) );
+            TryPatch( typeof( Ingredient ), "HasGoneBad", nameof( TrackDisplayCaseFood ) );
+            TryPatch( typeof( LevelManager ), "OnAcceptedSpoiledDish", nameof( RemoveSpoiledOrder ) );
+            TryPatch( typeof( LevelManager ), "OnAcceptedInfectedDish", nameof( RemoveSpoiledOrder ) );
+         }
+         */
       } catch ( Ex x ) { Err( x ); } }
-
-      private static List<Contract> allContracts;
-      private static void OverrideContracts ( ref List<Contract> ___allPossibleContracts, Company ___company ) { // Find BeachBurger contracts for bug fixing.
-         if ( allContracts != null ) allContracts = ___allPossibleContracts;
-         var filteredContracts = ___allPossibleContracts
-            .Where( e => e.requiredDishes.Contains( "BeachBurger" ) && e.client.minReputation <= ___company.reputation ).ToList();
-         if ( filteredContracts.Count == 0 ) return;
-         Info( "Filtering {0} down to {1}.", allContracts.Count, filteredContracts.Count );
-         ___allPossibleContracts = filteredContracts;
-         // Id = clientName
-         // Client1 = The Feedbag
-         // Client2 = Heartburns
-         // Client3 = Dine 'N Dash
-         // Client4 = The Happy Gorger
-         // Client5 = Salad Bowl
-         // Client6 = Cheesy Does It
-         // Client7 = Calorie Cabin
-         // Client8 = Lots O' Flavour
-         // Client9 = Fresh & Tasty
-         // Client10 = Big Taste Inc.
-      }
-      private static void RestoreContracts ( ref List<Contract> ___allPossibleContracts ) => ___allPossibleContracts = allContracts;
 
       private static void InstantGameSpeedUpdate ( float ___targetTimeScale ) { try {
          if ( Time.timeScale != ___targetTimeScale ) Time.timeScale = ___targetTimeScale;
@@ -69,6 +55,12 @@ namespace Automodchef {
       } catch ( Ex x ) { Err( x ); } }
 
       #region Packaging Machine and Food Processor
+      private static float fullFPpower, fullPMpower;
+      private static void SetFoodProcessorPower ( Processor __instance, float ___processingTime ) =>
+         SetIdlePower( __instance, "Food Processor", ___processingTime > 0, ref fullFPpower, conf.food_processor_idle_power );
+      private static void SetPackagingMachinePower ( PackagingMachine __instance, bool ___packaging ) =>
+         SetIdlePower( __instance, "Packaging Machine", ___packaging, ref fullPMpower, conf.packaging_machine_idle_power );
+
       private static void SetIdlePower ( KitchenPart part, string name, bool isBusy, ref float fullPower, float idlePower ) { try {
          if ( fullPower == 0 ) {
             fullPower = part.powerInWatts;
@@ -76,12 +68,6 @@ namespace Automodchef {
          }
          part.powerInWatts = isBusy ? fullPower : idlePower;
       } catch ( Ex x ) { Err( x ); } }
-
-      private static float fullFPpower, fullPMpower;
-      private static void SetFoodProcessorPower ( Processor __instance, float ___processingTime ) =>
-         SetIdlePower( __instance, "Food Processor", ___processingTime > 0, ref fullFPpower, conf.food_processor_idle_power );
-      private static void SetPackagingMachinePower ( PackagingMachine __instance, bool ___packaging ) =>
-         SetIdlePower( __instance, "Packaging Machine", ___packaging, ref fullPMpower, conf.packaging_machine_idle_power );
 
       private static void PackagingMachinePassThrough ( PackagingMachine __instance, List<Ingredient> ___ingredientsInside, KitchenPart.NodeData[] ___ourIngredientNodes ) { try {
          KitchenPart.NodeData exitNode = ___ourIngredientNodes[ 3 ]; // 3 is hardcoded in the game.
@@ -134,6 +120,34 @@ namespace Automodchef {
          if ( (bool) packMachineConsume.Invoke( __instance, new object[] { dish } ) ) packMachinePackage.Invoke( __instance, new object[] { dish } );
          return false;
       } catch ( Ex x ) { return Err( x, true ); } }
+      #endregion
+
+      #region Remove spoiled order
+      /* No time to test more features.  Xmas is coming!
+      private static FoodDisplayCase displayCase;
+      private static List<Ingredient> dishesThatCanFulfillOrders;
+	  private static Dictionary<object, List<Order>> ordersForPeople, ordersForCars;
+      private static Ingredient deliveredFood;
+      private static void TrackDisplayCase ( FoodDisplayCase __instance, List<Ingredient> ___dishesThatCanFulfillOrders ) { displayCase = __instance; dishesThatCanFulfillOrders = ___dishesThatCanFulfillOrders; }
+      private static void TrackOrderSource ( Dictionary<object, List<Order>> ___ordersForPeople, Dictionary<object, List<Order>> ___ordersForCars  ) { ordersForPeople = ___ordersForPeople; ordersForCars = ___ordersForCars; }
+      private static void TrackDisplayCaseFood ( Ingredient __instance ) => deliveredFood = __instance;
+
+      private static void RemoveSpoiledOrder ( string dishName ) { try {
+         Fine( "Spoiled / Infected {0} delivered", dishName );
+         Fine( displayCase, dishesThatCanFulfillOrders, ordersForCars, ordersForCars, deliveredFood );
+         if ( displayCase == null || ordersForPeople == null || deliveredFood == null ) return;
+         dishesThatCanFulfillOrders.Remove( deliveredFood );
+         // OrderQueue.FulfillOrder, without success logic
+         List<Order> orders = Initializer.GetInstance().levelManager.orderQueue.GetOrdersFromSource( displayCase.sourceToFulfill );
+         if ( orders == null || orders.Count < 1 ) return;
+         var order = orders.Find( e => e.dish.internalName == deliveredFood.internalName );
+         if ( order == null || ( displayCase.sourceToFulfill == OrderSource.DriveThru && order != orders[0] ) ) return;
+         Info( "Removing {0} {1} order for {2}", deliveredFood.HasGoneBad() ? "spoiled" : "infected", deliveredFood.friendlyName, displayCase.sourceToFulfill );
+         orders.Remove( order );
+         foreach ( var key in ordersForPeople ) ordersForPeople[ key ].Remove( order );
+         foreach ( var key in ordersForCars ) ordersForCars[ key ].Remove( order );
+      } catch ( Ex x ) { Err( x ); } }
+      */
       #endregion
    }
 }
