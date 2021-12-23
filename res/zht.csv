@@ -161,9 +161,9 @@ HowToPlay/ActionButtonsBody,"在機器/與藍圖列表的頂部有四個行動�
 HowToPlay/ActionButtonsTitle,行動按鈕
 HowToPlay/AssemblersBody,"*組合機*可以製作單一種料理。使用機械臂將食材送入機器，就會開始組裝。每台組合機可以獨立設定食譜和制作速度。不過要記住——製作速度越快，耗電就越高！
 
-含醬汁的料理必需使用高級組合機製作。
+含醬汁的料理必需使用*高級組合機*製作。
 
-如需包裝特定餐點（如薯條或辣翅）或將料理組合成套餐，請使用包裝機。"
+如需包裝特定餐點（如薯條或辣翅）或將料理組合成套餐，請使用*包裝機*。"
 HowToPlay/AssemblersTitle,機器 - 組合
 HowToPlay/BlackoutsBody,如果廚房在運行時出現*用電限制*，即意味着當廚房的耗電量超過限制，則會立刻斷電，導致失敗。當耗電量接近用電限制時，屏幕上會出現提示。微控機器的開關、調整機器的速度設定，都可以節約用電。特別注意傳送器等耗電機器，它們在運作時會耗用大量電力。
 HowToPlay/BlackoutsTitle,斷電
@@ -183,11 +183,11 @@ HowToPlay/ContractsBody,"合約模式給予你一個營運自己的廚房設計�
 HowToPlay/ContractsTitle,合約模式
 HowToPlay/ControlBody,"你可以設置*總機*，令其在接到訂單時對所有連接的機器下達開關指令。
 
-這個類別包括訂單讀取機、點算機、與可編程電腦，後者可以用低階編程語言設置指令，實現對廚房的精密操控。
+這個類別包括*訂單讀取機*、*點算機*、與*可編程電腦*，後者可以用低階編程語言設置指令，實現對廚房的精密操控。
 
-中繼器可以將輸入的開關訊號轉逹給四台機器。若將訂單讀取機連接至四台中繼器，則可以同時開關十六台機器。
+*中繼器*可以將輸入的開關訊號轉逹給四台機器。若將訂單讀取機連接至四台中繼器，則可以同時開關十六台機器。
 
-點算機可以點算特定機器中的食物數量，然後（基於此數量）開關另一台機器，例如在保溫箱存量不足時進行補充。"
+*點算機*可以點算特定機器中的食物數量，然後（基於此數量）開關另一台機器，例如在保溫箱存量不足時進行補充。"
 HowToPlay/ControlTitle,機器 - 總機
 HowToPlay/DisastersBody,"關卡的任務視窗會列出本廚房可能發生的各種災難。災難有三類，每類都有可以用特定的治理機器解決。話雖如此，最有效的辦法還是利用廚房佈局避免觸發災難。
 
@@ -207,21 +207,21 @@ HowToPlay/EfficiencyBody,"廚房效率取決於多項指數：完成和未完成
 
 廚房效率小貼士：
 
--*儘可能省電* 例如將機器設定為省電模式、或使用訂單讀取機在收到訂單時開關其他機器一段時間。
+-*儘可能省電*：例如將機器設定為省電模式、或使用訂單讀取機在收到訂單時開關其他機器一段時間。
 
--*儘可能惜食* 例如僅在接到訂單後再配發剛剛足夠的食材。
+-*儘可能惜食*：例如僅在接到訂單後再配發剛剛足夠的食材。
 
--*儘可能輕省* 使用的機器越少，用電量就越低，食材行經的路程也就越短。儘量避免多餘的輸送帶。
+-*儘可能輕省*：使用的機器越少，用電量就越低，食材行經的路程也就越短。儘量避免多餘的輸送帶。
 
 -如果多份料理都需要同一種食材，你可以用*設定成偵測多種料理的訂單讀取機*配發這種食材，並將其送往相應的流水線，減少重複的機器。"
 HowToPlay/EfficiencyTitle,效率
-HowToPlay/LiquidsBody,"*液體*設施專門用於在廚房中加添或運輸醬汁等液體。關卡開始時，液體已經預存在缸裡，可以直接送到高級組合機，也可能要先送入液體混合機，與其他液體混合成新的醬汁。
+HowToPlay/LiquidsBody,"液體設施專門用於在廚房中加添或運輸醬汁等*液體*。關卡開始時，液體已經預存在*缸*裡，可以直接送到高級組合機，也可能要先送入*液體混合機*，與其他液體混合成新的醬汁。
 
-液體只能用管道運輸，必需使用泵機推動。不管來源是缸還是混合機，都必須使用泵機輸送到所連結的機器。"
+液體只能用管道運輸，必需使用*泵機*推動。不管來源是缸還是混合機，都必須使用泵機輸送到所連結的機器。"
 HowToPlay/LiquidsTitle,機器 - 液體
 HowToPlay/ObjectivesBody,"每個廚房都設有最多三個任務，在關卡的任務視窗和數值區中顯示。
 
-*配送料理*：必要條件，你要配送指定數量的料理。如果未能配送出最低要求的料理，即告失敗！
+*配送料理*：必要條件，你要配送指定數量的料理。如果未能配送出所要求的料理，即告失敗！
 
 *電力消耗*：非必要條件，耗電不超過指定電量即告逹成。
 
@@ -255,7 +255,7 @@ HowToPlay/ScenarioBodyDRMFree,使用編輯器工具，即可建立廚房的原�
 HowToPlay/ScenarioTitle,場景編輯器
 HowToPlay/SpecialOrdersBody,"營運時，廚房可能會收到特別訂單。這些訂單只會在特定關卡中出現，在介紹廚房的時候會一拼提示。
 
-*食評家*訂餐後，訂單會直接插入序列頂部。食評家沒有耐性，因此必需在短時間內完成訂單！如果配送失敗，損失的聲望也會比一般訂單多。當食評家到達時，屏幕上會出現提示。
+*食評家*的訂餐會直接插到序列頂部。食評家沒有耐性，因此必需在短時間內完成訂單！如果配送失敗，損失的聲望也會比一般訂單多。當食評家抵步時，屏幕上會出現提示。
 
 *高峰時段*的訂單，出現速度比平常快，意味着廚房可能同時要處理多份訂單。高峰時段會持續一段特定時間，在高峰時段開始/結束時，屏幕上會出現提示。
 
@@ -276,11 +276,11 @@ HowToPlay/TransformBody,"*食品處理*機器包含*烹飪機器*與*切碎機*�
 
 *切碎機*會切開所有經過的食材，無需設定。閱讀食譜請要神，有些特定食材（比如起司）可能需要進行多次處理。
 
-*蒸爐*和*烤箱*只在某些特別食譜中使用，而且具備一些特有的屬性。*烤箱*烹飪食物的時間較長，而且還有防止熱量逸散的蓋子。然而，這也意味着機械無法從蓋子的一邊放置或取出食材。*蒸爐*不會引發火災，和其他烹飪機器不同，然而必需從水缸用泵機供水才能運作。"
+*蒸爐*和*烤箱*只在某些特別食譜中使用，而且具備一些特有的屬性。烤箱烹飪食物的時間較長，而且還有防止熱量逸散的蓋子。然而，這也意味着機械無法從蓋子的一邊放置或取出食材。蒸爐不會引發火災，和其他烹飪機器不同，然而必需從水缸用泵機供水才能運作。"
 HowToPlay/TransformTitle,機器 - 處理
 HowToPlay/TransportBody,"*輸送*系統舉足輕重，負責在廚房中運送食物。
 
-要在廚房中移動食物，使用輸送帶最簡單直接。每節輸送帶都可以獨立調節速度，以節約用電或確保機械臂有足夠時間拾取食物。
+要在廚房中移動食物，使用*輸送帶*最簡單直接。每節輸送帶都可以獨立調節速度，以節約用電或確保機械臂有足夠時間拾取食物。
 
 如果要將輸送帶上的食物移動到其他（非輸送帶）的機器，則需要使用機械臂。你需要設定機械臂的方向，確保它能將食物放到正確的位置。
 
@@ -333,7 +333,7 @@ Ingredients/ChoppedMushroom,蘑菇丁
 Ingredients/CookedHotDog,熟熱狗腸
 Ingredients/CookedMincedMeat,熟絞肉
 Ingredients/CrispyBaconStrips,香脆培根
-Ingredients/Croutons,炸麵包粒
+Ingredients/Croutons,脆麵包粒
 Ingredients/Egg,雞蛋
 Ingredients/EggContents,蛋液
 Ingredients/FriedBreadedChickenPieces,炸雞塊
@@ -379,14 +379,14 @@ Ingredients/TGMilk,牛奶
 Ingredients/TGOnion,洋蔥
 Ingredients/TGPieCrust,派皮
 Ingredients/TGPumpkinPieUncooked,南瓜派（生）
-Ingredients/TGPumpkinPuree,南瓜泥
+Ingredients/TGPumpkinPuree,南瓜蓉
 Ingredients/TGRawTurkey,生火雞
 Ingredients/TGRoastTurkeyUncooked,有料火雞（生）
 Ingredients/TGRoastedPumpkin,烤南瓜
-Ingredients/TGRoastedPumpkinPuree,烤南瓜泥
+Ingredients/TGRoastedPumpkinPuree,烤南瓜蓉
 Ingredients/TGRoastedSweetPotatoes,烤番薯
 Ingredients/TGSweetPotato,番薯
-Ingredients/TGSweetPotatoPuree,番薯泥
+Ingredients/TGSweetPotatoPuree,番薯蓉
 Ingredients/TGSweetPotatoWedges,番薯角
 Ingredients/TGSweetPumpkin,南瓜
 Ingredients/TGTurkeyStuffing,火雞餡料
@@ -396,22 +396,22 @@ Ingredients/TomatoPuree,番茄蓉
 Ingredients/TomatoSlice,番茄片
 Ingredients/WetGoop,受潮食物
 Level Titles/Level-1,初嘗滋味
-Level Titles/Level-10,組合混亂
+Level Titles/Level-10,套餐混戰
 Level Titles/Level-11,動聽滋味
 Level Titles/Level-12,碼頭高壓
 Level Titles/Level-13,油炸天才
 Level Titles/Level-14,精彩紛呈
 Level Titles/Level-15,全新創造
-Level Titles/Level-16,能量棒
+Level Titles/Level-16,充電條
 Level Titles/Level-17,送餐車
 Level Titles/Level-18,美麗夏日
 Level Titles/Level-19,完美搭配
 Level Titles/Level-2,生菜來襲
-Level Titles/Level-20,海上狂歡
+Level Titles/Level-20,海邊狂歡
 Level Titles/Level-21,大爆''炸''
 Level Titles/Level-22,無辣不歡
 Level Titles/Level-23,盡享套餐
-Level Titles/Level-24,不是蘑菇
+Level Titles/Level-24,不是菇息
 Level Titles/Level-25,人間美味
 Level Titles/Level-26,管道之夢
 Level Titles/Level-27,乘客狂熱
@@ -428,9 +428,9 @@ Level Titles/Level-9,食評家之選
 Level Titles/Level-C1,漢堡狂熱
 Level Titles/Level-C2,大高潮
 Level Titles/Level-C3,起司與旋律
-Level Titles/Level-C4,停跳
+Level Titles/Level-C4,心臟停頓
 Level Titles/Level-C5,家族時光
-Level Titles/Level-CN1,就醬剛好
+Level Titles/Level-CN1,打好醬油
 Level Titles/Level-CN2,美妙餡實！
 Level Titles/Level-CN3,大炒特炒
 Level Titles/Level-Contract,廚房設計合約
@@ -441,10 +441,10 @@ Level Titles/Level-S4,飛狗
 Level Titles/Level-S5,訂單故障
 Level Titles/Level-T1,基礎教程
 Level Titles/Level-T2,訂單讀取機教程
-Level Titles/Level-T3,電力消耗教程
+Level Titles/Level-T3,用電量教程
 Level Titles/Level-T4,災難教程
 Level Titles/Level-T5,液體食材教程
-Level Titles/Level-TG1,少年派
+Level Titles/Level-TG1,派的歷程
 Level Titles/Level-TG2,小雞遊戲
 Level Titles/Level-TG3,關於澆汁的一切
 Loading Flow/Autosave Warning,本遊戲有自動存檔。出現此圖標時，請不要關閉遊戲。
@@ -458,9 +458,9 @@ Machine Categories/Store,保存
 Machine Categories/Transform,處理
 Machine Categories/Transport,輸送
 Machine Descriptions/AdvancedAssembler,標準料理組合機的高性能現代版。這一台組合機可以接受液體食材，準備料理的速度也有提升。
-Machine Descriptions/AdvancedComputer,性能更強的可編程電腦，與AC-16相比記憶體更大、功能更高級。
+Machine Descriptions/AdvancedComputer,升級版可編程電腦，與AC-16相比記憶體更大、功能更高級。
 Machine Descriptions/AdvancedOrderReader,就是一台訂單讀取機……不過更高級！
-Machine Descriptions/Assembler,可以自動將食材組合成完成料理。這台機器擁有兩種輸出：一邊是成品，另一邊是不適用於組合的其他東西。機器最多可以容納10份食材。
+Machine Descriptions/Assembler,自動將食材組合成新的食物。這台機器擁有兩種輸出：一邊是成品，另一邊是無法組合的其他東西。機器最多可以容納10份食材。
 Machine Descriptions/Belt,普通輸送帶，可以運輸食材與料理。
 Machine Descriptions/BeltBridge,普通輸送帶，可以運輸食材與料理。
 Machine Descriptions/Computer,通用型16位元可編程電腦，可以讀寫最多四台裝置。
@@ -473,18 +473,18 @@ Machine Descriptions/ExtinguisherArm,此機械臂可以撲滅相鄰的火災。�
 Machine Descriptions/Fryer,經濟、可靠的油炸機，每次可以油炸一分食材。（緩慢地！）
 Machine Descriptions/Gate,一道閘門，僅在收到訂單讀取機或電腦的指令時放食物通過。
 Machine Descriptions/Grill,平凡的烤架，可以烤熟漢堡扒，也可以將食材烤成焦炭。
-Machine Descriptions/HighSpeedBelt,高速輸送帶，移動食材的速度是普通輸送帶的兩倍。
+Machine Descriptions/HighSpeedBelt,高速輸送帶，搬運食材的速度是普通輸送帶的兩倍。
 Machine Descriptions/HighSpeedDispenser,傳統食材配發器的高速版，每隔兩秒便可派發一分新鮮食材。
 Machine Descriptions/LargeStorageTank,最多可以供應10升液體的缸。
 Machine Descriptions/LargeStorageUnit,大型冷藏單元，最多可以保存8份食物。同時比普通保存箱更加抗蟲。
 Machine Descriptions/LiquidMixer,一種可以將兩種液體混合，形成新液體的機器。
 Machine Descriptions/LongRobotArm,一款遠距離機械臂，可以拾放兩個方格內的食物。速度也比普通版本快上許多。
-Machine Descriptions/MechanicMechanic,一款自動化機械臂，可以修復其他出現故障的鄰近機器。
+Machine Descriptions/MechanicMechanic,一款自動化機械臂，在鄰近機器出現故障時可以修復。
 Machine Descriptions/OrderReader,這個機器可以讀取訂單，在顧客訂購特定料理時調整其他廚房機器的行為。
 Machine Descriptions/Oven,用這款工業級烤箱烘焙個不停吧！不過要記住，烘焙需要大量的耐心（和電力）。
 Machine Descriptions/PackagingMachine,一款簡單的機器，可以將食物包裝好。
 Machine Descriptions/Processor,想增加食物的熵值？這就是你的最佳選擇！
-Machine Descriptions/Pump,只有泵機能夠將液體從一處移動至另一處，比如將液體從缸移至組合機。
+Machine Descriptions/Pump,泵機能夠將液體從一處移動至另一處，比如將液體從缸移至組合機。
 Machine Descriptions/Repeater,將輸入的信號轉送至最多四台其他機器。例如用一台訂單讀取機或電腦控制大量機器。
 Machine Descriptions/RobotArm,機械臂可以從一側拾起食物並放到其他方向。它可以設定成僅移動特定的食物。
 Machine Descriptions/SmartSplitter,分線器的智能版本，可以將特定食物將分送往兩條輸送帶。
@@ -493,8 +493,8 @@ Machine Descriptions/Sprinkler,能經濟有效地撲滅火災。缺點是，範�
 Machine Descriptions/StackingRobotArm,高容量版機械臂，可以一次搬運最多三份食材。
 Machine Descriptions/Steamer,使用蒸汽煮熟食物的機器！別忘了，必需用泵機從水缸給它注水，才能使用哦！
 Machine Descriptions/StorageTank,最多可以供應5升液體的缸。
-Machine Descriptions/StorageUnit,最多可以保存5份食物的小箱子。
-Machine Descriptions/Teleporter,實驗性機器，可以將食物傳送至廚房的任意地點﹐是電力消耗大戶。務必小心使用！
+Machine Descriptions/StorageUnit,最多可以保存5份食物的小箱。
+Machine Descriptions/Teleporter,實驗性機器，可以將食物傳送至廚房的任意地點﹐但非常耗電。務必小心使用！
 Machine Descriptions/XTerminator,一款自動化機械臂，可以對鄰近施放''幾乎對人類無害''的殺蟲劑，控制蟲災。
 Machine Names/AdvancedAssembler,組合機（高級）
 Machine Names/AdvancedComputer,AC-32電腦
@@ -624,8 +624,8 @@ Main UI/Current Energy Usage,用電量
 Main UI/Cycle Variants,按下{PartChangeVariant}以切換分線器的方向。
 Main UI/Cycle Variants Switch,按下 [TogglePartVariant] 以切換分線器的方向
 Main UI/Defeat Customers Left,有顧客未能及時收到食物！
-Main UI/Demo Follow Social,您現在已經可以在Steam上購買《Automachef》。請在Facebook和Twitter平台關注我們，獲取更多關信息。
-Main UI/Demo Follow Social Switch,感謝您遊玩《Automachef》，衷心希望您能喜歡！請在Facebook和Twitter平台關注我們，獲取更多關信息。
+Main UI/Demo Follow Social,您現在已經可以在Steam上購買《Automachef》。請在Facebook和Twitter平台關注我們，獲取更多關訊息。
+Main UI/Demo Follow Social Switch,感謝您遊玩《Automachef》，衷心希望您能喜歡！請在Facebook和Twitter平台關注我們，獲取更多關訊息。
 Main UI/Demo Full Version Available,現已登陸Steam商店！
 Main UI/Demo Full Version Available Switch,現已登陸Nintendo eShop！
 Main UI/Demo Head to Store,前往Steam商店
@@ -649,7 +649,7 @@ Main UI/Failure Time,你用盡了時間！
 Main UI/Gold Award,--- 金獎條件 ---
 Main UI/In Test Site Mode,不用擔心訂單！
 Main UI/Infinite Funds,無限資金！
-Main UI/Info Lenses,信息濾鏡
+Main UI/Info Lenses,資訊濾鏡
 Main UI/Ingredients,{[NUMBER]}份食材
 Main UI/Ingredients Level Condition,使用食材不超過{[NUMBER]}份
 Main UI/Ingredients Used,使用的食材
@@ -767,15 +767,15 @@ Part Properties/1L2R,1 左 - 2 右（33-67 %）
 Part Properties/1L3R,1 左 - 3 右（25-75 %）
 Part Properties/2L1R,2 左 - 1 右（67-33 %）
 Part Properties/3L1R,3 左 - 1 右（75-25 %）
-Part Properties/Any Finished Dish,任意料理
-Part Properties/Any Ingredient,任意食材
-Part Properties/Any Source,任意
-Part Properties/Anything,任意食物
+Part Properties/Any Finished Dish,任何料理
+Part Properties/Any Ingredient,任何食材
+Part Properties/Any Source,任何訂單來源
+Part Properties/Anything,任何食物
 Part Properties/Behavior,行為
 Part Properties/Being Monitored,監視中
 Part Properties/Cooking Time,烹飪時間：
 Part Properties/Destination Teleporter,終點傳送器
-Part Properties/Dishes to Package,包裝
+Part Properties/Dishes to Package,包裝目標
 Part Properties/Do Nothing,閒置
 Part Properties/Drive Thru,汽車訂餐
 Part Properties/Filter Left,將篩選物放到左側
@@ -805,25 +805,25 @@ Part Properties/On when on,正常模式（啟動時啟動）
 Part Properties/On when order count,待處理訂單數大於<color=#c18c26>X</color>時啟動
 Part Properties/On when pending,有訂單待處理時啟動
 Part Properties/Operation Mode,操作模式
-Part Properties/Order Source,要監視的訂單
+Part Properties/Order Source,要監視的來源
 Part Properties/Order to Detect,要偵測的訂單
 Part Properties/Origin Teleporter,起點傳送器
-Part Properties/Output Mode,輸出模式（要將完成的料理放在何處）
+Part Properties/Output Mode,輸出位置
 Part Properties/Perform action,收到新訂單時行動<color=#c18c26>X</color>次
 Part Properties/Perform action top,訂單到達序列頂部時行動<color=#c18c26>X</color>次
 Part Properties/Pipe to,管道連接到
 Part Properties/Power Saving,節能
 Part Properties/Processing Time,處理時間：
-Part Properties/Pump Amount,供給泵機的液體數量（mL）
-Part Properties/Pump Interval,泵機行動間的秒數
-Part Properties/Recipe to Follow,要參照的食譜
+Part Properties/Pump Amount,每次供應的液體數量（mL）
+Part Properties/Pump Interval,供應間隔（秒）
+Part Properties/Recipe to Follow,組合目標
 Part Properties/Repeater Inverted,反向模式（停機時啟動）
 Part Properties/Repeater Standard,正常模式（啟動時啟動）
 Part Properties/Restaurant,餐館
 Part Properties/Reverse,逆轉
 Part Properties/Right,右
 Part Properties/Short Range,近程（1格）
-Part Properties/Speed Setting,速度設定
+Part Properties/Speed Setting,速度
 Part Properties/Splitting Ratio,分離比例
 Part Properties/Spoiled Filter,品質篩選
 Part Properties/Spoiled Filter All,任何品質
@@ -1190,7 +1190,7 @@ Robot Dialogues/Level-16-1,今天早上我看到，有一個人類在海浪之�
 Robot Dialogues/Level-16-2,每次碰到這種事，我就覺得我對人類的看法確實沒錯！不過我跑題了……
 Robot Dialogues/Level-16-3,我們今天會迎來高峰時段，而且還會增加全新的雞肉沙拉，這個菜品可是專門為我們的全新醬汁設備設計的哦！
 Robot Dialogues/Level-16-4,這些醬汁，應該可以完美配送我們的心靈控制……啊，我是說，心靈手巧的美食，以達成我們的終極目標！
-Robot Dialogues/Level-16-5,我有點開始喜歡你了，等時候到了，沒准會饒你一命哦！
+Robot Dialogues/Level-16-5,我有點開始喜歡你了，等時候到了，沒準兒會饒你一命哦！
 Robot Dialogues/Level-17-1,今天，我們又見證了一個偉大的里程碑！不是佔領北半球的那個里程碑，那個以後再說！今天的里程碑是……我們的首個汽車訂餐餐廳！
 Robot Dialogues/Level-17-2,這裡有兩個配送窗口，右邊那個就是汽車訂餐用的。
 Robot Dialogues/Level-17-3,和其他的訂單不同，汽車訂餐的料理*必須*按照正確順序配送……訂單列表頂部的訂單需要*最先配送*！
@@ -1202,8 +1202,8 @@ Robot Dialogues/Level-18-2,他們今天要過來，這也是個好時機，讓�
 Robot Dialogues/Level-18-3,總有一天，我要給你立一座雕像！我說到做到，你的雕像也是我宏偉計劃的一環哦！
 Robot Dialogues/Level-18-4,今天的菜單只有兩種料理，不過需要用到高級組合機和多種醬汁。如果說有誰能做到的話，一定就是你啦！
 Robot Dialogues/Level-18-5,……因為我們物種中剩下的傢伙全都不值得信任！！
-Robot Dialogues/Level-19-1,後面有個行李運輸帶，上面放着個手提箱，你可以隨便拿！我可是給自己搞來了各種新玩意……我現在有''牙刷''和''腰帶''！我真是個模範人類！
 Robot Dialogues/Level-18-6,祝你今天服務順利！
+Robot Dialogues/Level-19-1,後面有個行李運輸帶，上面放着個手提箱，你可以隨便拿！我可是給自己搞來了各種新玩意……我現在有''牙刷''和''腰帶''！我真是個模範人類！
 Robot Dialogues/Level-19-2,今天，我們會為顧客提供迄今為止最棒的菜單！不僅有三種組合套餐，還有兩種配菜可供選擇！
 Robot Dialogues/Level-19-3,你現在應該需要依賴大量訂單讀取機吧？所以我搞來了一種新的機器……中繼器！
 Robot Dialogues/Level-19-4,中繼器可以向與其連接的所有機器下達命令，將輸入信號如實或反轉後轉發出去……
@@ -1297,8 +1297,8 @@ Robot Dialogues/Level-7-4,這裡的空間足夠放下兩條專門製作薯條的
 Robot Dialogues/Level-7-5,薯條可以放入保存箱，然後可以用訂單讀取機控制機械臂拾取出來，供配菜或組合套餐的訂單使用。
 Robot Dialogues/Level-7-6,祝你今天好運！如果沒記住今天的多巴胺套餐的食譜，別忘了再去確認一下哦！
 Robot Dialogues/Level-8-1,這裡是一個全新的地點，不過一定要注意！這片城區的電網格外老舊…………
-Robot Dialogues/Level-8-2,如果消耗的電力過多，就會導致*斷電*，這裡的運營也會徹底結束。所以，一定要多加小心，隨時留意電力消耗情況！
-Robot Dialogues/Level-8-3,我們在實驗場進行電力消耗實驗時也看到了，我們可以採取特定措施，降低電力消耗。
+Robot Dialogues/Level-8-2,如果用電量過高，就會導致*斷電*，這裡的運營也會徹底結束。所以，一定要多加小心，隨時留意用電量！
+Robot Dialogues/Level-8-3,我們在實驗場進行用電量實驗時也看到了，我們可以採取特定措施，降低耗電。
 Robot Dialogues/Level-8-4,我甚至還搞了一些新的機器，用來降低我們廚房的耗電，讓廚房更有效率！
 Robot Dialogues/Level-8-5,啊……還有，我聽說，有人看到一位我從來沒聽說過的名人在吃我們的BLT三明治！估計今天這個菜品一定會很受顧客歡迎！
 Robot Dialogues/Level-9-1,又回到公園了……我在這裡有着很美好的回憶。和我的同胞一樣，我會用磁力核心存儲器來記錄過去50天內我所做過的一切。
@@ -1498,7 +1498,7 @@ Settings/Key ToggleRecipes,切換食譜窗口
 Settings/KeyNameDelete,Delete
 Settings/KeyNameReturn,Enter
 Settings/Language Restart,切換至其他語言需要重新啟動遊戲。要繼續嗎？
-Settings/Misconfigured Parts,警告：機器設定錯誤
+Settings/Misconfigured Parts,機器設定錯誤時進行提示
 Settings/Music Volume,音樂音量
 Settings/Parts Auto Rotation,自動旋轉機器
 Settings/Post-Processing Effects,後期圖像效果
@@ -1545,18 +1545,18 @@ SwitchLegend/ZoomCamera,縮放視角
 Tabs/Assemble,組合
 Tabs/Blueprints,藍圖
 Tabs/Code,源碼
-Tabs/Code Editor,源碼編輯器
+Tabs/Code Editor,程序
 Tabs/Control,控制
 Tabs/Disasters,災難
 Tabs/Dishes,料理
 Tabs/Dispense,配發
-Tabs/Help,幫助
+Tabs/Help,說明
 Tabs/Inbox,收件箱
-Tabs/Info,信息
-Tabs/Kitchen Report,廚房報告
+Tabs/Info,描述
+Tabs/Kitchen Report,廚房日誌
 Tabs/Liquids,液體
 Tabs/Local Mods,本地模組
-Tabs/Logic Editor,程序編輯器
+Tabs/Logic Editor,規則
 Tabs/Machines,機器
 Tabs/My Contracts,我的合約
 Tabs/My Scenarios,我的場景
@@ -1750,8 +1750,8 @@ Tutorial Texts/OrderReader-Step23-01,選擇*閒置*展開控制選項，然後�
 Tutorial Texts/OrderReader-Step24-01,幹得好！接下來看看效果如何。按*開始*即可開始測試……
 Tutorial Texts/OrderReader-Step24-01-Switch,幹得好！接下來看看效果如何。按[StartSimulation]開始……
 Tutorial Texts/OrderReader-Step25-01,顧客的訂單會出現在左側。我來模擬一些顧客訂單。''模擬''……會不會讓我聽起來很像機器人？！真是太幽默啦！
-Tutorial Texts/OrderReader-Step26-01,完美！我們已經大大提升了廚房的效率，我就知道找你准沒錯！是時候開始我們的第一處場地了，全世界都不知道，馬上就要出大事啦！哈哈！呃……沒錯，我們就來開第一家餐館吧，嗯？
-Tutorial Texts/PowerUsage-Step01-01,又見面了，我親愛的搭檔！今天，我要教你幾個小技巧，降低廚房的電力消耗。
+Tutorial Texts/OrderReader-Step26-01,完美！我們已經大大提升了廚房的效率，我就知道找你準沒錯！是時候開始我們的第一處場地了，全世界都不知道，馬上就要出大事啦！哈哈！呃……沒錯，我們就來開第一家餐館吧，嗯？
+Tutorial Texts/PowerUsage-Step01-01,又見面了，我親愛的搭檔！今天，我要教你幾個小技巧，降低廚房的耗電。
 Tutorial Texts/PowerUsage-Step01-02,我看上了一處電網老舊的沙灘場地，如果用電量太高，就會觸發斷電！
 Tutorial Texts/PowerUsage-Step01-03,好消息是，要是有好的點子，應該就可以繞過這些限制！我們快來開動我們碳基生物的大腦吧！
 Tutorial Texts/PowerUsage-Step01-04,你現在看到的這個廚房，一旦兩台*組合機*同時啟動，就很可能觸發斷電。我來給你展示一下吧！
@@ -1763,7 +1763,7 @@ Tutorial Texts/PowerUsage-Step03-01,接下來，我們可以把操作模式切�
 Tutorial Texts/PowerUsage-Step04-01,好極了，接下來也對*起司漢堡**組合機*應用相同的改動！
 Tutorial Texts/PowerUsage-Step05-01,這下，我們的*組合機*耗電就比之前降低了20%，但組合*普通漢堡*所要花費的時間延長了50%。
 Tutorial Texts/PowerUsage-Step05-02,要節約電力，我們還可以採取其他措施。我們用不上兩個*烤架*的，對吧？只要用一個就可以了！
-Tutorial Texts/PowerUsage-Step06-01,我要先幫你移除一些機器，然後你再放一些新的……在這裡等一下吧，人類朋友！
+Tutorial Texts/PowerUsage-Step06-01,我要先幫你移除一些機器，然後你再放一些新的……稍等一下吧，人類朋友！
 Tutorial Texts/PowerUsage-Step07-01,接下來，我們就可以開始重建廚房了。首先，在機器列表中選擇*配發器*，並將其放置在高亮的位置。
 Tutorial Texts/PowerUsage-Step08-01,打開*配發器*的屬性界面，將其設定為配發*生漢堡扒*。
 Tutorial Texts/PowerUsage-Step08-01-Switch,打開*配發器*的屬性界面，將其設定為配發*生漢堡扒*。
