@@ -3,7 +3,7 @@ Every feature can be individually turned on or off, with some having fine contro
 Main config file is `Automodchef.ini`, in the game's app data folder at
 %AppData%\..\LocalLow\HermesInteractive\Automachef\
 
-If not exists, the file will be created when launching the modded game,
+If not exists, the config file will be created when launching the modded game, alongside mod log.
 
 
 = Main Config =

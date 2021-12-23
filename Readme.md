@@ -45,15 +45,15 @@ i.e. %AppData%\..\LocalLow\HermesInteractive\Automachef
 
 You can edit the ini file to turn on/off mod features.
 Each setting have a short description that explains its effects and options.
-See config.md or config.txt for more information.
+See config.md or automodchef_config.txt for more information.
 
-If you can't see file extensions, the file with a little gear in its icon is the right one.
+If you can't see file extensions, the one with a little gear in its icon is the config file.
 You may want to google how to see file extensions.
 
 
 = Compatibility =
 
-The mod is developed and tested on Automachef version 1.1.0, Epic Game Store.
+The mod is developed and tested on Automachef version 1.1.0|0|9, Epic Game Store.
 It works only on the Microsoft .Net build of the game, i.e. on Windows or Wine.
 
 It should be compatible with Steam version, and is expected to be broadly compatible with future game versions.
@@ -83,7 +83,13 @@ Mod is open source.  Feel free to fork and release in a new name (to avoid confu
 = Removal =
 
 To remove the mod, delete `version.dll`, `doorstop_config.ini`, and the `Mod` folder from game folder.
+You may also want to remove the `src` folder and anything that starts with `automodchef_`
 
-The mod does not modify any game files, so there is normally no need to Verify files.
+The mod does not modify game files, so there is normally no need to Verify files.
 
-You may also move / rename version.dll to temporary disable the mod.
+If you move / rename version.dll and leave the rest alone, you can temporary disable the mod.
+
+
+= License =
+
+GPL v3.  All bundled libraries are either MIT or public domain; licenses included in package.
