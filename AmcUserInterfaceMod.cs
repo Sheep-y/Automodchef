@@ -48,6 +48,7 @@ namespace Automodchef {
             TryPatch( typeof( MaterialDropdown ), "ShowDropdown", nameof( ToggleDropdown ) );
          if ( conf.fix_food_hint_when_paused )
             TryPatch( typeof( IngredientTooltip ), "Update", postfix: nameof( FixIngredientHintOnPause ) );
+         TryPatch( typeof( VisualCodeToolCommandSub ), "DecompileInstruction", postfix: nameof( FixSubCommandText ) );
          if ( conf.fix_epic_locale_override )
             TryPatch( typeof( BasePCPlatform ).Assembly.GetType( "BaseEpicPlatform" ), "SetSocialOverlayLocale", nameof( DisablePlatformLangSwitch ) );
          if ( conf.traditional_chinese ) {
@@ -205,6 +206,55 @@ namespace Automodchef {
          __instance.canvasGroup.alpha = 1f;
       } catch ( Ex x ) { Err( x ); } }
 
+      private static void FixSubCommandText ( GameObject __result ) {
+         Info( "------------" );
+         var logged = new HashSet<object>();
+         DumpComponents( "", logged, __result );
+      }
+      
+      internal static void DumpComponents ( string prefix, HashSet<object> logged, GameObject e ) {
+         if ( prefix.Length > 10 ) return;
+         if ( e == null || logged.Contains( e ) ) return;
+         logged.Add( e );
+         var text = FindText( e );
+         Output( "{0}- '{1}'{2} {3}{4}{5}{6} :{7}", prefix, e.name, ToTag( e.tag ), text, TypeName( e ),
+            e.activeSelf ? "" : " (Inactive)", ToLayer( e.layer ), ToString( e.GetComponent<Transform>() ) );
+         if ( prefix.Length == 0 )
+            foreach ( var c in e.GetComponents<Component>() ) try {
+               var typeName = TypeName( c );
+               if ( c is Transform cRect ) ;
+               else if ( c is UnityEngine.UI.Text txt ) Output( "{0}...{1} {2} {3}", prefix, typeName, txt.color, txt.text );
+               else if ( c is I2.Loc.Localize loc ) Output( "{0}...{1} {2}", prefix, typeName, loc.mTerm );
+               else if ( c is UnityEngine.UI.LayoutGroup layout ) Output( "{0}...{1} Padding {2}", prefix, typeName, layout.padding );
+               else Output( "{0}...{1}", prefix, typeName );
+            } catch ( Exception ) { }
+         for ( int i = 0 ; i < e.transform.childCount ; i++ )
+            DumpComponents( prefix + "  ", logged, e.transform?.GetChild( i )?.gameObject );
+      }
+
+      private static Func<string> ToTag ( string tag ) => () => "Untagged".Equals( tag ) ? "" : $":{tag}";
+
+      private static Func<string> FindText ( GameObject obj ) => () => {
+         var text = obj.GetComponent< UnityEngine.UI.Text >()?.text;
+         return text == null ? "" : $"\"{text}\" ";
+      };
+
+      private static Func<string> ToLayer ( int layer ) => () => layer == 0 ? "" : $" Layer {layer}";
+
+      private static Func<string> ToString ( Transform t ) { return () => {
+         if ( t == null ) return "";
+         var result = string.Format( "Pos {0} Scale {1} Rotate {2}", t.localPosition, t.localScale, t.localRotation );
+         return " " + result.Replace( ".0,", "," ).Replace( ".0)", ")" )
+            .Replace( "Pos (0, 0, 0)", "" )
+            .Replace( "Scale (1, 1, 1)", "" )
+            .Replace( "Rotate (0, 0, 0, 1)", "" )
+            .Trim();
+      }; }
+
+      private static void Output ( object msg, params object[] args ) => Info( msg, args );
+
+      private static string TypeName ( object e ) => e?.GetType().FullName.Replace( "UnityEngine.", "UE." ).Replace( "UE.GameObject", "" );
+
       private static bool DisablePlatformLangSwitch () { Info( "Platform language override disabled." ); return false; }
 
       #region Traditional Chinese.  Hooray for Taiwan, Hong Kong, Macau!
@@ -224,10 +274,9 @@ namespace Automodchef {
          zhs2zht = new Dictionary< string, string >();
          instance?.TryPatch( typeof( LanguageSelectionButton ), "Start", postfix: nameof( ZhImg ) );
          if ( instance?.TryPatch( typeof( TermData ), "GetTranslation", postfix: nameof( ToZht ) ) == null ) return;
-         var csv = Path.Combine( ModDir, "zht.dat" );
-         if ( ! File.Exists( csv ) ) return;
-         Info( "Importing zh text from {0}", csv );
-         using ( var r = new StreamReader( csv ) )
+         if ( ! IsFound( Path.Combine( ModDir, "zht.dat" ), out var path ) ) return;
+         Info( "Importing zh text from {0}", path );
+         using ( var r = new StreamReader( path ) )
             while ( r.TryReadCsvRow( out var row ) ) {
                var cells = row.ToArray();
                if ( cells.Length >= 2 && ! string.IsNullOrWhiteSpace( cells[ 0 ] ) ) zhs2zht[ cells[ 0 ] ] = cells[ 1 ];
@@ -235,14 +284,18 @@ namespace Automodchef {
          Info( "{0} text imported", zhs2zht.Count );
       } catch ( Ex x ) { Err( x ); } }
 
+      private static Texture2D zhLangImg;
+
       private static void ZhImg ( LanguageSelectionButton __instance ) { try {
          var texture = __instance.icon.texture as Texture2D;
-         var img = Path.Combine( ModDir, "zh.img" );
-         if ( texture == null || texture.name != "Chinese" || ! File.Exists( img ) ) return;
-         Info( "Replace Chinese button with {0}", img );
-         texture = new Texture2D( 256, 256, texture.format, false );
-         ImageConversion.LoadImage( texture, File.ReadAllBytes( img ) );
-         __instance.icon.texture = texture;
+         if ( texture == null || texture.name != "Chinese" ) return;
+         if ( zhLangImg == null ) {
+            if ( ! IsFound( Path.Combine( ModDir, "zh.img" ), out var path ) ) return;
+            Info( "Replace Chinese button with {0}", path );
+            zhLangImg = new Texture2D( 256, 256, texture.format, false );
+            if ( ! zhLangImg.LoadImage( File.ReadAllBytes( path ) ) ) { Warn( "Failed to load {0}", path ); return; }
+         }
+         __instance.icon.texture = zhLangImg;
       } catch ( Ex x ) { Err( x ); } }
 
       private static Dictionary< string, string > zhs2zht;

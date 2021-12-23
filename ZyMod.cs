@@ -83,6 +83,8 @@ namespace ZyMod {
       public static void Info  ( object msg, params object[] arg ) => RootMod.Log?.Info ( msg, arg );
       public static void Fine  ( object msg, params object[] arg ) => RootMod.Log?.Fine ( msg, arg );
       public static bool Non0 ( float val ) => val != 0 && ! float.IsNaN( val ) && ! float.IsInfinity( val );
+      public static bool IsFound ( string path ) { if ( File.Exists( path ) ) return true; Warn( "Not Found: {0}", path ); return false; }
+      public static bool IsFound ( string path, out string found ) { found = path; return IsFound( path ); }
 
       public static string ModPath => new Uri( Assembly.GetExecutingAssembly().CodeBase ).LocalPath;
       public static string ModDir => Path.GetDirectoryName( ModPath );
@@ -351,6 +353,7 @@ namespace ZyMod {
             case TraceLevel.Verbose : line = "FINE "; break;
          }
          try {
+            for ( var i = arg.Length - 1 ; i >= 0 ; i-- ) if ( arg[i] is Func<string> f ) arg[i] = f();
             if ( msg is string txt && txt.Contains( '{' ) && arg?.Length > 0 ) msg = string.Format( msg.ToString(), arg );
             else if ( msg is Exception ) { txt = msg.ToString(); if ( knownErrors.Contains( txt ) ) return; knownErrors.Add( txt ); msg = txt; }
             else if ( arg?.Length > 0 ) msg = string.Join( ", ", new object[] { msg }.Union( arg ).Select( e => e?.ToString() ?? "null" ) );
