@@ -11,11 +11,11 @@ Mod is compatible with all languages, but efficiency and power reports are in En
 
 Main features:
 
-* Skip intros.
-* Fix game bugs.
-* Efficiency and power report in kitchen log.
-* Improved packaging machines, with passthrough.
-* Startup load on all levels and bypass Roboto speech.
+* Skip intros and disable analytics.
+* Fix minor game bugs like Double Bypass Meal efficiency.
+* Efficiency Report and Power Report in kitchen log.
+* Smarter Packaging Machines, with pass-through and idle mode.
+* Chance to load game on level start and bypass Roboto speech.
 * Higher camera (bird view possible), faster speeds, expanded tooltips.
 * Improved Chinese (Traditional) translation.
 * And more.
