@@ -4,8 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.UI;
@@ -49,9 +47,7 @@ namespace Automodchef {
          if ( conf.fix_food_hint_when_paused )
             TryPatch( typeof( IngredientTooltip ), "Update", postfix: nameof( FixIngredientHintOnPause ) );
          if ( conf.fix_visual_editor_text )
-            TryPatch( typeof( VisualCodeToolCommandSub ), "DecompileInstruction", postfix: nameof( FixSubCommandText ) );
-         if ( conf.fix_epic_locale_override )
-            TryPatch( typeof( BasePCPlatform ).Assembly.GetType( "BaseEpicPlatform" ), "SetSocialOverlayLocale", nameof( DisablePlatformLangSwitch ) );
+            TryPatch( typeof( VisualCodeToolCommand ), "Start", nameof( FixCommandText ) );
          if ( conf.traditional_chinese ) {
             TryPatch( typeof( LocalizationManager ), "CreateCultureForCode", nameof( DetectZh ) );
             TryPatch( typeof( LanguageSelectionScreen ), "OnShown", nameof( ShowZht ) );
@@ -78,7 +74,6 @@ namespace Automodchef {
          ___m_bProcessedCloseRequest = false;
       } }
       #endregion
-
 
       private static void OverrideCameraSettings ( ref float ___wideAngle, ref float ___wideHeight, ref float ___teleAngle, ref float ___isometricAngle ) {
          if ( Non0( conf.side__view_angle ) ) ___isometricAngle = conf.side__view_angle;
@@ -207,12 +202,11 @@ namespace Automodchef {
          __instance.canvasGroup.alpha = 1f;
       } catch ( Ex x ) { Err( x ); } }
 
-      private static void FixSubCommandText ( GameObject __result ) {
-         var to = __result.GetChildByName<Component>( "to" )?.gameObject;
+      private static void FixCommandText ( VisualCodeToolCommand __instance ) {
+         if ( ! ( __instance is VisualCodeToolCommandSub ) ) return;
+         var to = __instance.transform.GetChildByName<Component>( "to" )?.gameObject;
          if ( to?.GetComponent<Text>() is Text txt ) txt.text = LocalizationManager.GetTranslation( "Visual Logic Editor/by" );
       }
-
-      private static bool DisablePlatformLangSwitch () { Info( "Platform language override disabled." ); return false; }
 
       #region Traditional Chinese.  Hooray for Taiwan, Hong Kong, Macau!
       private static void ShowZht ( List<string> ___languageNames ) { try {
@@ -229,6 +223,7 @@ namespace Automodchef {
          ModText.Get = ModText.GetTextZh;
          zhs2zht = new Dictionary< string, string >();
          instance?.TryPatch( typeof( LanguageSelectionButton ), "Start", postfix: nameof( ZhImg ) );
+         instance?.TryPatch( typeof( BasePCPlatform ).Assembly.GetType( "BaseEpicPlatform" ), "SetSocialOverlayLocale", nameof( ZhtEpic ) );
          if ( instance?.TryPatch( typeof( TermData ), "GetTranslation", postfix: nameof( ToZht ) ) == null ) return;
          if ( ! IsFound( Path.Combine( ModDir, "zht.dat" ), out var path ) ) return;
          Info( "Importing zh text from {0}", path );
@@ -247,12 +242,20 @@ namespace Automodchef {
          if ( texture == null || texture.name != "Chinese" ) return;
          if ( zhLangImg == null ) {
             if ( ! IsFound( Path.Combine( ModDir, "zh.img" ), out var path ) ) return;
-            Info( "Replace Chinese button with {0}", path );
+            Info( "Replacing Chinese button with {0}", path );
             zhLangImg = texture = new Texture2D( 256, 256, texture.format, false );
             if ( ! texture.LoadImage( File.ReadAllBytes( path ) ) ) { Warn( "Failed to load {0}", path ); return; }
          }
          __instance.icon.texture = (Texture2D) zhLangImg;
       } catch ( Ex x ) { Err( x ); } }
+
+      private static bool ZhtEpic ( object ___platformInterface ) { try {
+         var setLocale = ___platformInterface?.GetType().Method( "SetOverrideLocaleCode" );
+         if ( setLocale?.GetParameters().Length != 1 || setLocale?.GetParameters()[0].ParameterType != typeof( string ) ) return true;
+         Info( "Instructing Epic Platform to use Traditional Chinese" );
+         setLocale.Invoke( ___platformInterface, new object[]{ "zh-Hant" } );
+         return false;
+      } catch ( Ex x ) { return Err( x, true ); } }
 
       private static Dictionary< string, string > zhs2zht;
 

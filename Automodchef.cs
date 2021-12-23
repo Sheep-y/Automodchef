@@ -104,8 +104,6 @@ namespace Automodchef {
       public bool export_hardware_csv = false;
       [ ConfigAttribute( "Misc", "Export text from current language to text-0.csv on game launch.  Default false.  Ditto." ) ]
       public bool export_text_csv = false;
-      [ ConfigAttribute( "Misc", "Prevent the game from overriding Epic Game Store's language preference (e.g. in overlay).  Default true." ) ]
-      public bool fix_epic_locale_override = true;
       [ ConfigAttribute( "Misc", "Change Simplified Chinese to Traditional Chinese with improved translations.  No effect on other langauges.  Default true." ) ]
       public bool traditional_chinese = true;
 

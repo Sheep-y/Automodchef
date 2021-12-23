@@ -154,6 +154,13 @@ The patches may or may not be closely related, and can be as elegance or as mess
 
 Example: Efficiency log, Power log, Ask loadgame on level start, Traditional Chinese.
 
+=== Type Avoidance ===
+
+Sometimes, you may need to avoid direct reference to a game class, to solve circular reference or play nice with (and without) DLC.
+Playing with Type and Reflection is an unavoidable part of modding.
+
+Example: orderedDish, cookedDish, target and body of ZhtEpic.
+
 === Non-Patches ===
 
 Patching is not the only job of the mod.

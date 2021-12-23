@@ -326,22 +326,18 @@ Specifically, the localization key and the text from current game language will 
 The dump is done by the game's internationaliztion engine, not by this mod.  Some values may be misaligned.
 
 
-*fix_epic_locale_override*
-
-When true, the game will no longer try to force Epic Game to change its language.
-
-I can set the platform's language on my own, thanks.  Please don't change it for me, and Epic please don't automatically assume Chinese must be Simplified.
-
-
 *traditional_chinese*
 
-When true, and when game language is set to Chinese, a new Traditional Chinese translation will be used.
-Regardless of language, the Chinese option in the language menu will also be renamed.
+When true, and when game language is set to Chinese, the game will use Traditional Chinese instead of Simplified Chinese.
+Regardless of game language, the Chinese option in the language menu will also be renamed.
 
-This game has the best Chinese translation I have seen for an Indie, make no mistake.  But there are mistakes.  Not to mention that some names mean different things in Traditional Chinese, used by Taiwan, Hong Kong, and Macau.  More people than Australia.  Rich people!
+This game has the best Chinese translation I have seen for an Indie, make no mistake.  But there are mistakes.
+Not to mention that some names mean different things in Traditional Chinese, used by Taiwan, Hong Kong, and Macau.
+More people than Australia.  Rich people!
 
 So I conveted the original text and rewrote most lines.  Need to make a stand, leave a mark before our cultures are wiped by a... determinated force.
 
+In addition to replacing translations, the China flag will be replaced with a generic icon, and Epic's Social Panel will be set to Traditional Chinese.
 Any new text added later will fallback to a win32 coversion api.  Literally a few lines of work.
 
 
