@@ -503,7 +503,7 @@ Machine Names/Assembler,組合機
 Machine Names/Belt,輸送帶
 Machine Names/BeltBridge,輸送帶橋
 Machine Names/Computer,AC-16電腦
-Machine Names/ConvectionFryer,對流油炸機
+Machine Names/ConvectionFryer,對流氣炸架
 Machine Names/ConveyorGrill,輸送帶烤架
 Machine Names/Counter,點算機
 Machine Names/Dispenser,配發器
@@ -1151,7 +1151,7 @@ ProgrammingReference/retDescription,ret 指令會完成當前33毫秒時鐘周�
 ProgrammingReference/sub,sub指令
 ProgrammingReference/subDescription,sub 指令會計算兩個值之間的差別，並將結果存入第三個參數指定的變量中。記住，暫存器都是16位大小，所以結果必須在-32768到32767之間，否則便會發生錯誤。基本來說，它會進行''operand1 - operand2''並將結果存入operand3指定的變量中。
 Robot Dialogues/FireDisasterIntro,*着火啦*！……既然已經成功吸引到了你的注意力，我就可以告訴你，現在已經可以使用*灑水器*和*滅火器*了。如果食材在烹飪機器中停留太久，就會發生火災！
-Robot Dialogues/Level-1-1,時間已到！世界屈服在人類……的飢餓之下的日子，即將結束！這就是我們的第一間廚房，雖然現在還很空曠，但具有無窮的潛力！
+Robot Dialogues/Level-1-1,時間已到！世界將不再屈服在人類……的飢餓之下！這就是我們的第一間廚房，雖然現在還很空曠，但具有無窮的潛力！
 Robot Dialogues/Level-1-2,計劃如下：我們迅速擴張，開設多間廚房，隨着我們的科技不斷發展，配送更加豪華的料理。
 Robot Dialogues/Level-1-3,我們要爭取公眾信任，獲得媒體曝光，成為大眾之選……然後，等到所有人都在吃我們的食物……唔，到時你就會知道！
 Robot Dialogues/Level-1-4,我們先從簡單的東西做起，為顧客提供普通漢堡和起司漢堡就好……畢竟，我們有自知可以輕鬆做到！
@@ -1248,7 +1248,7 @@ Robot Dialogues/Level-26-1,這裡是我們的第一塊場地……那可是好�
 Robot Dialogues/Level-26-2,快樂的時光總是過得特別快，你說呢，我最好的朋友？
 Robot Dialogues/Level-26-3,我帶你回到這裡，就是為了讓你看看我們一同走了多遠。
 Robot Dialogues/Level-26-4,既然現在我的計劃已經……變了，我打算專注於為顧客獻上健康的料理，改做正經生意……
-Robot Dialogues/Level-26-5,而不是實在的全球威脅，我是說……裝成廚房的全球威脅……我是說……這本能徹底消滅人……算了不說了，我們還是來做吃的吧，怎麼樣，我的朋友？
+Robot Dialogues/Level-26-5,而不是實在的全球威脅，我是說……裝成廚房的全球威脅……我是說……這本來可以徹底消滅人……算了不說了，我們還是來做吃的吧，怎麼樣，我的朋友？
 Robot Dialogues/Level-27-1,你猜怎麼着？
 Robot Dialogues/Level-27-2,我交了更多朋友！都是人類朋友，和我一樣！我們簡直太像了……頭部毛囊，超長的內部腸道……要是說下去可就沒個完了！
 Robot Dialogues/Level-27-3,想想吧，要是沒有你，他們現在的處境可就大大不同了……
@@ -1800,19 +1800,19 @@ Visual Logic Editor/VisualCodeToolCommandRet,完成執行
 Visual Logic Editor/VisualCodeToolCommandSub,減（數字-變量）
 Visual Logic Editor/VisualCodeToolCommandSubVariables,減（變量-變量）
 Visual Logic Editor/add,加
-Visual Logic Editor/by,的值
-Visual Logic Editor/by one,數量為1
+Visual Logic Editor/by,減去
+Visual Logic Editor/by one,的值減1（但不低於0）
 Visual Logic Editor/copy,複制
-Visual Logic Editor/decrement,減少
+Visual Logic Editor/decrement,將
 Visual Logic Editor/finish,完成
 Visual Logic Editor/if,如果
-Visual Logic Editor/if new order in,如果新訂單進入
+Visual Logic Editor/if new order in,如果有新訂單
 Visual Logic Editor/into,進入
 Visual Logic Editor/invert,反轉
 Visual Logic Editor/jump,跳至
 Visual Logic Editor/label,標籤
 Visual Logic Editor/read,讀取行動次數：
-Visual Logic Editor/reduce,減少
+Visual Logic Editor/reduce,將
 Visual Logic Editor/set,設定
 Visual Logic Editor/to,至
 Visual Logic Editor/turn,設定輸出

@@ -54,6 +54,8 @@ namespace Automodchef {
 
       [ ConfigAttribute( "User Interface", "Fix food mouseover hints not showing when game is paused.  Default true." ) ]
       public bool fix_food_hint_when_paused = true;
+      [ ConfigAttribute( "User Interface", "Fix wrong text in computer's visual editor.  Default true." ) ]
+      public bool fix_visual_editor_text = true;
       [ ConfigAttribute( "User Interface", "Suppress yes/no confirmations - save before quit, load game, delete or overwrite save / blueprint / scenario, quit level / game, reset layout.  Default true." ) ]
       public bool suppress_confirmation = true;
       [ ConfigAttribute( "User Interface", "Show load game prompt when entering a level (if any saves).  Loading a game will bypass level goal popup and roboto speech.  Default true." ) ]

@@ -17,7 +17,7 @@ Main features:
 * Improved packaging machines, with passthrough.
 * Startup load on all levels and bypass Roboto speech.
 * Higher camera (bird view possible), faster speeds, expanded tooltips.
-* Traditional Chinese translation.
+* Improved Chinese (Traditional) translation.
 * And more.
 
 

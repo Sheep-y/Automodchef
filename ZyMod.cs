@@ -179,6 +179,38 @@ namespace ZyMod {
                pos++;
          }
       }
+
+      /* Dump unity components to log. *
+      public static void DumpComponents ( UnityEngine.GameObject e ) => DumpComponents( Info, "", new HashSet<object>(), e );
+      public static void DumpComponents ( Action< object, object[] > output, UnityEngine.GameObject e ) => DumpComponents( output, "", new HashSet<object>(), e );
+      internal static void DumpComponents ( Action< object, object[] > output, string prefix, HashSet<object> logged, UnityEngine.GameObject e ) {
+         if ( prefix.Length > 10 ) return;
+         if ( e == null || logged.Contains( e ) ) return;
+         logged.Add( e );
+         Dump( output, "{0}- '{1}'{2} {3}{4}{5}{6} :{7}", prefix, e.name, ToTag( e.tag ), FindText( e ), TypeName( e ),
+            e.activeSelf ? "" : " (Inactive)", e.layer == 0 ? "" : $" Layer {e.layer}", ToString( e.GetComponent<UnityEngine.Transform>() ) );
+         if ( prefix.Length == 0 )
+            foreach ( var c in e.GetComponents<UnityEngine.Component>() ) try {
+               var typeName = TypeName( c );
+               if ( c is UnityEngine.Transform cRect ) ;
+               else if ( c is UnityEngine.UI.Text txt ) Dump( output, "{0}...{1} {2} {3}", prefix, typeName, txt.color, txt.text );
+               else if ( c is I2.Loc.Localize loc ) Dump( output, "{0}...{1} {2}", prefix, typeName, loc.mTerm );
+               else if ( c is UnityEngine.UI.LayoutGroup layout ) Dump( output, "{0}...{1} Padding {2}", prefix, typeName, layout.padding );
+               else Dump( output, "{0}...{1}", prefix, typeName );
+            } catch ( Exception ) { }
+         for ( int i = 0 ; i < e.transform.childCount ; i++ )
+            DumpComponents( output, prefix + "  ", logged, e.transform?.GetChild( i )?.gameObject );
+      }
+      private static void Dump ( Action< object, object[] > output, object msg, params object[] augs ) => output( msg, augs );
+      private static string TypeName ( object c ) => c?.GetType().FullName.Replace( "UnityEngine.", "UE." ).Replace( "UE.GameObject", "" );
+      private static string ToTag ( string tag ) => "Untagged".Equals( tag ) ? "" : $":{tag}";
+      private static string FindText ( UnityEngine.GameObject obj ) { var text = obj.GetComponent< UnityEngine.UI.Text >()?.text; return text == null ? "" : $"\"{text}\" "; }
+      private static string ToString ( UnityEngine.Transform t ) {
+         if ( t == null ) return "";
+         var result = string.Format( "Pos {0} Scale {1} Rotate {2}", t.localPosition, t.localScale, t.localRotation );
+         return " " + result.Replace( ".0,", "," ).Replace( ".0)", ")" ).Replace( "Pos (0, 0, 0)", "" ).Replace( "Scale (1, 1, 1)", "" ).Replace( "Rotate (0, 0, 0, 1)", "" ).Trim();
+      }
+      /**/
    }
 
    public class IniConfig { // Load and save INI to and from a config object.  Public instant fields (not properties) will be loaded and saved, may be filtered by attributes.

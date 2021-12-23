@@ -97,6 +97,18 @@ The game couldn't show mouseover hint on foods when paused because of a bug.
 Set to true to fix it.
 
 
+*fix_visual_editor_text
+
+When true, fix a minor visual editor bug that may be a source of confusion.
+
+The "Subtract (variable-number)" command is using an incorrect text in visual editor.
+It says "Subtract V0 to Number" when it should be "Subtract V0 by Number".
+
+The fix is language independent, but the translation itself may not make sense.
+I know because the original Chinese blocks are trash.  They use English grammer.
+They are difficult to translate right.  Fortunately, I am a semi-professional translator.
+
+
 *suppress_confirmation*
 
 If true, suppress the following popups:

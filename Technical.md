@@ -144,7 +144,7 @@ Example 2: LogPackagingMachineLastDish & ClearPackagingMachineLastDish
 For performance, risk control, damage control, flexibility, or other reasons, we can manually apply patches as required, instead of Harmony.PatchAll
 
 Example 1: Every patch in this mod!
-Example 2: ToZht, applied by DetectZh
+Example 2: ZhImg and ToZht, applied by DetectZh
 Example 3: DisableAnalytics, applied in a loop.
 
 === Combinations ===
