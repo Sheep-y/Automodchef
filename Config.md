@@ -6,7 +6,7 @@ Main config file is `Automodchef.ini`, in the game's app data folder at
 If not exists, the config file will be created when launching the modded game, alongside mod log.
 
 
-= Main Config =
+# Main Config #
 
 The main config file is a standard ini.
 Values are case insensitive.
@@ -16,15 +16,15 @@ Invalid values will be ignored.
 Sections are cosmetic and ignored by this mod.
 
 
-*config_version*
+**config_version**
 
 This field can be used by the mod to detect old config and update it to new version.
 If set to a number lower than the current default, the config file will be recreated while retaining config.
 
 
-== System ==
+## System ##
 
-*skip_intro*
+**skip_intro**
 
 If true, it will skip all scenes straight to "Press spacebar to continue",
 namely Unity logo, Hermes logo, Team 17 logo, and auto-save disclaimer.
@@ -33,7 +33,7 @@ If the press spacebar scene is not found, nothing will be skipped.
 Took me a while.  There is no standard way to skip intro. :(
 
 
-*skip_spacebar*
+**skip_spacebar**
 
 If true, the "Press spacebar to continue" scene will be bypassed.
 
@@ -41,7 +41,7 @@ This is the very first feature.
 Imagine the disappointment when I realise that hacking the `SplashScreen` class skips only the spacebar.
 
 
-*disable_analytics*
+**disable_analytics**
 
 Disable the game's level analytics and most Unity analytics.
 
@@ -49,9 +49,9 @@ Why, when a game comes with `UnityEngine.Advertisements.dll`, what did you expec
 Given the mechanic changes, the stats would be polluted anyway.
 
 
-== Camera ==
+## Camera ##
 
-*side_view_angle*
+**side_view_angle**
 
 Angle of left / right view, measured from center.
 Game default 35.
@@ -63,14 +63,14 @@ The game's camera moves only in three horizontal angles (left, centre, right) an
 Modding that would require extensive rewrite of the camera subsystem, so I settle with angle controls, about two order of magnitude simpler.
 
 
-*close_view_angle*
+**close_view_angle**
 
 Downward angle of close up view, measured from the ground.
 Game default 40.
 Mod default is 0 which means do not change.
 
 
-*far_view_angle*
+**far_view_angle**
 
 Downward angle of far view, measured from the ground.
 Game default 60.
@@ -82,22 +82,22 @@ It is not set as default because it differs too much from the game's vanilla exp
 Many players don't read readme and never know the mod is configurable.
 
 
-*far_view_height*
+**far_view_height**
 
 Camera height of far view, measured from the ground.
 Game default 20.
 Mod default 0 which means do not change.
 
 
-== User Interface ==
+## User Interface ##
 
-*fix_food_hint_when_paused*
+**fix_food_hint_when_paused**
 
 The game couldn't show mouseover hint on foods when paused because of a bug.
 Set to true to fix it.
 
 
-*fix_visual_editor_text
+**fix_visual_editor_text
 
 When true, fix a minor visual editor bug that may be a source of confusion.
 
@@ -109,25 +109,25 @@ I know because the original Chinese blocks are trash.  They use English grammer.
 They are difficult to translate right.  Fortunately, I am a semi-professional translator.
 
 
-*suppress_confirmation*
+**suppress_confirmation**
 
 If true, suppress the following popups:
 
-* Load game warning.
-* Challenge level warning.
-* Delete blueprint warning.
-* Delete save slot warning.
-* Overwrite blueprint warning.
-* Overwrite save slot warning.
-* Quit level warning.
-* Quit game warning.
-* Reset kitchen warning.
+** Load game warning.
+** Challenge level warning.
+** Delete blueprint warning.
+** Delete save slot warning.
+** Overwrite blueprint warning.
+** Overwrite save slot warning.
+** Quit level warning.
+** Quit game warning.
+** Reset kitchen warning.
 
 No, you can't toggle individual warnings, because I want to keep the config simple.
 Just... be more careful.  Or disable this feature.
 
 
-*ask_loadgame_on_level_start*
+**ask_loadgame_on_level_start**
 
 When you start a level and an existing save is found, the load dialog will immediately popup.
 
@@ -139,12 +139,12 @@ killing two birds in one stone while preserving the new level experience.
 Straightforward to mod too.  For me.
 
 
-*stay_open_after_delete_save*
+**stay_open_after_delete_save**
 
 When true, the save dialog will stay open after the delete button is clicked.
 
 
-*dropdown_toogle_threshold*
+**dropdown_toogle_threshold**
 
 If an in-game dropdown have less options than this value, it will behave like a toggle button.
 
@@ -157,22 +157,22 @@ This feature, plus skip intro, is the main driving force of the creation of this
 In other words, I am fed up with stupid dropdowns, so I decided to mod the game.
 
 
-*hide_tutorial_efficiency*
+**hide_tutorial_efficiency**
 
 When true, all completed tutorial levels will display "Success" on the level tree instead.
 Power log, efficiency log, and efficiency score will also be disabled in tutorial levels.
 
 
-= Info =
+# Info #
 
-*tooltip_power_usage*
+**tooltip_power_usage**
 
 When true, current power usage and total power usage is displayed in kitchen part's mouseover hint.
 
 This allows you to see how much power a part is drawing _right now_, and the lifetime power of each part.
 
 
-*tooltip_freshness*
+**tooltip_freshness**
 
 When true, the "freshness" of a food is displayed in its mouseover hint.
 
@@ -185,7 +185,7 @@ Kitchen parts do not show the min freshness of the food inside because they are 
 Showing fresh timer when the foods are on transit seems to be sufficient.
 
 
-*efficiency_log*
+**efficiency_log**
 
 When true, add efficiency calculation to kitchen log.
 It shows you the efficiency quotas, how much you have used, and calculation of the final score.
@@ -194,7 +194,7 @@ In effect, you can see what you need to optimise, and how many to optimise for.
 Note that the mod's other tweaks may result in different values from vanilla game.
 
 
-*efficiency_log_breakdown*
+**efficiency_log_breakdown**
 
 When true, show the count of each dishes, and their contributions to the efficiency quotas.
 
@@ -205,38 +205,38 @@ This is enabled by default to explain why the quotas is different from level goa
 but is also useful when you want to know which dishes are most or least ordered.
 
 
-*power_log_rows*
+**power_log_rows**
 
 When > 0, show top X power consuming part types in kitchen log.
 
 Similiar parts are grouped together:
 
-* Advanced Assembler / Computer / Dispenser / Order Reader / Storage are grouped into their basic versions.
-* Conveyor Grill / Frier are grouped into their non-conveyor versions.
-* Fast conveyors, bridges, and gates are grouped into simple Belt.
-* All robot arms are grouped into dump arm.
+** Advanced Assembler / Computer / Dispenser / Order Reader / Storage are grouped into their basic versions.
+** Conveyor Grill / Frier are grouped into their non-conveyor versions.
+** Fast conveyors, bridges, and gates are grouped into simple Belt.
+** All robot arms are grouped into dump arm.
 
 I could have Google Translated each of the groups in each language, and verify them, but too much effort.
 So each group will use the basic model as representative.
 
 
-= Simulation =
+# Simulation #
 
-*instant_speed_change*
+**instant_speed_change**
 
 When true, make the game change speed instantaneously.
 
 This means pausing or resuming the game will immediately take effect, without delay.
 
 
-*speed2*
+**speed2**
 
 Set the speed of double time (displayed as two arrows), a 0-100 integer.
 Game default is 3, which means 3x realtime.
 Mod default to 5, same as vanilla triple time.
 
 
-*speed3*
+**speed3**
 
 Set the speed of triple time (displayed as three arrows), a 0-100 integer.
 Game default is 5.
@@ -245,9 +245,9 @@ Mod default to 20, so 1 minute in-game time can pass in 3 seconds... if computer
 The speeds are limited to integer because of game design. Cap of 100 is imposed by Unity.
 
 
-= Mechanic =
+# Mechanic #
 
-*dish_ingredient_quota_buffer*
+**dish_ingredient_quota_buffer**
 
 The game's efficiency calculation expects a predefined number of ingredients to be used per dish.
 For most non-trivial dishes, there is a little headroom, but it is inconsistent,
@@ -258,7 +258,7 @@ When set to 0, the mod makes sure all dishes do not expect less than what is req
 When set to -1 or less, the feature is disabled and the mod does not change quota.
 
 
-*food_processor_idle_power*
+**food_processor_idle_power**
 
 When set to 0 or any positive number, the Food Processor will use this amount of power (in W) when not packaging.
 Default is -1 which have them always use full power like in vanilla game.
@@ -266,7 +266,7 @@ Default is -1 which have them always use full power like in vanilla game.
 Initially I didn't plan to do this, but some players may differ, and I only need to copy a few lines from below.
 
 
-*packaging_machine_idle_power*
+**packaging_machine_idle_power**
 
 When set to 0 or any positive number, the Packaging Machine will use this amount of power (in W) when not packaging.
 Default is 60 which is the expected power cost of its belts.
@@ -277,7 +277,7 @@ Because of the reduced power usage, some layouts may use slightly less power,
 and may score higher efficiencies or make it pass power cap when it couldn't before.
 
 
-*packaging_machine_passthrough*
+**packaging_machine_passthrough**
 
 When true, Packaging Machine will pass-through all foods that are not part of its recipes.
 This is another change that aligns it with assemblers.
@@ -285,7 +285,7 @@ This is another change that aligns it with assemblers.
 You still need to assign at least one recipe to the machine to make it runs.
 
 
-*smart_packaging_machine*
+**smart_packaging_machine**
 
 When true, Packaging Machine becomes smarter.  Military grade technology, right?
 
@@ -301,9 +301,9 @@ Each machine remember their own last recipt.  Memory is not shared.
 Rule 3, throw a dice if there is still multiple choices.
 
 
-= Misc =
+# Misc #
 
-*export_food_csv*
+**export_food_csv**
 
 When true, export food data to foods.csv in the same folder as the config file.
 The data includes its internal id, current translated name, recipe, outcome of various process etc.
@@ -311,7 +311,7 @@ The data includes its internal id, current translated name, recipe, outcome of v
 The export process has neglectable performance impact (a few ms), but disabled by default because most players won't need the data.
 
 
-*export_hardware_csv*
+**export_hardware_csv**
 
 When true, export kitchen part data to hardwares.csv in the same folder as the config file.
 The data is simpler than food because most differences are in code rather than in data.
@@ -319,14 +319,14 @@ The data is simpler than food because most differences are in code rather than i
 Neglectable performance impact (a few ms), but disabled by default for the same reason.
 
 
-*export_text_csv*
+**export_text_csv**
 
 When true, export game text data to text.csv in the same folder as the config file.
 Specifically, the localization key and the text from current game language will be dumped.
 The dump is done by the game's internationaliztion engine, not by this mod.  Some values may be misaligned.
 
 
-*traditional_chinese*
+**traditional_chinese**
 
 When true, and when game language is set to Chinese, the game will use Traditional Chinese instead of Simplified Chinese.
 Regardless of game language, the Chinese option in the language menu will also be renamed.
@@ -341,7 +341,7 @@ In addition to replacing translations, the China flag will be replaced with a ge
 Any new text added later will fallback to a win32 coversion api.  Literally a few lines of work.
 
 
-= Logging Level =
+# Logging Level #
 
 To control logging level, create a text file `Automochef-log.conf` in the same folder as `Automodchef.ini`.
 This file is not automatically created.
@@ -350,5 +350,3 @@ First line controls the log level, which may be Off, Error, Warning, Info (defau
 Second line controls write interval in seconds.  A non zero value will buffer log entries and write to disk in the background.  Default 2.
 
 Log level requires a different file from main config because logging starts at bootstrap, before config file is parsed.
-
-

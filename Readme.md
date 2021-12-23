@@ -1,5 +1,5 @@
-= ﻿Automodchef =
-== A mod of Automachef ==
+# ﻿Automodchef #
+## A mod of Automachef ##
 
 Automodchef is an unofficial code mod of the factory building game Automachef.
 It tweaks various aspects of the game, including bug fixes, efficiency and power reports, QoL improvements, and mechanic weaks.
@@ -7,7 +7,7 @@ It tweaks various aspects of the game, including bug fixes, efficiency and power
 This mod does not add any new recipes or missions.
 All vanilla / mod level saves are compatible; this mod does not affect save games.
 
-Mod is compatible with all languages, but efficiency and power reports are in English only.
+Mod is compatible with all languages, but efficiency and power reports are in English/Chinese only.
 
 Main features:
 
@@ -21,7 +21,7 @@ Main features:
 * And more.
 
 
-= Installation =
+# Installation #
 
 1. Download latest release from GitHub or NexusMods.
 
@@ -29,8 +29,9 @@ Main features:
 
 3. Copy or move `version.dll`, `doorstop_config.ini`, and the `Mod` folder into game's root folder:
 
-    %ProgramFiles(x86)%\Steam\steamapps\common\Automachef
-    %ProgramFiles%\Epic Games\Automachef
+> %ProgramFiles(x86)%\Steam\steamapps\common\Automachef
+> 
+> %ProgramFiles%\Epic Games\Automachef
 
 4. That's all. When you launch the game, the intro should be skipped by default.
 
@@ -38,7 +39,7 @@ The mod has no special requirements.  It runs as part of the game.
 The src folder contains source code and licenses.
 
 
-= Configuration =
+# Configuration #
 
 On first launch, the mod will create `automodchef.ini` and `automodchef.log` in the game's user data folder,
 i.e. %AppData%\..\LocalLow\HermesInteractive\Automachef
@@ -51,7 +52,7 @@ If you can't see file extensions, the one with a little gear in its icon is the 
 You may want to google how to see file extensions.
 
 
-= Compatibility =
+# Compatibility #
 
 The mod is developed and tested on Automachef version 1.1.0|0|9, Epic Game Store.
 It works only on the Microsoft .Net build of the game, i.e. on Windows or Wine.
@@ -67,7 +68,7 @@ As the first known DLL mod for Automachef, it does not have other mods to be com
 Newer mods can use their own method to "play nice" with this mod.  This one's on them.
 
 
-= Troubleshoot =
+# Troubleshoot #
 
 If Unity and other logos were not skipped and you didn't explictly disable skip_intro,
 the mod is not being loaded.  Check `version.dll` and `doorstop_config.ini` are in game root and non-empty,
@@ -80,7 +81,7 @@ I have cleared the game, so don't count on future development or support.
 Mod is open source.  Feel free to fork and release in a new name (to avoid confusion), or make a mod that mod this mod.
 
 
-= Removal =
+# Removal #
 
 To remove the mod, delete `version.dll`, `doorstop_config.ini`, and the `Mod` folder from game folder.
 You may also want to remove the `src` folder and anything that starts with `automodchef_`
@@ -90,6 +91,6 @@ The mod does not modify game files, so there is normally no need to Verify files
 If you move / rename version.dll and leave the rest alone, you can temporary disable the mod.
 
 
-= License =
+# License #
 
 GPL v3.  All bundled libraries are either MIT or public domain; licenses included in package.

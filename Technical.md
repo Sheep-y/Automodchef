@@ -1,4 +1,4 @@
-= Technical Overview =
+# Technical Overview #
 
 a.k.a How this mod works.  How mod works.
 
@@ -6,7 +6,7 @@ Some programming experience to understand this doc.
 It is hoped that this introduction can get more people into dll modding.
 
 
-== Requirements ==
+## Requirements ##
 
 The mod is written in C# as a .Net Standard Class Library.
 It depends on Nuget HarmonyX, and a few game assembiles.  Nothing else.
@@ -20,13 +20,13 @@ Every line is written by me, almost all features are pure .Net.
 The one exception is automatic conversion of unknown Chinese.  It depends on an old Win32 API.  Nothing Wine can't handle?
 
 
-== Reading Game Code ==
+## Reading Game Code ##
 
 dnSpy is the tool of choice.  Point it to Assembly-CSharp.dll.
 You don't get any design doc or comments - we all start blind.  Good luck!
 
 
-== Design ==
+## Design ##
 
 This mod works in three stages: bootstrap, patching, and execution.
 
@@ -60,7 +60,7 @@ Most features are limited to one or a few methods.
 They are generally short and as self-explanatory as patches can be.
 
 
-== Architecture ==
+## Architecture ##
 
 Before we go ahead, let's talk about the elephant first.  My code is atypical.
 
@@ -77,7 +77,7 @@ Putting many features in one mod is generally less flexible and carries a higher
 In short, most mods probably do not look like this one.  Only the basic principles apply.
 
 
-== Patches ==
+## Patches ##
 
 Each patch is a method that we add before, add after, and/or rewrite an existing method.
 See the HarmonyX documentation for a longer introduction and examples.
@@ -87,51 +87,51 @@ It can be simple or complicated, we can replace a whole subsystem, hack other mo
 
 Here are some common patch behaviours:
 
-=== Modify Input ===
+### Modify Input ###
 
 A prefix patch runs right before the patched method, modifying parameters, fields, properties, data etc., changing behaviour(s).
 
 Examples: SkipVideoSplashes, SetPackagingMachinePower
 
-=== Modify Output ===
+### Modify Output ###
 
 A postfix patch runs right after the patched method, modifying its result, fields, properties, and/or other data.
 
 Examples: OverrideCameraSettings, FixDishIngredientQuota
 
-=== Added Logic ===
+### Added Logic ###
 
 Code can be added before or after the target method to do extra things.
 
 Examples: PackagingMachinePassThrough, FixIngredientHintOnPause
 
-=== Total Disable ===
+### Total Disable ###
 
 A prefix patch can prevent the original from running, totally bypassing it.
 The bypass can be conditional.
 
 Examples: DisableAnalytics, DisablePlatformLangSwitch
 
-=== Total Rewrite ===
+### Total Rewrite ###
 
 An extension of total disable - you bypass the original *and* do your own thing.
 
 Examples: ToggleDropdown (conditional), OverridePackagingMachineLogic (non-conditional)
 
-=== Partial Rewrite ===
+### Partial Rewrite ###
 
 A "transpiler" can surgically modify part of a method, replacing values, changing conditions, inserting or removing method calls etc.
 It is perfect for making small changes without recreating the whole method, but you essentially need to learn a new mini language.
 
 This mod does not use transpilers.
 
-=== Scoped Modification ===
+### Scoped Modification ###
 
 Use prefix to set or change something, and restore it in postfix.
 
 Examples: SuppressFreshnessTooltip & RestoreFreshnessTooltip
 
-=== Tracker ===
+### Tracker ###
 
 Sometimes you need to "listen" a method to keep track of game state or object associations, to be used later.
 Often, you also need to listen to some events to clear the records.
@@ -139,7 +139,7 @@ Often, you also need to listen to some events to clear the records.
 Example 1: TrackOrdersEfficiency & TrackDeliveryEfficiency & ClearEfficiencyLog
 Example 2: LogPackagingMachineLastDish & ClearPackagingMachineLastDish
 
-=== Dynamic Patching ===
+### Dynamic Patching ###
 
 For performance, risk control, damage control, flexibility, or other reasons, we can manually apply patches as required, instead of Harmony.PatchAll
 
@@ -147,21 +147,21 @@ Example 1: Every patch in this mod!
 Example 2: ZhImg and ToZht, applied by DetectZh
 Example 3: DisableAnalytics, applied in a loop.
 
-=== Combinations ===
+### Combinations ###
 
 Using a combination of techniques, you can extensively modify game logic.
 The patches may or may not be closely related, and can be as elegance or as messy as real world programs.
 
 Example: Efficiency log, Power log, Ask loadgame on level start, Traditional Chinese.
 
-=== Type Avoidance ===
+### Type Avoidance ###
 
 Sometimes, you may need to avoid direct reference to a game class, to solve circular reference or play nice with (and without) DLC.
 Playing with Type and Reflection is an unavoidable part of modding.
 
 Example: orderedDish, cookedDish, target and body of ZhtEpic.
 
-=== Non-Patches ===
+### Non-Patches ###
 
 Patching is not the only job of the mod.
 The Traditional Chinese part will load custom translation data and custom language icon, replacing the original.
@@ -173,7 +173,7 @@ On the other hand, Cheat Engine can "mod" a game without patching any code.
 So many ways to skin a robot CEO.
 
 
-== Last Words ==
+## Last Words ##
 
 Whether you think my code is crazy, elegance, or both, they took many sheep-days of decipering, testing, and polishing, built on decades of coding experience.
 You don't need to mimic my style, and I do not expect to see it at work, where I were kid gloves.
