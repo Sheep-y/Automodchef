@@ -84,6 +84,9 @@ namespace ZyMod {
       public static void Fine  ( object msg, params object[] arg ) => RootMod.Log?.Fine ( msg, arg );
       public static bool Non0 ( float val ) => val != 0 && ! float.IsNaN( val ) && ! float.IsInfinity( val );
 
+      public static string ModPath => new Uri( Assembly.GetExecutingAssembly().CodeBase ).LocalPath;
+      public static string ModDir => Path.GetDirectoryName( ModPath );
+
       public static IEnumerable< MethodInfo > Methods ( this Type type ) => type.GetMethods( Public | NonPublic | Instance | Static ).Where( e => ! e.IsAbstract );
       public static IEnumerable< MethodInfo > Methods ( this Type type, string name ) => type.Methods().Where( e => e.Name == name );
 

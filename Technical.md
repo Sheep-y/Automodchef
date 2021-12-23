@@ -156,7 +156,10 @@ Example: Efficiency log, Power log, Ask loadgame on level start, Traditional Chi
 
 === Non-Patches ===
 
-A dll mod does not necessary patch the game.
+Patching is not the only job of the mod.
+The Traditional Chinese part will load custom translation data and custom language icon, replacing the original.
+
+A dll mod also does not necessary patch the game.
 Mod Managers, for example, may or may not patch the game.  Same for modding libraries.
 
 On the other hand, Cheat Engine can "mod" a game without patching any code.

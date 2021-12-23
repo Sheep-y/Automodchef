@@ -208,6 +208,7 @@ namespace Automodchef {
       private static bool DisablePlatformLangSwitch () { Info( "Platform language override disabled." ); return false; }
 
       #region Traditional Chinese.  Hooray for Taiwan, Hong Kong, Macau!
+
       private static void ShowZht ( List<string> ___languageNames ) { try {
          for ( var i = ___languageNames.Count - 1 ; i >= 0 ; i-- )
             if ( ___languageNames[ i ] == "简体中文" ) {
@@ -221,8 +222,9 @@ namespace Automodchef {
          if ( code != "zh" ) return;
          ModText.Get = ModText.GetTextZh;
          zhs2zht = new Dictionary< string, string >();
-         if ( instance.TryPatch( typeof( TermData ), "GetTranslation", postfix: nameof( ToZht ) ) == null ) return;
-         var csv = Path.Combine( Path.GetDirectoryName( new Uri( Assembly.GetExecutingAssembly().CodeBase ).LocalPath ), "zht.dat" );
+         instance?.TryPatch( typeof( LanguageSelectionButton ), "Start", postfix: nameof( ZhImg ) );
+         if ( instance?.TryPatch( typeof( TermData ), "GetTranslation", postfix: nameof( ToZht ) ) == null ) return;
+         var csv = Path.Combine( ModDir, "zht.dat" );
          if ( ! File.Exists( csv ) ) return;
          Info( "Importing zh text from {0}", csv );
          using ( var r = new StreamReader( csv ) )
@@ -231,6 +233,16 @@ namespace Automodchef {
                if ( cells.Length >= 2 && ! string.IsNullOrWhiteSpace( cells[ 0 ] ) ) zhs2zht[ cells[ 0 ] ] = cells[ 1 ];
             }
          Info( "{0} text imported", zhs2zht.Count );
+      } catch ( Ex x ) { Err( x ); } }
+
+      private static void ZhImg ( LanguageSelectionButton __instance ) { try {
+         var texture = __instance.icon.texture as Texture2D;
+         var img = Path.Combine( ModDir, "zh.img" );
+         if ( texture == null || texture.name != "Chinese" || ! File.Exists( img ) ) return;
+         Info( "Replace Chinese button with {0}", img );
+         texture = new Texture2D( 256, 256, texture.format, false );
+         ImageConversion.LoadImage( texture, File.ReadAllBytes( img ) );
+         __instance.icon.texture = texture;
       } catch ( Ex x ) { Err( x ); } }
 
       private static Dictionary< string, string > zhs2zht;
