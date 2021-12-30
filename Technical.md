@@ -2,8 +2,9 @@
 
 a.k.a How this mod works.  How mod works.
 
-Some programming experience to understand this doc.
-It is hoped that this introduction can get more people into dll modding.
+Programming skill is required to understand this doc and the code.
+For a small mod it has many common tasks - config, conditional patching, replacing game text and texture.
+It is hoped that this explaination can help you understand the mod and may be get into modding if you haven't already.
 
 
 ## Requirements ##
@@ -12,12 +13,11 @@ The mod is written in C# as a .Net Standard Class Library.
 It depends on Nuget HarmonyX, and a few game assembiles.  Nothing else.
 HarmonyX is used over Harmony because it supports .Net Standard 2, requried to match the game.
 
-So it only works on a .Net build of the game, i.e. a Windows or Mono build.  Potentially through Wine or Proton.
+It only works on a .Net build of the game, i.e. a Windows or Mono build.  Potentially through Wine or Proton.
 Other builds or obfucated builds are not supported.
 
-Every line is written by me, almost all features are pure .Net.
-
-The one exception is automatic conversion of unknown Chinese.  It depends on an old Win32 API.  Nothing Wine can't handle?
+Every line of code is written by me, virtually all features are pure .Net.
+The one exception is automatic conversion of unknown Chinese, using an old Win32 API.
 
 
 ## Reading Game Code ##
@@ -161,23 +161,45 @@ Playing with Type and Reflection is an unavoidable part of modding.
 
 Example: orderedDish, cookedDish, target and body of ZhtEpic.
 
-### Non-Patches ###
+## Common Unity Tasks ##
 
-Patching is not the only job of the mod.
-The Traditional Chinese part will load custom translation data and custom language icon, replacing the original.
+Like .Net, Unity has its own unique ecosystem.
+Once you learn it, the skill can be applied to other Unity games.
 
-A dll mod also does not necessary patch the game.
-Mod Managers, for example, may or may not patch the game.  Same for modding libraries.
+### Modifying UI ###
 
-On the other hand, Cheat Engine can "mod" a game without patching any code.
-So many ways to skin a robot CEO.
+Everything displayed in Unity is a GameObject with a Transform, and potentially more components.
+If you activate or inactivate the object, you can show or hide it.  Position can be adjusted through its transform.
 
+There are a number of tools that can help you "see" the GUI tree.
+BepIn comes with a visual plugin, and I got some commented out code in ZyMod to dump it to mod log.
+
+This mod only do a minor tweaks.  From a computer command object it find the label object called "to", then find it Text component and change its text.
+See FixCommandText for the code.
+
+### Replacing Texture ###
+
+Texture is widlely used in Unity both in 2D and 3D.
+
+Replacing asset bundles requires no coding, but you need to redistribute the whole bundle (copyright, file size etc.), and it must be updated with every game patch.
+So, if you can code, you can replace it on the fly.  Pretty easy, as long as you can find where to intercept it before it is displayed.
+
+See LanguageSelectionButton for code that dynamically load a 2d texture.
+The code then replaces the language button's image with it, provided the game is set to show Chinese.
 
 ## Last Words ##
 
+Patching is not the only way to modify a game.
+Cheat Engine can "mod" a game without patching any code, and some tools can rewrite the dll file.
+So many ways to skin a robot CEO.
+Conversingly, a dll mod does not necessary patch the game either.  Mod managers, modding libraries, mods that depends on other mods to do the dirty work...
+
+It is what I am exceedingly good at, so it is what I focus on, but even I mod games in other ways.
+Save file hacking, ini tweaking, asset replacement, x86 code hack, python script hack, men in the middle.  Been there done that.
+So, yeah, keep your eyes open.
+Even within .Net patching, Harmony / HarmonyX is not the only option.  RuntimeDetour, for example.  If you are mad like me.
+
 Whether you think my code is crazy, elegance, or both, they took many sheep-days of decipering, testing, and polishing, built on decades of coding experience.
-You don't need to mimic my style, and I do not expect to see it at work, where I were kid gloves.
+You don't need to mimic my style, and I do not expect to see it at work, where I were kid gloves.  Poor me.
 
 Modding is a small circle.  Please be nice, respect other modders and the deveolpers.
-
-Also, Harmony / HarmonyX is popular, but not the only option.  For something different, try RuntimeDetour.

@@ -1,13 +1,13 @@
 # ﻿Automodchef #
 ## A mod of Automachef ##
 
-Automodchef is an unofficial code mod of the factory building game Automachef.
-It tweaks various aspects of the game, including bug fixes, efficiency and power reports, QoL improvements, and mechanic weaks.
+Automodchef is an unofficial quality-of-life mod of the factory building game Automachef.
+It tweaks various aspects of the game, including bug fixes, efficiency and power reports, user interface improvements, and mechanic weaks.
 
 This mod does not add any new recipes or missions.
 All vanilla / mod level saves are compatible; this mod does not affect save games.
 
-Mod is compatible with all languages, but efficiency and power reports are in English/Chinese only.
+Mod is compatible with all languages, but dish / efficiency / power reports are in English / Chinese only.
 
 Main features:
 

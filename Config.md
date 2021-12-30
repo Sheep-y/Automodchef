@@ -1,4 +1,4 @@
-Every feature can be individually turned on or off, with some having fine controls.
+Every feature can be individually turned on or off, with some having finer control.
 
 Main config file is `Automodchef.ini`, in the game's app data folder at
 %AppData%\..\LocalLow\HermesInteractive\Automachef\
