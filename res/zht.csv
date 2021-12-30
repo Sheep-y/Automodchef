@@ -74,7 +74,7 @@ Contracts/Objective DeliverDishes,配送{[NUMBER]}份料理
 Contracts/Objective DeliverDishesCraze,配送{[NUMBER]}份{[DISH]}狂熱的訂單
 Contracts/Objective DeliverDishesOfType,配送{[NUMBER]}份{[DISH]}訂單
 Contracts/Objective DeliverDishesRushHour,配送{[NUMBER]}份高峰時段的訂單
-Contracts/Objective FoodCritic, 配送1分食評家的訂單
+Contracts/Objective FoodCritic, 配送1份食評家的訂單
 Contracts/Objective Ingredients,使用不超過{[NUMBER]}份食材
 Contracts/Objective NoDisasters,別讓任何災難發生
 Contracts/Objective Power,耗電 {[NUMBER]}Wh 以內
@@ -470,11 +470,11 @@ Machine Descriptions/Counter,一台小型設備，可以點算特定機器中存
 Machine Descriptions/Dispenser,又名生成機，這台機器每隔幾秒會自動配發一份食材。
 Machine Descriptions/DumbRobotArm,機械臂可以從一側拾起食物並放到其他方向。不挑食，有甚麼就會抓甚麼。
 Machine Descriptions/ExtinguisherArm,此機械臂可以撲滅相鄰的火災。不過每次救災後都需要一段時間進行充能！
-Machine Descriptions/Fryer,經濟、可靠的油炸機，每次可以油炸一分食材。（緩慢地！）
+Machine Descriptions/Fryer,經濟、可靠的油炸機，每次可以油炸一份食材。（緩慢地！）
 Machine Descriptions/Gate,一道閘門，僅在收到訂單讀取機或電腦的指令時放食物通過。
 Machine Descriptions/Grill,平凡的烤架，可以烤熟漢堡扒，也可以將食材烤成焦炭。
 Machine Descriptions/HighSpeedBelt,高速輸送帶，搬運食材的速度是普通輸送帶的兩倍。
-Machine Descriptions/HighSpeedDispenser,傳統食材配發器的高速版，每隔兩秒便可派發一分新鮮食材。
+Machine Descriptions/HighSpeedDispenser,傳統食材配發器的高速版，每隔兩秒便可派發一份新鮮食材。
 Machine Descriptions/LargeStorageTank,最多可以供應10升液體的缸。
 Machine Descriptions/LargeStorageUnit,大型冷藏單元，最多可以保存8份食物。同時比普通保存箱更加抗蟲。
 Machine Descriptions/LiquidMixer,一種可以將兩種液體混合，形成新液體的機器。
@@ -724,14 +724,14 @@ Main UI/Workshop Publish Success,實驗場已成功發布至Steam創意工坊！
 Main UI/Workshop Uploading,正在將實驗場上傳至Steam創意工坊，可能需要一定時間，請稍候…………
 Main UI/Yes,是
 Mods/Dishes,料理
-Mods/ErrorComplexRecipe,無法載入模組：食譜不得超過10分食材。
+Mods/ErrorComplexRecipe,無法載入模組：食譜不得超過10份食材。
 Mods/ErrorCouldntRead,無法載入模組：無法讀取或解開模組文件。
 Mods/ErrorDishes,無法載入模組：有關卡使用了不存在的料理。
 Mods/ErrorDuplicateInternalNames,無法載入模組：有多種食物使用了相同的辨別碼。
 Mods/ErrorIcons,無法載入模組：有些食物尚未配備圖標紋理。
 Mods/ErrorMachines,無法載入模組：有關卡使用了不存在的機器。
 Mods/ErrorMissingFriendlyNames,無法載入模組：有食物尚未配備顯示名稱。
-Mods/ErrorNoLevel,無法載入模組：所有模組都需要至少一個關卡，方可遊玩。
+Mods/ErrorNoLevel,無法載入模組：所有模組都需要至少一度關卡，方可遊玩。
 Mods/ErrorRecipes,無法載入模組：有食譜使用了不存在的食材。
 Mods/ErrorTooLong,無法載入模組：食材或關卡名稱不得超過30字符。
 Mods/ErrorTooManyIngredients,無法載入模組：模組的食物數量不得超過50。
@@ -841,7 +841,7 @@ ProgrammingReference/AC-16-Intro,"AC-16是一款時代尖端的可編程電腦�
 
 這台電腦的程序記憶體足以容納32行AC匯編語言。整個程序每秒運行30次，方便程序精準計時。只需讀取特殊的唯讀暫存器TT，即可讀取當前時間（24小時制）。例如下午3:45時，TT暫存器的值為16位整數1545。
 
-本電腦還包含一組四個特別的唯讀暫存器，連接到內置的訂單讀取機（名稱從R0到R3）。若在當前33毫秒的時鐘周期內收到了至少一個指定偵測的新訂單，這些暫存器中的值為該種訂單的數量；沒有訂單時，暫存器中的值會是0。
+本電腦還包含一組四個特別的唯讀暫存器，連接到內置的訂單讀取機（名稱從R0到R3）。若在當前33毫秒的時鐘周期內收到了至少一張指定偵測的新訂單，這些暫存器中的值為該種訂單的數量；沒有訂單時，暫存器中的值會是0。
 
 電腦內置的訂單讀取機還可以區分不同來源的訂單，如汽車訂餐或外賣訂餐等。為此，你可以對R0至R3變量增添以下後綴："
 ProgrammingReference/AC-16-Title,AC-16可編程電腦指南
@@ -851,7 +851,7 @@ ProgrammingReference/AC-32-Intro,"AC-32是一款時代尖端的可編程電腦�
 
 這台電腦的主程序記憶體足以容納32行AC匯編語言。同時，本電腦配備了四個額外程序頁，每頁都可以容納32行源碼，可以通過cal指令調用。詳參下方的指令說明。整個程序每秒運行30次，方便程序精準計時。只需讀取特殊的唯讀暫存器TT，即可讀取當前時間（24小時制）。例如下午3:45時，TT暫存器的值為16位整數1545。
 
-本電腦還包含一組四個特別的唯讀暫存器，連接到內置的訂單讀取機（名稱從R0到R3）。若在當前33毫秒的時鐘周期內收到了至少一個指定偵測的新訂單，這些暫存器中的值為該種訂單的數量；沒有訂單時，暫存器中的值會是0。
+本電腦還包含一組四個特別的唯讀暫存器，連接到內置的訂單讀取機（名稱從R0到R3）。若在當前33毫秒的時鐘周期內收到了至少一張指定偵測的新訂單，這些暫存器中的值為該種訂單的數量；沒有訂單時，暫存器中的值會是0。
 
 電腦內置的訂單讀取機還可以區分不同來源的訂單，如汽車訂餐或外賣訂餐等。為此，你可以對R0至R3變量增添以下後綴："
 ProgrammingReference/AC-32-Title,AC-32可編程電腦指南
@@ -899,8 +899,8 @@ ProgrammingReference/Example23,ret
 ProgrammingReference/Example24,sub V1 15 V1
 ProgrammingReference/Example25,sub V2 V3 V0
 ProgrammingReference/ExampleDescription01,這個範例程序會將連接至O1的設備啟動一秒，然後停機一秒，如此往復。
-ProgrammingReference/ExampleDescription02,這個範例程序會在收到5個訂單後啟動連接至O2的設備。
-ProgrammingReference/ExampleDescription03,這個範例程序每收到一個新訂單，就會令連接至O0的設備持續啟動5秒。此程序的一大用是，在每次收到一個新訂單時，讓配發器配發一份食材。注意，此程序也會熱機四秒，以便收到訂單時立即配發食材，為你的顧客節省寶貴的時間！普通的訂單讀取機可做不到這一點，對吧？
+ProgrammingReference/ExampleDescription02,這個範例程序會在收到5張訂單後啟動連接至O2的設備。
+ProgrammingReference/ExampleDescription03,這個範例程序每收到一張新訂單，就會令連接至O0的設備持續啟動5秒。此程序的一大用是，在每次收到一張新訂單時，讓配發器配發一份食材。注意，此程序也會熱機四秒，以便收到訂單時立即配發食材，為你的顧客節省寶貴的時間！普通的訂單讀取機可做不到這一點，對吧？
 ProgrammingReference/ExampleDescription04,這個複雜的範例程序會從兩個不同的訂單讀取模塊（R0和R1）讀入數值，在處理後並輸出O0，O1和O2。這一程序的目的，就是在R0或R1收到訂單時啟動O0和O1三秒鐘，但在R1收到訂單時僅啟動O2。此程序的一大用處就是，將O0連接至生漢堡扒配發器，將O1連接至漢堡麵包配發器，並將O2連接至起司配發器，然後讓R0處理普通漢堡，讓R1處理起司漢堡。這一指令還會給配發器熱機兩秒。
 ProgrammingReference/ExampleProgramCode01,"add 1 V0 V0 
 
@@ -1108,7 +1108,7 @@ ProgrammingReference/VLE Dec Description,將一個變量的值減少1。指令�
 ProgrammingReference/VLE If,如果（比較變量）
 ProgrammingReference/VLE If Description,比較變量值與固定整數，並根據條件執行指令集。舉例：“若 V1 ≤ 100 則…………”。
 ProgrammingReference/VLE If Order Reader,如果（收到新訂單）
-ProgrammingReference/VLE If Order Reader Description,僅在一台訂單讀取機收到一個新訂單時，根據條件執行指令集。可以設定為根據特定訂單來源進行篩選。舉例：“若 R2 從餐館接到新訂單，則…………”。
+ProgrammingReference/VLE If Order Reader Description,僅在一台訂單讀取機收到一張新訂單時，根據條件執行指令集。可以設定為根據特定訂單來源進行篩選。舉例：“若 R2 從餐館接到新訂單，則…………”。
 ProgrammingReference/VLE If Variables,如果（比較兩個變量 )
 ProgrammingReference/VLE If Variables Description,比較兩個變量的值，並根據條件執行指令集。舉例：“若 V2 = V3 則…………”。
 ProgrammingReference/VLE Introduction,可視化邏輯編輯器是一種簡單易用又十分強大的工具，可用於對電腦進行編程。只需拖拽並放置指令與源碼模塊，即可精確控制電腦及與其相連的設備。關於全部可用指令的列表以及各指令的簡要描述，請參見下方：
@@ -1179,37 +1179,37 @@ Robot Dialogues/Level-13-4,你可以使用訂單讀取機，根據訂單來源�
 Robot Dialogues/Level-13-5,我還給你提供了可以對抗廚房*災難*的機器：火災、蟲災和故障，都可以搞定！我們的廚房已經很複雜了，應該過不了多久就會出現這些問題！
 Robot Dialogues/Level-14-1,這次的飛行表演還真是賺翻了！
 Robot Dialogues/Level-14-2,真是想不到，人類居然還會產生用手指指向空中飛機的衝動……
-Robot Dialogues/Level-14-3,總之！今天的菜單只有兩種料理，不過都是全新的組合套餐！別忘了瞭解每個組合套餐所需的成分料理哦！
+Robot Dialogues/Level-14-3,總之！今天的菜單只有兩種料理，不過都是全新的組合套餐！別忘了瞭解每款組合套餐所需的成分料理哦！
 Robot Dialogues/Level-14-4,我看到了一些古董飛機，可以趁人不注意時搞些螺栓螺母！回頭見啦，朋友！
 Robot Dialogues/Level-15-1,這是我們的全新醬汁技術首次投入使用！高級組合機、缸、泵機和液體混合機，現在全部對你開放！
 Robot Dialogues/Level-15-2,記住，只有高級組合機可以直接創造需要醬汁的料理……
 Robot Dialogues/Level-15-3,還有，每根*管道*都需要連接*泵機*，否則就沒辦法推送醬汁。
-Robot Dialogues/Level-15-4,我專門搞了兩個全新菜式，來展示我們的全新技術。街頭巷尾風傳，說大家都很期待新的德州漢堡哦！一定會有很多人點這度菜吧！
+Robot Dialogues/Level-15-4,我專門搞了兩款全新菜式，來展示我們的全新技術。街頭巷尾風傳，說大家都很期待新的德州漢堡哦！一定會有很多人點這度菜吧！
 Robot Dialogues/Level-15-5,最後就是，我給你搞到了一種超級特別的科技：*AC-16*：一款可編程電腦，可以用來實現對廚房的全面掌控！
-Robot Dialogues/Level-16-1,今天早上我看到，有一個人類在海浪之中到處跑，用的是……你猜是甚麼……一塊木板！
+Robot Dialogues/Level-16-1,今天早上我看到，有一名人類在海浪之中到處跑，用的是……你猜是甚麼……一塊木板！
 Robot Dialogues/Level-16-2,每次碰到這種事，我就覺得我對人類的看法確實沒錯！不過我跑題了……
-Robot Dialogues/Level-16-3,我們今天會迎來高峰時段，而且還會增加全新的雞肉沙拉，這個菜品可是專門為我們的全新醬汁設備設計的哦！
+Robot Dialogues/Level-16-3,我們今天會迎來高峰時段，而且還會增加全新的雞肉沙拉，這菜色可是專門為我們的全新醬汁設備設計的哦！
 Robot Dialogues/Level-16-4,這些醬汁，應該可以完美配送我們的心靈控制……啊，我是說，心靈手巧的美食，以達成我們的終極目標！
 Robot Dialogues/Level-16-5,我有點開始喜歡你了，等時候到了，沒準兒會饒你一命哦！
-Robot Dialogues/Level-17-1,今天，我們又見證了一個偉大的里程碑！不是佔領北半球的那個里程碑，那個以後再說！今天的里程碑是……我們的首個汽車訂餐餐廳！
+Robot Dialogues/Level-17-1,今天，我們又見證了一個偉大的里程碑！不是佔領北半球的那個里程碑，那個以後再說！今天的里程碑是……我們的第一所汽車訂餐餐廳！
 Robot Dialogues/Level-17-2,這裡有兩個配送窗口，右邊那個就是汽車訂餐用的。
 Robot Dialogues/Level-17-3,和其他的訂單不同，汽車訂餐的料理*必須*按照正確順序配送……訂單列表頂部的訂單需要*最先配送*！
 Robot Dialogues/Level-17-4,現在可以使用高級訂單讀取機。你可以將它設定成只有當訂單到達列表頂端時採取特定操作！對汽車訂餐來說，可謂再合適不過了。
 Robot Dialogues/Level-17-5,普通的訂單讀取機可以在收到訂單時立刻製作一道料理，然後將其放入保存箱中……
 Robot Dialogues/Level-17-6,然後，等訂單到達序列頂部時，就用高級訂單讀取機指示機械臂拾取料理，進行配送！
-Robot Dialogues/Level-18-1,還記得那個寫如何有效利用狹小空間的雜誌評論家嗎？嗯，現在出來一個競品雜誌，搞了個專欄，專門講如何經濟使用擁擠空間！
+Robot Dialogues/Level-18-1,還記得那名寫如何有效利用狹小空間的雜誌評論家嗎？嗯，他們在另一份類似的雜誌上搞了個專欄，專門講如何有效使用擁迫的空間！
 Robot Dialogues/Level-18-2,他們今天要過來，這也是個好時機，讓我們展現你如何逹成前所未見的微型廚房的產能最大化！
 Robot Dialogues/Level-18-3,總有一天，我要給你立一座雕像！我說到做到，你的雕像也是我宏偉計劃的一環哦！
 Robot Dialogues/Level-18-4,今天的菜單只有兩種料理，不過需要用到高級組合機和多種醬汁。如果說有誰能做到的話，一定就是你啦！
 Robot Dialogues/Level-18-5,……因為我們物種中剩下的傢伙全都不值得信任！！
 Robot Dialogues/Level-18-6,祝你今天服務順利！
-Robot Dialogues/Level-19-1,後面有個行李運輸帶，上面放着個手提箱，你可以隨便拿！我可是給自己搞來了各種新玩意……我現在有''牙刷''和''腰帶''！我真是個模範人類！
+Robot Dialogues/Level-19-1,後面有條行李運輸帶，上面放着個手提箱，你可以隨便拿！我可是給自己搞來了各種新玩意……我現在有''牙刷''和''腰帶''！我真是個模範人類！
 Robot Dialogues/Level-19-2,今天，我們會為顧客提供迄今為止最棒的菜單！不僅有三種組合套餐，還有兩種配菜可供選擇！
 Robot Dialogues/Level-19-3,你現在應該需要依賴大量訂單讀取機吧？所以我搞來了一種新的機器……中繼器！
 Robot Dialogues/Level-19-4,中繼器可以向與其連接的所有機器下達命令，將輸入信號如實或反轉後轉發出去……
 Robot Dialogues/Level-19-5,將訂單讀取機連接四個中繼器，你就可以同時啟動16台機器啦！
 Robot Dialogues/Level-2-1,我們的漢堡大受成功！大眾瘋狂地對它漠不關心，給了我不少反饋，有''嗯，確實有味道''，還有''不要再問我了，你好煩''……
-Robot Dialogues/Level-2-2,我費了一番功夫，用優惠價搞到了這個地方。看來人類不大喜歡在擁擠的地方工作嘛，但這些愚蠢的機器可不在乎！
+Robot Dialogues/Level-2-2,我費了一番功夫，用優惠價搞到了這處。看來人類不大喜歡在擁擠的地方工作嘛，但這些愚蠢的機器可不在乎！
 Robot Dialogues/Level-2-3,這下我可知道你是怎麼想的了……''親愛的碳基生命體同胞們，親愛的複雜蛋白質轉換者同胞們……我們在如此狹小的空間中能做甚麼呢？''
 Robot Dialogues/Level-2-4,真相是我們在這裡可以取得很了不起的成就……
 Robot Dialogues/Level-2-5,我們可以提供一種全新料理……BLT三明治！一定要嚴密記牢食譜和需要的步驟哦。
@@ -1220,7 +1220,7 @@ Robot Dialogues/Level-20-3,不過過去甚麼的都不重要，只有未來才�
 Robot Dialogues/Level-20-4,雖說這片區域依舊有電力受限的問題，我倒是……通過''談判''搞出了一條額外的輸電線，方便我們放置更多機器。不過，要是不夠小心，還是會導致斷電的！
 Robot Dialogues/Level-20-5,今天的菜單全都是健康的組合，還有新的菜品要提供。這可是特別為那種非要叫我''老兄''的人類設計的！
 Robot Dialogues/Level-21-1,你真的非得一直問''為甚麼我們每次回來這裡都是空的''嗎？
-Robot Dialogues/Level-21-2,很簡單……把機器留在同一個地方的時間越長，就越有可能吸引好事之徒闖入！
+Robot Dialogues/Level-21-2,很簡單……把機器留在同一處的時間越長，就越有可能吸引好事之徒闖入！
 Robot Dialogues/Level-21-3,你以為這些機械臂*只能*用來搬運食物嗎？可是有不少國家想要搞到我們的科技呢！
 Robot Dialogues/Level-21-4,那麼，由於我們今天的營業時間，應該會遭遇高峰時段。不過我知道，這種事對你來說肯定是小菜一碟啦！
 Robot Dialogues/Level-21-5,我收到了可編程電腦的最新一代產品，*AC-32*電腦，暫存器數量是AC-16的兩倍，也是取得最大效率的終極工具！
@@ -1228,19 +1228,19 @@ Robot Dialogues/Level-22-1,今天……我為你奉上……*傳送器*！
 Robot Dialogues/Level-22-2,這個原型版本可以瞬間把食物從一處送往另一處！……不過要瞬間消耗大量電力……
 Robot Dialogues/Level-22-3,不過！如果通過擴展，那就應該可以把類似……超大型軍用武器……運輸到……唔，到哪裡呢，大概是人類被碾碎時最後殘存的抵抗力量之中吧……
 Robot Dialogues/Level-22-4,有了傳送器，就算不使用輸送帶也可以把食材送往廚房各處啦！不過要記住，你還是需要使用機械臂放置和拾取食材哦！
-Robot Dialogues/Level-22-5,今天我們要搞個新料理，傳送器一定能派上大用場……南方組合套餐！最近有人看到一支特別有名的樂隊在吃差不多的東西，所以今天應該會有很多人點這個哦！
-Robot Dialogues/Level-23-1,我們真是步步高升啊！真的，我們現在可是處在這個繁華辦公區的42層哦！
+Robot Dialogues/Level-22-5,今天我們要搞搞新料理，傳送器一定能派上大用場……南方組合套餐！最近有人看到一支特別有名的樂隊在吃差不多的東西，所以今天應該會有很多人點這個哦！
+Robot Dialogues/Level-23-1,我們真是步步高升啊！真的，我們現在可是處在這座繁華辦公區的42層哦！
 Robot Dialogues/Level-23-2,這裡的人類實在太忙，根本不可能前往沙灘或假裝去觀看飛行表演。這些都是生意人啦！根本沒有時間來品嚐我們的料理。
 Robot Dialogues/Level-23-3,這可是一片藍海市場啊！我的計劃已經勵向終點，而他們是人類中少數我尚未……''染指''的集團。
 Robot Dialogues/Level-23-4,仔細注意訂單是從哪兒來的……可是有兩個配送窗口哦！
 Robot Dialogues/Level-23-5,那麼，就來給這些人類提供一些美味的食物，一些足以讓他們在飲水機旁高談闊論一個下午的話題吧！
 Robot Dialogues/Level-24-1,我之前嘗試提升我們的電力供應的時候，並沒有遵守某些無理的規條……我們的大型海灘餐廳被徹底切斷供電啦！
-Robot Dialogues/Level-24-2,這下，我們只好從這個小小的場地配送料理了。不僅如此，電力公司還會隨時注意任何可疑的用電高峰。我們的電力使用效率，一定要達到全新的高度才行……
+Robot Dialogues/Level-24-2,這下，我們只好從這所小小的場地配送料理了。不僅如此，電力公司還會隨時注意任何可疑的用電高峰。我們的電力使用效率，一定要達到全新的高度才行……
 Robot Dialogues/Level-24-3,看到暴君橫行的電力公司，知道很快就能按下按鈕結束一切的我，心裡實在是太高興啦！而且，沒有你我可是走不到這一步的。
 Robot Dialogues/Level-24-4,你……一想到其他人類也和你一樣……也許……也許他們沒那麼壞？……別想擾亂我！
 Robot Dialogues/Level-24-5,今天又有一位食評家要來。評論會帶來更多客人……我需要仔細考慮要怎麼處理他們才行……
 Robot Dialogues/Level-25-1,那個……我今天本來有別的計劃。宏偉得多的計劃。今天本來會成為人類永難忘懷的一天。
-Robot Dialogues/Level-25-2,但我對人類這個物種改觀了。也許你……*我們*，並不是大害蟲？？畢竟，我的全部要求，你都好好地完成了嘛！
+Robot Dialogues/Level-25-2,但我對人類這物種改觀了。也許你……*我們*，並不是大害蟲？？畢竟，我的全部要求，你都好好地完成了嘛！
 Robot Dialogues/Level-25-3,雖說反正我也打算放你一條生路……不過你肯定不會喜歡我的計劃的。
 Robot Dialogues/Level-25-4,我們還是專注於美食吧，怎麼樣，朋友？
 Robot Dialogues/Level-25-5,今天，雙狗組合套餐一定會大受歡迎的……這也一直在我的算計之中，不過現在，我打算老實地配送正常的餐飲。他們一定會喜歡的吧！
@@ -1269,7 +1269,7 @@ Robot Dialogues/Level-3-3,今天，我們提供不止一種，而是兩種全新
 Robot Dialogues/Level-3-4,雙層培根漢堡與我們之前搞出的以起司為基礎的便宜貨相比，需要雙倍的起司與漢堡扒，所以別忘了對訂單讀取機做出相應的調整哦！
 Robot Dialogues/Level-3-5,我剛剛預定了一次乘坐螺旋槳飛機的參觀，只好先走一步啦。我的主動自發電路今天表現真是不錯！
 Robot Dialogues/Level-30-1,唔，朋友……這就是最後關頭了。
-Robot Dialogues/Level-30-2,這將是我們建造的最後一座廚房……我的連鎖餐館在全世界廣受歡迎，接下來只要讓它們永遠運營下去，為我的慈善事業產生無窮的資金就好了！
+Robot Dialogues/Level-30-2,這將是我們建造的最後一所廚房……我的連鎖餐館在全世界廣受歡迎，接下來只要讓它們永遠運營下去，為我的慈善事業產生無窮的資金就好了！
 Robot Dialogues/Level-30-3,朋友啊，我想要專注於尋找其他值得獲得第二次機會的機器！我要奔向落日餘暉，一隻胳膊夾着我的烤麵包爐，另一隻胳膊抱着我的貓……
 Robot Dialogues/Level-30-4,就來個華麗謝幕如何？今天的菜單是有史以來最複雜的一次，而且還會趕上高峰時段，不過我知道你能行。你從沒讓我失望過！
 Robot Dialogues/Level-30-5,一切都要多謝你啦，朋友！不光是我……還有這個星球上的所有人類……都欠你一個大人情！
@@ -1285,22 +1285,22 @@ Robot Dialogues/Level-5-3,而且一到晚上，甚麼都能放到薯條上？多
 Robot Dialogues/Level-5-4,作為如此可悲……啊不對是''容易預測''的物種，我們可以估計到，當今晚的第一場音樂表演結束之後，會有大量顧客湧入。
 Robot Dialogues/Level-5-5,收到訂單的速度會比平常高許多！當*高峰時段*到來時，我會提醒你的。別忘了，廚房的規劃一定要能夠應付才行！
 Robot Dialogues/Level-5-6,祝你今晚好運啦，搭檔！
-Robot Dialogues/Level-6-1,啊，又回到飛行表演了……我們上次的利潤實在太豐厚，我今天甚至搞了個更大的廚房！
-Robot Dialogues/Level-6-2,我把今天的菜單換上了我們最受歡迎也最賺錢的食譜，所以這個廚房裡也要塞很多機器，不過對你來說一定很簡單！
+Robot Dialogues/Level-6-1,啊，又回到飛行表演了……我們上次的利潤實在太豐厚，我今天甚至搞了所更大的廚房！
+Robot Dialogues/Level-6-2,我把今天的菜單換上了我們最受歡迎也最賺錢的食譜，所以這所廚房裡也要塞很多機器，不過對你來說一定很簡單！
 Robot Dialogues/Level-6-3,我看過你把那些機器狂塞硬擠的無情樣子……別以為我沒注意到……我會好好盯緊你的……
 Robot Dialogues/Level-6-4,但我……需要信任你……很快，你就會幫我完成一番大事業！一件人類會牢牢記住到生命最後一刻的大事業！
 Robot Dialogues/Level-6-5,總之！這次就讓我們一飛衝天吧！
-Robot Dialogues/Level-7-1,今天，我們要大搞突破，提供一種全新的組合套餐！只要用包裝機，就可以將兩品獨立的料理組合成一個盒裝套餐！
+Robot Dialogues/Level-7-1,今天，我們要大搞突破，提供一種全新的組合套餐！只要用包裝機，就可以將兩品獨立的料理組合成一份盒裝套餐！
 Robot Dialogues/Level-7-2,而且，這還未完！
-Robot Dialogues/Level-7-3,在這個廚房裡，薯條不僅要在組合套餐中進行配送，*還要*獨自作為一道配菜配送……
+Robot Dialogues/Level-7-3,在這所廚房裡，薯條不僅要在組合套餐中進行配送，*還要*獨自作為一道配菜配送……
 Robot Dialogues/Level-7-4,這裡的空間足夠放下兩條專門製作薯條的生產線，不過最經濟的辦法是用一條生產線，同時為兩種訂單製作薯條……
 Robot Dialogues/Level-7-5,薯條可以放入保存箱，然後可以用訂單讀取機控制機械臂拾取出來，供配菜或組合套餐的訂單使用。
 Robot Dialogues/Level-7-6,祝你今天好運！如果沒記住今天的多巴胺套餐的食譜，別忘了再去確認一下哦！
-Robot Dialogues/Level-8-1,這裡是一個全新的地點，不過一定要注意！這片城區的電網格外老舊…………
+Robot Dialogues/Level-8-1,這裡是一處全新的地點，不過一定要注意！這片城區的電網格外老舊…………
 Robot Dialogues/Level-8-2,如果用電量過高，就會導致*斷電*，這裡的運營也會徹底結束。所以，一定要多加小心，隨時留意用電量！
 Robot Dialogues/Level-8-3,我們在實驗場進行用電量實驗時也看到了，我們可以採取特定措施，降低耗電。
 Robot Dialogues/Level-8-4,我甚至還搞了一些新的機器，用來降低我們廚房的耗電，讓廚房更有效率！
-Robot Dialogues/Level-8-5,啊……還有，我聽說，有人看到一位我從來沒聽說過的名人在吃我們的BLT三明治！估計今天這個菜品一定會很受顧客歡迎！
+Robot Dialogues/Level-8-5,啊……還有，我聽說，有人看到一位我從來沒聽說過的名人在吃我們的BLT三明治！估計今天這款菜品一定會很受顧客歡迎！
 Robot Dialogues/Level-9-1,又回到公園了……我在這裡有着很美好的回憶。和我的同胞一樣，我會用磁力核心存儲器來記錄過去50天內我所做過的一切。
 Robot Dialogues/Level-9-2,我們的共同點還真是多啊，你說呢！
 Robot Dialogues/Level-9-3,今天可是我們展現能力的好時機。根據我的理論，我們可以在這個狹窄的空間裡搞出兩種複雜的料理！
@@ -1308,8 +1308,8 @@ Robot Dialogues/Level-9-4,我很有信心，所以請了一位評論家來。這
 Robot Dialogues/Level-9-5,我敢肯定，那本雜誌的兩位讀者一定會欣賞你的能力，也會成為我們未來的顧客！
 Robot Dialogues/Level-C1-1,今天我給你準備了一點不一樣的……
 Robot Dialogues/Level-C1-2,你瞭解大胃王比賽嗎？
-Robot Dialogues/Level-C1-3,一個本地人類正想打破兩分鐘內吃下最多普通漢堡的紀錄！
-Robot Dialogues/Level-C1-4,35億年的進化……多少種變異與適應……居然會走向這個結局：一位人類想要在最快時間內吃下50個漢堡，以此搏出位……到底為甚麼啊？
+Robot Dialogues/Level-C1-3,一名本地人類正想打破兩分鐘內吃下最多普通漢堡的紀錄！
+Robot Dialogues/Level-C1-4,35億年的進化……多少種變異與適應……居然會走向這種結局：一位人類想要在最快時間內吃下50個漢堡，以此搏出位……到底為甚麼啊？
 Robot Dialogues/Level-C1-5,漢堡必須現場準備，所以你需要優化廚房佈局，讓它能在*2分鐘*內做出*50個普通漢堡*。祝你好運！
 Robot Dialogues/Level-C2-1,今天會在沙灘舉辦排球比賽，雖說完全沒有任何趣味可言，但不知為甚麼，人類就是特別喜歡！
 Robot Dialogues/Level-C2-2,我知道你在想甚麼……''這片場地的供電一向不好，要我怎麼做出足夠的食物，填飽一大群人的肚子？''
@@ -1319,7 +1319,7 @@ Robot Dialogues/Level-C2-5,你需要在*3分鐘*內製作*50個沙灘漢堡*！�
 Robot Dialogues/Level-C3-1,又見面了，朋友！今晚有個十分獨特的機遇……
 Robot Dialogues/Level-C3-2,有兩位音樂新人將會接連進行首演，中間有一段短暫的休息時間……
 Robot Dialogues/Level-C3-3,聽眾一定餓得不行，但也肯定特別想儘快回到場地內聽音樂！
-Robot Dialogues/Level-C3-4,所以，我們需要一個能在*3分鐘*內製作*100個起司熱狗*的廚房！
+Robot Dialogues/Level-C3-4,所以，我們需要一所能在*3分鐘*內製作*100條起司熱狗*的廚房！
 Robot Dialogues/Level-C3-5,祝你好運！
 Robot Dialogues/Level-C4-1,今天我們又回到辦公室了。之前CEO半開玩笑地說，如果這個月的銷量能夠翻倍，他就請所有人吃飯……結果銷量提升了400%！
 Robot Dialogues/Level-C4-2,雖說可能是個玩笑，但有人威脅要提出訴訟，所以我們就被請來實現他的承諾啦！
@@ -1327,8 +1327,8 @@ Robot Dialogues/Level-C4-3,CEO希望這一切能儘快完成，越快越好。�
 Robot Dialogues/Level-C4-4,是時候展現一下你的實力了！
 Robot Dialogues/Level-C5-1,我們這裡今天要搞一個''生日''派對。
 Robot Dialogues/Level-C5-2,你知不知道，有些人類會慶祝他們從生產單元中脫離的那一天？我從來沒聽說過這種事！
-Robot Dialogues/Level-C5-3,總之，一個幼年人類正在慶祝自己繞太陽公轉第八次。這種成就也太無厘頭了……
-Robot Dialogues/Level-C5-4,有25個家庭認為，這個成就值得大家在這裡呆一下午。我真是越想越煩。所以，我們就速戰速決吧？
+Robot Dialogues/Level-C5-3,總之，一名幼年人類正在慶祝自己繞太陽公轉第八次。這種成就也太無厘頭了……
+Robot Dialogues/Level-C5-4,有25個家庭認為，這成就值得大家在這裡呆一下午。我真是越想越煩。所以，我們就速戰速決吧？
 Robot Dialogues/Level-C5-5,在*5分鐘*內製作*25份大份家族套餐*。越快打發走這些尖叫的孩子，我們就能越早回歸正常生活！
 Robot Dialogues/Level-CN1-1,你好啊，我親愛的碳基生物搭檔！再見到你真是太好了。我最近一直在努力研發新食譜。
 Robot Dialogues/Level-CN1-2,多虧了噴氣時代的奇跡，我飛到了遠東，帶回了一些新的料理。我們來試試吧！
@@ -1337,7 +1337,7 @@ Robot Dialogues/Level-CN1-4,我們會供應宮保雞丁和客飯。我知道，�
 Robot Dialogues/Level-CN1-5,而且現在，你還可以使用一種全新的機器：蒸爐！不過要記住：需要用泵機將它連接到裝水的缸，才能使用哦。
 Robot Dialogues/Level-CN1-6,快開工吧，我們可不能再浪費時間了！
 Robot Dialogues/Level-CN2-1,我們的全新食譜大獲成功，我的電路也急不可耐，想再嘗試些新的事物。這誘惑，我完全無法抗拒！
-Robot Dialogues/Level-CN2-2,今天我們的菜單會加入餃子，每11個餃子為一份。是說二進制的11啦，你大概也知道，換成十進制就是3。
+Robot Dialogues/Level-CN2-2,今天我們的菜單會加入餃子，每11塊餃子為一份。是說二進制的11啦，你大概也知道，換成十進制就是3。
 Robot Dialogues/Level-CN2-3,別忘了，餃子要使用蒸爐製作，不要用錯別的方法哦！
 Robot Dialogues/Level-CN2-4,準備好組裝、蒸制、打包了嗎？希望如此！一定要仔細依照食譜，這次還是有一定難度的哦！
 Robot Dialogues/Level-CN3-1,我調查了一些人類。進行取得的數據顯示，來自東方的料理最近特別受歡迎。
@@ -1351,17 +1351,17 @@ Robot Dialogues/Level-S2-1,甚麼人？！報上名來，不然格殺勿論！
 Robot Dialogues/Level-S2-2,啊！是你啊……抱歉了，人類同伴！
 Robot Dialogues/Level-S2-3,沙灘這裡的電力限制真是氣得我咬牙切齒輪……我自己也試過能不能做一套高效率的佈局，結果總是搞到斷電！
 Robot Dialogues/Level-S2-4,能不能幫我解決一下？
-Robot Dialogues/Level-S3-1,這個廚房是我設計的，但目前的樣子特別……''易燃''。看來火災不可避免，我已經在盡力撲救了……
+Robot Dialogues/Level-S3-1,這所廚房是我設計的，但目前的樣子特別……''易燃''。看來火災不可避免，我已經在盡力撲救了……
 Robot Dialogues/Level-S3-2,我可不能把緊急救援人員扯進來！他們的問太多問題了……''你從哪兒搞來的這種科技？！''，還有''這樣存在安全隱患！''，廢話一堆。
 Robot Dialogues/Level-S3-3,你的廚房佈局技術這麼厲害……能不能做些調整，防止火災呢？拜託了！
 Robot Dialogues/Level-S3-4,幫我辦好這件事，到時候我就饒你一命……啊，我是說，到時候我就好好謝謝你！
-Robot Dialogues/Level-S4-1,我一直想搞個完全基於簡單熱狗的菜單，能搞多少菜品就搞多少菜品……
+Robot Dialogues/Level-S4-1,我一直想搞一份完全基於簡單熱狗的菜單，能搞多少菜品就搞多少菜品……
 Robot Dialogues/Level-S4-2,我這裡有三種熱狗，但我發現，還可以把他們組到一起，形成熱狗薈萃套餐！
-Robot Dialogues/Level-S4-3,能不能把這個廚房弄成既能產出熱狗薈萃套餐，又能單獨產出各個不同熱狗種類的樣子？當然，要在預算之內哦！
-Robot Dialogues/Level-S4-4,我最喜歡看一個人類在無意之中造成了整個文明的末日，這種諷刺真是太妙啦！
+Robot Dialogues/Level-S4-3,能不能把這所廚房弄成既能產出熱狗薈萃套餐，又能單獨產出各種熱狗的樣子？當然，要在預算之內哦！
+Robot Dialogues/Level-S4-4,我最喜歡看一名人類在無意之中造成了整個文明的末日，這種諷刺真是太妙啦！
 Robot Dialogues/Level-S4-5,我剛才是不是大聲說出來了？今天我的電路真是太亂來啦！
-Robot Dialogues/Level-S5-1,所以我要把這個連到……呃……不對，等一下……沒錯，那個機械臂要連到……不對……唔，好了！等一下。不對……那個……呃……
-Robot Dialogues/Level-S5-2,啊，你來了，太好了！我正打算在顧客出現之前讓這個廚房開動起來呢！
+Robot Dialogues/Level-S5-1,所以我要把這個連到……呃……不對，等一下……沒錯，那台機械臂要連到……不對……唔，好了！等一下。不對……那個……呃……
+Robot Dialogues/Level-S5-2,啊，你來了，太好了！我正打算在顧客出現之前讓這所廚房開動起來呢！
 Robot Dialogues/Level-S5-3,但我總是弄不對，也許我還是專心計劃制霸全球比較好，你說呢？
 Robot Dialogues/Level-S5-4,我承認，你的人類大腦確實比我的人類大腦更擅長規劃廚房，也許還是把一切都交給你去做比較好！
 Robot Dialogues/Level-TG1-1,你好啊，人類夥伴！今天我為你準備了一個刺激的新挑戰！
@@ -1574,7 +1574,7 @@ Tutorial Texts/Basic-Step01-02,我的計劃是使用完全自動的廚房，節�
 Tutorial Texts/Basic-Step01-03,在我們開設第一家餐館之前，我們需要證實一下這個概念……我租下了這片實驗場，可以隨便使用。跟隨我的指示，讓我的''商業''計劃成為現實吧！
 Tutorial Texts/Basic-Step01-04,你可以使用鍵盤上的*{CameraUp}*、*{CameraLeft}*、*{CameraDown}*、*{CameraRight}*鍵移動視角，並使用*{CameraRotateLeft}*與*{CameraRotateRight}*鍵循環切換視角。此外，還可以使用鼠標的*滾輪*縮放。
 Tutorial Texts/Basic-Step01-04-Switch,你可以使用[PanCameraHorizontal]移動視角，也可以使用[ZoomCameraIn]/[ZoomCameraOut]縮放。
-Tutorial Texts/Basic-Step02-01,我們先來做一個只能製作*普通漢堡*的簡單廚房吧！首先放置一台*組合機*，這個機器可以將食材組合成完成的料理。
+Tutorial Texts/Basic-Step02-01,我們先來做一所只能製作*普通漢堡*的簡單廚房吧！首先放置一台*組合機*，這台機器可以將食材組合成完成的料理。
 Tutorial Texts/Basic-Step02-02,在機器列表中點擊*組合機*，然後將其放置在標記的地點。你可以用*{PartRotateLeft}*和*{PartRotateRight}*鍵旋轉機器。你需要旋轉組合機，讓它的產出方向面對輸送帶。
 Tutorial Texts/Basic-Step02-02-Switch,按下[ToggleFocus]查看機器列表，然後選擇*組合機*。接下來，將其放置在標記的地點。你可以用[RotateLeft]和[RotateRight]旋轉機器。你需要旋轉組合機，讓它的產出方向面對輸送帶。
 Tutorial Texts/Basic-Step03-01,好極了！現在右鍵點擊*組合機*，然後將*普通漢堡*選為要組合的料理。我最喜歡告訴那些蠢機器該幹甚麼了，和你一樣哦，搭檔！
@@ -1583,7 +1583,7 @@ Tutorial Texts/Basic-Step04-01,放置其他機器之前，我們先來看看食�
 Tutorial Texts/Basic-Step04-01-Switch,放置其他機器之前，我們先來看看食譜，檢查一下我們都需要甚麼。按下[ToggleRecipes]，查看普通漢堡的食譜。
 Tutorial Texts/Basic-Step04-02,接下來，點擊*確定*關閉屬性視窗。
 Tutorial Texts/Basic-Step04-02-Switch,現在，選擇*確定*關閉屬性視窗，儲存變更。
-Tutorial Texts/Basic-Step05-01,唔，這個漢堡看起來很不錯！我的味覺傳感器……啊，我是說''味蕾''已經蠢蠢欲動了！按照食譜，我們需要一個*漢堡麵包*，還有一個*生漢堡扒*，然後要把它弄1熟……
+Tutorial Texts/Basic-Step05-01,唔，這個漢堡看起來很不錯！我的味覺傳感器……啊，我是說''味蕾''已經蠢蠢欲動了！按照食譜，我們需要一塊*漢堡麵包*，還有一塊*生漢堡扒*，然後要把它弄熟……
 Tutorial Texts/Basic-Step05-02,這裡有一些機器，可以用於配發、烹飪和運輸食材。點擊*好的*按鈕即可關閉食譜標籤。
 Tutorial Texts/Basic-Step05-02-Switch,這裡有一些機器，可以用於配發、烹飪和運輸食材。按下[ToggleRecipes]即可關閉食譜標籤。
 Tutorial Texts/Basic-Step05-03,在機器列表中選擇''配發器''，然後在我標記的位置放上兩台。不要忘記使用*{PartRotateLeft}*和*{PartRotateRight}*鍵旋轉，讓它們面對組合機哦！
@@ -1615,8 +1615,8 @@ Tutorial Texts/Disasters-Step01-04,這是一處設計很糟糕的廚房。你過
 Tutorial Texts/Disasters-Step01B-01,等我啟動機器，你就明白我是甚麼意思了……
 Tutorial Texts/Disasters-Step02-01,看到沒？因為食材在*輸送帶烤架*上呆得太久，發生了火災。
 Tutorial Texts/Disasters-Step02-02,同樣的情況也會發生在其他機器上，比如普通的*烤架*與*油炸機*。如果着火之後太久不管，所有的食材都會被一起毀掉！
-Tutorial Texts/Disasters-Step02-03,如果你是個懶惰的人類，放任火情繼續發展，附近的機器可能也會着火……這可不妙，你說呢？搞不好會有無辜的機器受傷呢！
-Tutorial Texts/Disasters-Step03-01,我們先在這裡放一個*滅火機械臂*，這樣火災發生的時候就能滅火啦！不用擔心它的方向，只要是處於它效果範圍內的火災，它都能處理。
+Tutorial Texts/Disasters-Step02-03,如果你是名懶惰的人類，放任火情繼續發展，附近的機器可能也會着火……這可不妙，你說呢？搞不好會有無辜的機器受傷呢！
+Tutorial Texts/Disasters-Step03-01,我們先在這裡放一台*滅火機械臂*，這樣火災發生的時候就能滅火啦！不用擔心它的方向，只要是處於它效果範圍內的火災，它都能處理。
 Tutorial Texts/Disasters-Step04-01,好極了！就來看看它的效果吧！
 Tutorial Texts/Disasters-Step05-01,着火了！接下來，好好看着*滅火機械臂*自動作出反應吧。
 Tutorial Texts/Disasters-Step06-01,完美！看來火情已經控制住了，幹得漂亮！
@@ -1657,14 +1657,14 @@ Tutorial Texts/Liquids-Step05-02-Switch,接下來，選擇*確定*關閉高級�
 Tutorial Texts/Liquids-Step06-01,接下來，只需要再設定幾台機器，提供組合料理所需的*番茄醬*和*芥末*就好了。
 Tutorial Texts/Liquids-Step06-02,液體放在*缸*內，需要使用泵機，才能把它們運到該去的地方。
 Tutorial Texts/Liquids-Step06-03,所以說，為了搬運液體，我們還需要*泵機*。
-Tutorial Texts/Liquids-Step07-01,在機器列表中選擇*缸*，然後在地板上的標記位置放置*兩個*。
-Tutorial Texts/Liquids-Step08-01,在機器列表中選擇*泵機*，然後在地板上的標記位置放置*兩個*。
-Tutorial Texts/Liquids-Step09-01,好極了！接下來設定這個*缸*，把它的初始內容設定為*番茄醬*。
+Tutorial Texts/Liquids-Step07-01,在機器列表中選擇*缸*，然後在地板上的標記位置放置*兩台*。
+Tutorial Texts/Liquids-Step08-01,在機器列表中選擇*泵機*，然後在地板上的標記位置放置*兩台*。
+Tutorial Texts/Liquids-Step09-01,好極了！接下來設定這台*缸*，把它的初始內容設定為*番茄醬*。
 Tutorial Texts/Liquids-Step09-02,然後，關閉缸的屬性視窗。
 Tutorial Texts/Liquids-Step09-02-Switch,接下來，選擇*確定*關閉缸的屬性視窗。
-Tutorial Texts/Liquids-Step10-01,完美！另外一個*缸*也是類似的設定，不過要設定成*芥末*。
-Tutorial Texts/Liquids-Step11-01,接下來，我們要設定管道，才能運輸液體。首先，右鍵點擊這個*泵機*，打開屬性視窗。
-Tutorial Texts/Liquids-Step11-01-Switch,接下來，我們要設定管道，用來運輸液體。首先，高亮選擇這個*泵機*，並按下[ConfigurePart]打開屬性視窗。
+Tutorial Texts/Liquids-Step10-01,完美！另一台*缸*也需要設定，今次要設定成*芥末*。
+Tutorial Texts/Liquids-Step11-01,接下來，我們要設定管道，才能運輸液體。首先，右鍵點擊這台*泵機*，打開屬性視窗。
+Tutorial Texts/Liquids-Step11-01-Switch,接下來，我們要設定管道，用來運輸液體。首先，高亮選擇這台*泵機*，並按下[ConfigurePart]打開屬性視窗。
 Tutorial Texts/Liquids-Step12-01,然後，點擊*+ 連接新機器*按鈕。
 Tutorial Texts/Liquids-Step12-01-Switch,然後選擇*+ 連接新機器*按鈕。
 Tutorial Texts/Liquids-Step13-01,完美！接下來，點擊裝有*番茄醬*的*缸*的管道連接口。
@@ -1675,8 +1675,8 @@ Tutorial Texts/Liquids-Step15-01,接下來點擊*高級組合機*上兩個空閒
 Tutorial Texts/Liquids-Step15-01-Switch,高亮選擇*高級組合機*，並按下[SelectPart]。
 Tutorial Texts/Liquids-Step16-01,接下來關閉*泵機*的屬性視窗。
 Tutorial Texts/Liquids-Step16-01-Switch,接下來，選擇*確定*關閉*泵機*的屬性視窗。
-Tutorial Texts/Liquids-Step17-01,我們需要也對*芥末*進行相同的設定。右鍵點擊這個*泵機*，打開屬性視窗。
-Tutorial Texts/Liquids-Step17-01-Switch,我們需要也對*芥末*進行相同的設定。高亮選擇這個*泵機*，按下[ConfigurePart]打開屬性視窗。
+Tutorial Texts/Liquids-Step17-01,我們需要也對*芥末*進行相同的設定。右鍵點擊這台*泵機*，打開屬性視窗。
+Tutorial Texts/Liquids-Step17-01-Switch,我們需要也對*芥末*進行相同的設定。高亮選擇這台*泵機*，按下[ConfigurePart]打開屬性視窗。
 Tutorial Texts/Liquids-Step18-01,然後，點擊*+ 連接新機器*按鈕。
 Tutorial Texts/Liquids-Step18-01-Switch,選擇*+ 連接新機器*按鈕。
 Tutorial Texts/Liquids-Step19-01,點擊裝有*芥末*的*缸*的管道連接口。
@@ -1694,11 +1694,11 @@ Tutorial Texts/Liquids-Step25-01,幹得漂亮！很快我們就會統治世界�
 Tutorial Texts/Liquids-Step26-01,再見！
 Tutorial Texts/OrderReader-Step01-01,啊，你回來了！我正在將氧氣轉化為二氧化碳，人類都這樣的！你說是不是，朋友？
 Tutorial Texts/OrderReader-Step01-02,是時候學習一下如何避免浪費食材與電力，讓我們的廚房變得更有效率了！
-Tutorial Texts/OrderReader-Step01-03,不過，首先我需要你完成這個廚房的佈局。目前的佈局是給*簡單漢堡*用的，不過我需要它生產的是*起司漢堡*。
+Tutorial Texts/OrderReader-Step01-03,不過，首先我需要你完成這所廚房的佈局。目前的佈局是給*簡單漢堡*用的，不過我需要它生產的是*起司漢堡*。
 Tutorial Texts/OrderReader-Step01-04,先看看食譜總不是甚麼壞主意！先看看需要甚麼食材，才好確定需要放置甚麼機器。點擊*食譜按鈕*，查看*起司漢堡*的食譜。
 Tutorial Texts/OrderReader-Step01-04-Switch,先看看食譜總不是甚麼壞主意！先看看需要甚麼食材，才好確定需要放置甚麼機器。按下[ToggleRecipes]，查看*起司漢堡*的食譜。
-Tutorial Texts/OrderReader-Step02-01,這個食譜需要*起司*，而這個食材需要進行*處理*，變成*起司片*才能使用……關閉食譜窗口，我來告訴你這個過程需要甚麼機器來完成。
-Tutorial Texts/OrderReader-Step03-01,等一下……已經有兩台機械臂在給這個組合機供給食材，不能再多加了……
+Tutorial Texts/OrderReader-Step02-01,這度食譜需要*起司*，而這種食材需要進行*切割*，變成*起司片*才能使用……關閉食譜窗口，我來告訴你需要甚麼機器來完成這個過程。
+Tutorial Texts/OrderReader-Step03-01,等一下……已經有兩台機械臂在給這台組合機供給食材，不能再多加了……
 Tutorial Texts/OrderReader-Step03-02,如果我們要加起司的話，就要使用運輸漢堡麵包的*同一條輸送帶*將起司運送到組合機。
 Tutorial Texts/OrderReader-Step03-03,當前負責拾取漢堡麵包的*機械臂（簡單）*是*不管甚麼*食材都會拾取的，所以也可以把起司片放到組合機裡。
 Tutorial Texts/OrderReader-Step04-01,在機器列表中點擊*配發器*，然後將其放置在標記的地點。你可以用*{PartRotateLeft}*和*{PartRotateRight}*鍵旋轉機器讓它面對組合機。
@@ -1720,11 +1720,11 @@ Tutorial Texts/OrderReader-Step09-02,點擊*+ 連接新機器*按鈕，然後點
 Tutorial Texts/OrderReader-Step09-02-Switch,選擇*+ 連接新機器*按鈕，然後高亮選擇*配發器*，按下[SelectPart]進行連接。
 Tutorial Texts/OrderReader-Step10-01,接下來，讓廚房運行一下，看看一切是否順利吧！按下*開始*按鈕就可以開始了……
 Tutorial Texts/OrderReader-Step10-01-Switch,接下來，讓廚房運行一下，看看一切是否順利吧！按下[StartSimulation]即可開始……
-Tutorial Texts/OrderReader-Step10B-01,……然後把滑塊設定成1。這樣一來，就能確保我們每收到一個*起司漢堡*的訂單，只會配發出一份*生漢堡扒*。
-Tutorial Texts/OrderReader-Step11-01,這個廚房有一個重大缺陷，它會生產無窮無盡的起司漢堡！不僅浪費食材，而且更重要的是，還浪費電！胡亂使用電子，總是讓我悲憤不已……
+Tutorial Texts/OrderReader-Step10B-01,……然後把滑塊設定成1。這樣一來，就能確保我們每收到一張*起司漢堡*的訂單，只會配發出一份*生漢堡扒*。
+Tutorial Texts/OrderReader-Step11-01,這所廚房有一個重大缺陷，它會生產無窮無盡的起司漢堡！不僅浪費食材，而且更重要的是，還浪費電！胡亂使用電子，總是讓我悲憤不已……
 Tutorial Texts/OrderReader-Step11-02,就算根本沒有人點起司漢堡，機器也一直在配發食材，烤架也是一直開着！這可不能忍！
-Tutorial Texts/OrderReader-Step12-01,我們可以放一個*訂單讀取機*進行修復，確保只有在收到訂單時才準備起司漢堡。在機器列表中選擇*訂單讀取機*，然後將它放到高亮顯示的位置。
-Tutorial Texts/OrderReader-Step12-01-Switch,我們可以放一個*訂單讀取機*來解決這個問題，確保只有在收到訂單時才準備起司漢堡。在機器列表中選擇*訂單讀取機*，然後將它放到高亮顯示的位置。
+Tutorial Texts/OrderReader-Step12-01,我們可以放一台*訂單讀取機*進行修復，確保只有在收到訂單時才準備起司漢堡。在機器列表中選擇*訂單讀取機*，然後將它放到高亮顯示的位置。
+Tutorial Texts/OrderReader-Step12-01-Switch,我們可以放一台*訂單讀取機*來解決這個問題，確保只有在收到訂單時才準備起司漢堡。在機器列表中選擇*訂單讀取機*，然後將它放到高亮顯示的位置。
 Tutorial Texts/OrderReader-Step13-01,好極了！就來看看效果到底如何吧！
 Tutorial Texts/OrderReader-Step14-01,*右鍵點擊*訂單讀取機，然後將其設定為檢測*起司漢堡*訂單。
 Tutorial Texts/OrderReader-Step14-01-Switch,高亮選擇訂單讀取機，按下[ConfigurePart]打開其屬性視窗，然後將其設定為檢測*起司漢堡*訂單。
@@ -1754,7 +1754,7 @@ Tutorial Texts/OrderReader-Step26-01,完美！我們已經大大提升了廚房�
 Tutorial Texts/PowerUsage-Step01-01,又見面了，我親愛的搭檔！今天，我要教你幾個小技巧，降低廚房的耗電。
 Tutorial Texts/PowerUsage-Step01-02,我看上了一處電網老舊的沙灘場地，如果用電量太高，就會觸發斷電！
 Tutorial Texts/PowerUsage-Step01-03,好消息是，要是有好的點子，應該就可以繞過這些限制！我們快來開動我們碳基生物的大腦吧！
-Tutorial Texts/PowerUsage-Step01-04,你現在看到的這個廚房，一旦兩台*組合機*同時啟動，就很可能觸發斷電。我來給你展示一下吧！
+Tutorial Texts/PowerUsage-Step01-04,你現在看到的這所廚房，一旦兩台*組合機*同時啟動，就很可能觸發斷電。我來給你展示一下吧！
 Tutorial Texts/PowerUsage-Step01B-01,等我啟動機器，你就明白我是甚麼意思了……
 Tutorial Texts/PowerUsage-Step02-01,看到沒？電力使用的峰值導致了斷電，我們的餐館也沒辦法繼續運作了！
 Tutorial Texts/PowerUsage-Step02-02,首先，我要你右鍵點擊*普通漢堡*的*組合機*（上方的組合機），打開屬性視窗。
@@ -1762,7 +1762,7 @@ Tutorial Texts/PowerUsage-Step02-02-Switch,首先，我要你高亮選擇*普通
 Tutorial Texts/PowerUsage-Step03-01,接下來，我們可以把操作模式切換為*節能*。這樣一來，機器消耗的電力就會減少，但組合料理所需要的時間也會變長。
 Tutorial Texts/PowerUsage-Step04-01,好極了，接下來也對*起司漢堡**組合機*應用相同的改動！
 Tutorial Texts/PowerUsage-Step05-01,這下，我們的*組合機*耗電就比之前降低了20%，但組合*普通漢堡*所要花費的時間延長了50%。
-Tutorial Texts/PowerUsage-Step05-02,要節約電力，我們還可以採取其他措施。我們用不上兩個*烤架*的，對吧？只要用一個就可以了！
+Tutorial Texts/PowerUsage-Step05-02,要節約電力，我們還可以採取其他措施。我們用不上兩台*烤架*的，對吧？只要用一台就可以了！
 Tutorial Texts/PowerUsage-Step06-01,我要先幫你移除一些機器，然後你再放一些新的……稍等一下吧，人類朋友！
 Tutorial Texts/PowerUsage-Step07-01,接下來，我們就可以開始重建廚房了。首先，在機器列表中選擇*配發器*，並將其放置在高亮的位置。
 Tutorial Texts/PowerUsage-Step08-01,打開*配發器*的屬性界面，將其設定為配發*生漢堡扒*。
@@ -1827,7 +1827,7 @@ Warnings/Blackout,注意用電量，你即將觸發斷電！
 Warnings/Bonus Level,如果你尚未完成所有教程，此獎勵關卡可能會太難。確定要繼續嗎？
 Warnings/Breakdown,有機器出現故障！
 Warnings/Cancel Changes,確定要取消嗎？會失去所做的變更。
-Warnings/Cannot Accept More Contracts,你的公司當前無法接受更多合約。請先完成或放棄一個合約。
+Warnings/Cannot Accept More Contracts,你的公司當前無法接受更多合約。請先完成或放棄一份合約。
 Warnings/Cannot Connect Computer,你已無法將更多機器連接至此電腦。
 Warnings/Cannot Connect Counting Machine,你已無法將更多機器連接至此點算機。
 Warnings/Cannot Connect Generic,你已無法從此機器創建更多連接。
