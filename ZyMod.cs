@@ -126,13 +126,15 @@ namespace ZyMod {
          return parsed != null;
       } catch ( ArgumentException ) { if ( logWarnings ) Warn( "Invalid value for {0}: {1}", valueType.FullName, val ); return false; } }
 
-      public static void WriteCsvLine ( this TextWriter tw, params object[] values ) => tw.Write( new StringBuilder().AppendCsvLine( values ).Append( "\r\n" ) );
-
+      public static void WriteCsvLine ( this TextWriter tw, params object[] values ) => tw.WriteCsvLine( tw, null, values );
+      public static void WriteCsvLine ( this TextWriter tw, StringBuilder buffer, params object[] values ) =>
+         tw.Write( ( buffer?.Clear() ?? new StringBuilder() ).AppendCsvLine( values ).Append( "\r\n" ) );
+      private static char[] NeedCsvQuote = new char[] { ',', '"', '\n', '\r' };
       public static StringBuilder AppendCsvLine ( this StringBuilder buf, params object[] values ) {
          if ( buf.Length > 0 ) buf.Append( "\r\n" );
          foreach ( var val in values ) {
             string v = val?.ToString() ?? "null";
-            if ( v.IndexOfAny( new char[] { ',', '"', '\n', '\r' } ) >= 0 ) buf.Append( '"' ).Append( v.Replace( "\"", "\"\"" ) ).Append( "\"," );
+            if ( v.IndexOfAny( NeedCsvQuote ) >= 0 ) buf.Append( '"' ).Append( v.Replace( "\"", "\"\"" ) ).Append( "\"," );
             else buf.Append( v ).Append( ',' );
          }
          --buf.Length;
@@ -164,7 +166,7 @@ namespace ZyMod {
             return line.Substring( head, end - head );
          }
          if ( buf == null ) buf = new StringBuilder(); else buf.Clear();
-         var start = ++pos; // Drop initial quote.
+         var start = ++pos; // Drop opening quote.
          while ( true ) {
             int end = pos < len ? line.IndexOf( '"', pos ) : -1, next = end + 1;
             if ( end < 0 ) { // End of line.  Append and read next line.
