@@ -363,17 +363,17 @@ namespace ZyMod {
    public class ZyLogger {
       private TraceLevel _LogLevel = TraceLevel.Info;
       public TraceLevel LogLevel {
-         get { lock ( buffer ) return _LogLevel; }
+         get { lock ( buffer ) return _LogLevel; } // ReaderWriterLockSlim is tempting, but expected use case is 1 thread logging + 1 thread flushing.
          set { lock ( buffer ) { _LogLevel = value;
                   if ( value == TraceLevel.Off ) { flushTimer?.Stop(); buffer.Clear(); }
                   else flushTimer?.Start(); }  } }
       private string _TimeFormat = "HH:mm:ss.fff ";
       public string TimeFormat { get { lock ( buffer ) return _TimeFormat; } set { lock ( buffer ) _TimeFormat = value; } }
-      public uint FlushInterval { get; private set; } = 2; // Seconds.  0 to write and flush every line, a lot slower.
+      public uint FlushInterval { get; private set; } = 2; // Seconds.  0 to write and flush every line, reliable but way slower.
       public string LogPath { get; private set; }
 
       private readonly List< string > buffer = new List<string>();
-      private System.Timers.Timer flushTimer;
+      private readonly System.Timers.Timer flushTimer;
 
       public ZyLogger ( string path, uint interval = 2 ) { new FileInfo( path ); try {
          Initialize( path );
@@ -418,21 +418,21 @@ namespace ZyMod {
 
       private void Terminate ( object _, EventArgs __ ) { Flush(); LogLevel = TraceLevel.Off; AppDomain.CurrentDomain.ProcessExit -= Terminate; }
 
-      private HashSet< string > knownErrors = new HashSet<string>(); // Duplicate exception are ignored.  Modding is risky.
+      private readonly HashSet< string > knownErrors = new HashSet<string>(); // Duplicate exception are ignored.  Modding is risky.
 
       public void Write ( TraceLevel level, object msg, params object[] arg ) {
          string line = "INFO ", time;
          lock ( buffer ) { if ( level > _LogLevel ) return; time = TimeFormat; }
          switch ( level ) {
             case TraceLevel.Off : return;
-            case TraceLevel.Error : line = "ERROR "; break;
-            case TraceLevel.Warning : line = "WARN "; break;
-            case TraceLevel.Verbose : line = "FINE "; break;
+            case TraceLevel.Error   : line = "ERROR "; break;
+            case TraceLevel.Warning : line = "WARN " ; break;
+            case TraceLevel.Verbose : line = "FINE " ; break;
          }
-         try {
+         try { // In a not-so-simple mod these should be done in the background thread.
             for ( var i = arg.Length - 1 ; i >= 0 ; i-- ) if ( arg[i] is Func<string> f ) arg[i] = f();
             if ( msg is string txt && txt.Contains( '{' ) && arg?.Length > 0 ) msg = string.Format( msg.ToString(), arg );
-            else if ( msg is Exception ) { txt = msg.ToString(); if ( knownErrors.Contains( txt ) ) return; knownErrors.Add( txt ); msg = txt; }
+            else if ( msg is Exception ) lock ( knownErrors ) { txt = msg.ToString(); if ( knownErrors.Contains( txt ) ) return; knownErrors.Add( txt ); msg = txt; }
             else if ( arg?.Length > 0 ) msg = string.Join( ", ", new object[] { msg }.Union( arg ).Select( e => e?.ToString() ?? "null" ) );
             else msg = msg?.ToString();
             line = DateTime.Now.ToString( time ?? "mm:ss " ) + line + ( msg ?? "null" );
