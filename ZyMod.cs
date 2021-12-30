@@ -126,6 +126,8 @@ namespace ZyMod {
          return parsed != null;
       } catch ( ArgumentException ) { if ( logWarnings ) Warn( "Invalid value for {0}: {1}", valueType.FullName, val ); return false; } }
 
+      public static void WriteCsvLine ( this TextWriter tw, params object[] values ) => tw.Write( new StringBuilder().AppendCsvLine( values ).Append( "\r\n" ) );
+
       public static StringBuilder AppendCsvLine ( this StringBuilder buf, params object[] values ) {
          if ( buf.Length > 0 ) buf.Append( "\r\n" );
          foreach ( var val in values ) {
@@ -213,62 +215,103 @@ namespace ZyMod {
       /**/
    }
 
-   public class IniConfig { // Load and save INI to and from a config object.  Public instant fields (not properties) will be loaded and saved, may be filtered by attributes.
-      public virtual void Load ( string path = "" ) => Read( this, path );
-      public void Save ( string path ) => Write( this, path );
+   public abstract class BaseConfig { // Abstract code to load and save simple config object to text-based file.  By default only process public instant fields, may be filtered by attributes.
+      protected virtual string GetFileExtension () => ".conf";
+      public virtual string GetDefaultPath () => Path.Combine( RootMod.AppDataDir, RootMod.ModName + GetFileExtension() );
 
-      public static void Read ( object config, string path = "" ) { try {
-         if ( string.IsNullOrEmpty( path ) ) path = Path.Combine( RootMod.AppDataDir, RootMod.ModName + ".ini" );
-         var type = config.GetType();
+      public void Load () => Load( this );
+      public void Load ( string path ) => Load( this, path );
+      public void Load ( object subject ) => Load( subject, GetDefaultPath() );
+      public virtual void Load ( object subject, string path ) { try {
          if ( ! File.Exists( path ) ) {
-            Write( config, path );
+            Save( subject, path );
          } else {
-            ModHelpers.Info( "Loading {0} into {1}", path, type.FullName );
-            foreach ( var line in File.ReadAllLines( path ) ) {
-               var split = line.Split( new char[]{ '=' }, 2 );
-               if ( split.Length != 2 || line.StartsWith( ";" ) ) continue;
-               var f = type.GetField( split[ 0 ].Trim() );
-               if ( f == null ) { ModHelpers.Warn( "Unknown field: {0}", split[ 0 ] ); continue; } // Legacy fields are expected to be kept in config class as [Obsolete].
-               var val = split[1].Trim();
-               if ( val.Length > 1 && val.StartsWith( "\"" ) && val.EndsWith( "\"" ) ) val = val.Substring( 1, val.Length - 2 );
-               if ( ModHelpers.TryParse( f.FieldType, val, out object parsed ) ) f.SetValue( config, parsed );
-            }
+            _Log( TraceLevel.Info, "Loading {0} into {1}", path, new object[]{ subject.GetType().FullName } );
+            _ReadFile( subject, path );
          }
-         foreach ( var prop in type.GetFields() ) ModHelpers.Info( "Config {0} = {1}", prop.Name, prop.GetValue( config ) );
-      } catch ( Exception ex ) { ModHelpers.Warn( ex ); } }
+         foreach ( var prop in GetType().GetFields() ) _Log( TraceLevel.Info, "Config {0} = {1}", prop.Name, prop.GetValue( this ) );
+      } catch ( Exception ex ) {  _Log( TraceLevel.Warning, ex ); } }
 
-      public static void Write ( object config, string path = "" ) { try {
-         var lastSection = "";
-         var type = config.GetType();
-         if ( string.IsNullOrEmpty( path ) ) path = Path.Combine( RootMod.AppDataDir, RootMod.ModName + ".ini" );
-         ModHelpers.Info( "Creating {0} from {1}", path, type.FullName );
+      protected abstract void _ReadFile ( object subject, string path );
+      protected virtual bool _ReadField ( object subject, string name, out FieldInfo field ) {
+         field = subject.GetType().GetField( name );
+         if ( field == null ) _Log( TraceLevel.Warning, "Unknown field: {0}", field ); // Legacy fields are expected to be kept in config class as [Obsolete].
+         return field != null;
+      }
+      protected virtual void _LoadField ( object subject, FieldInfo f, string val ) {
+         if ( ModHelpers.TryParse( f.FieldType, val, out object parsed ) ) f.SetValue( subject, parsed );
+      }
+
+      public void Save () => Save( this );
+      public void Save ( string path ) => Save( this, path );
+      public void Save ( object subject ) => Save( subject, GetDefaultPath() );
+      public virtual void Save ( object subject, string path ) { try {
+         var type = subject.GetType();
+         _Log( TraceLevel.Info, "Creating {0} from {1}", path, type.FullName );
          using ( TextWriter tw = File.CreateText( path ) ) {
             var attr = type.GetCustomAttribute<ConfigAttribute>();
-            if ( ! string.IsNullOrWhiteSpace( attr?.Comment ) ) tw.Write( $"{attr.Comment}\r\n" );
-            var fields = type.GetFields();
-            if ( fields.Any( e => e.GetCustomAttribute<ConfigAttribute>() != null ) ) // If any field has ConfigAttribute, save only these fields.
-               fields = fields.Where( e => e.GetCustomAttribute<ConfigAttribute>() != null ).ToArray();
-            foreach ( var f in fields.Where( e => e.GetCustomAttribute<ObsoleteAttribute>() == null ) ) {
-               if ( ! f.IsPublic || f.IsStatic ) continue;
-               if ( ( attr = f.GetCustomAttribute<ConfigAttribute>() ) != null ) {
-                  if ( ! string.IsNullOrWhiteSpace( attr.Section ) && attr.Section != lastSection ) tw.Write( $"\r\n[{lastSection = attr.Section}]\r\n" );
-                  if ( ! string.IsNullOrWhiteSpace( attr.Comment ) ) tw.Write( $"; {attr.Comment}\r\n" );
-               }
-               tw.Write( f.Name + " = " + f.GetValue( config ) + "\r\n" );
+            var comment = ! string.IsNullOrWhiteSpace( attr?.Comment ) ? attr.Comment : null;
+            _WriteData( tw, subject, type, subject, comment );
+            foreach ( var f in _LoadFields( subject ) ) {
+               comment = ( attr = f.GetCustomAttribute<ConfigAttribute>() ) != null && ! string.IsNullOrWhiteSpace( attr.Comment ) ? attr.Comment : null;
+               _WriteData( tw, subject, f, f.GetValue( subject ), comment );
             }
-            tw.Flush();
+            _WriteData( tw, subject, type, subject, "" );
          }
-         if ( File.Exists( path ) ) ModHelpers.Fine( "{0} bytes written", new FileInfo( path ).Length );
-         else ModHelpers.Warn( "Config file not written." );
-      } catch ( Exception ex ) { ModHelpers.Warn( "Cannot create config file: {0}", ex ); } }
+         if ( File.Exists( path ) ) _Log( TraceLevel.Verbose, "{0} bytes written", new FileInfo( path ).Length );
+         else _Log( TraceLevel.Warning, "Config file not written." );
+      } catch ( Exception ex ) { _Log( TraceLevel.Warning, "Cannot create config file: {0}", ex ); } }
+
+      protected virtual IEnumerable<FieldInfo> _LoadFields ( object subject ) {
+         var fields = subject.GetType().GetFields();
+         if ( fields.Any( e => e.GetCustomAttribute<ConfigAttribute>() != null ) ) // If any field has ConfigAttribute, save only these fields.
+            fields = fields.Where( e => e.GetCustomAttribute<ConfigAttribute>() != null ).ToArray();
+         return fields.Where( e => ! e.IsStatic && e.GetCustomAttribute<ObsoleteAttribute>() == null );
+      }
+      protected abstract void _WriteData ( TextWriter f, object subject, MemberInfo target, object value, string comment );
+      protected virtual void _Log ( TraceLevel level, object msg, params object[] arg ) => RootMod.Log.Write( level, msg, arg );
+   }
+
+   public class CsvConfig : BaseConfig { // Load and save CSV to and from a config object.
+      protected override string GetFileExtension () => ".csv";
+      protected override void _ReadFile ( object subject, string path ) {
+         var rowCount = 0;
+         var buf = new StringBuilder();
+         using ( var reader = new StreamReader( path, true ) ) while ( reader.TryReadCsvRow( out var row, buf ) ) {
+            var cells = row.ToArray();
+            if ( ++rowCount == 1 && cells.Length == 3 && cells[0] == "Config" && cells[1] == "Value" ) continue;
+            if ( cells.Length < 2 || string.IsNullOrWhiteSpace( cells[0] ) || ! _ReadField( subject, cells[0].Trim(), out var field ) ) continue;
+            _LoadField( subject, field, cells[1] ?? "" );
+         }
+      }
+      protected override void _WriteData ( TextWriter f, object subject, MemberInfo target, object value, string comment ) {
+         if ( target is Type ) { if ( comment != "" ) f.WriteCsvLine( "Config", "Value", comment ?? "Comment" ); }
+         else f.WriteCsvLine( target.Name, value, comment ?? "" );
+      }
+   }
+
+   public class IniConfig : BaseConfig { // Load and save INI to and from a config object.  Same field handling as CsvConfig.
+      protected override string GetFileExtension () => ".ini";
+      protected override void _ReadFile ( object subject, string path ) {
+         foreach ( var line in File.ReadAllLines( path ) ) {
+            var split = line.Split( new char[]{ '=' }, 2 );
+            if ( split.Length != 2 || line.StartsWith( ";" ) || ! _ReadField( subject, split[ 0 ].Trim(), out var field ) ) continue;
+            var val = split[1].Trim();
+            if ( val.Length > 1 && val.StartsWith( "\"" ) && val.EndsWith( "\"" ) ) val = val.Substring( 1, val.Length - 2 );
+            _LoadField( subject, field, val );
+         }
+      }
+      protected override void _WriteData ( TextWriter f, object subject, MemberInfo target, object value, string comment ) {
+         if ( ! string.IsNullOrEmpty( comment ) ) f.Write( comment.Substring( 0, 1 ).IndexOfAny( new char[]{ '[', ';', '\r', '\n' } ) != 0 ? $"; {comment}\r\n" : $"{comment}\r\n" );
+         if ( ! ( target is Type ) ) f.Write( $"{target.Name} = {value}\r\n" );
+      }
    }
 
    [ AttributeUsage( AttributeTargets.Class | AttributeTargets.Field | AttributeTargets.Property ) ]
    public class ConfigAttribute : Attribute { // Slap this on config attributes for auto-doc.
       public ConfigAttribute () {}
       public ConfigAttribute ( string comment ) { Comment = comment; }
-      public ConfigAttribute ( string section, string comment ) { Section = section; Comment = comment; }
-      public string Section, Comment;
+      public string Comment;
    }
 
    public class Patcher { // Patch classes may inherit from this class for manual patching.  Or you can use Harmony.PatchAll, of course.
