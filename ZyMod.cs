@@ -422,16 +422,10 @@ namespace ZyMod {
       private readonly HashSet< string > knownErrors = new HashSet<string>(); // Known exceptions are ignored.  Modding is risky.
 
       public void Write ( TraceLevel level, object msg, params object[] arg ) {
-         string line = "INFO ", time;
-         lock ( buffer ) { if ( level > _LogLevel ) return; time = TimeFormat; }
-         switch ( level ) {
-            case TraceLevel.Off : return;
-            case TraceLevel.Error   : line = "ERROR "; break;
-            case TraceLevel.Warning : line = "WARN " ; break;
-            case TraceLevel.Verbose : line = "FINE " ; break;
-         }
-         try { // In a not-so-simple mod these should be done in the background thread.
-            line = DateTime.Now.ToString( time ?? "mm:ss " ) + line + Format( msg, arg );
+         string line;
+         lock ( buffer ) { if ( level > _LogLevel ) return; line = _TimeFormat; }
+         try {
+            if ( ( line = Format( level, line, msg, arg ) ) == null ) return;
          } catch ( Exception e ) { // ToString error, time format error, stacktrace error...
             if ( msg is Exception ex ) line = msg.GetType() + ": " + ex.Message;
             else { Warn( e ); if ( msg is string txt ) line = txt; else return; }
@@ -440,13 +434,20 @@ namespace ZyMod {
          if ( level == TraceLevel.Error || FlushInterval == 0 ) Flush();
       }
 
-      protected virtual string Format ( object msg, object[] arg ) {
+      protected virtual string Format ( TraceLevel level, string timeFormat, object msg, object[] arg ) {
+         string tag = "INFO ";
+         switch ( level ) {
+            case TraceLevel.Off : return null;
+            case TraceLevel.Error   : tag = "ERROR "; break;
+            case TraceLevel.Warning : tag = "WARN " ; break;
+            case TraceLevel.Verbose : tag = "FINE " ; break;
+         }
          for ( var i = arg.Length - 1 ; i >= 0 ; i-- ) if ( arg[i] is Func<string> f ) arg[i] = f();
          if ( msg is string txt && txt.Contains( '{' ) && arg?.Length > 0 ) msg = string.Format( msg.ToString(), arg );
-         else if ( msg is Exception ) lock ( knownErrors ) { txt = msg.ToString(); if ( knownErrors.Contains( txt ) ) return; knownErrors.Add( txt ); msg = txt; }
+         else if ( msg is Exception ) lock ( knownErrors ) { txt = msg.ToString(); if ( knownErrors.Contains( txt ) ) return null; knownErrors.Add( txt ); msg = txt; }
          else if ( arg?.Length > 0 ) msg = string.Join( ", ", new object[] { msg }.Union( arg ).Select( e => e?.ToString() ?? "null" ) );
          else msg = msg?.ToString();
-         return msg?.ToString() ?? "null";
+         return DateTime.Now.ToString( timeFormat ?? "mm:ss " ) + tag + ( msg?.ToString() ?? "null" );
       }
    }
 }
