@@ -432,18 +432,22 @@ namespace ZyMod {
             case TraceLevel.Verbose : line = "FINE " ; break;
          }
          try { // In a not-so-simple mod these should be done in the background thread.
-            for ( var i = arg.Length - 1 ; i >= 0 ; i-- ) if ( arg[i] is Func<string> f ) arg[i] = f();
-            if ( msg is string txt && txt.Contains( '{' ) && arg?.Length > 0 ) msg = string.Format( msg.ToString(), arg );
-            else if ( msg is Exception ) lock ( knownErrors ) { txt = msg.ToString(); if ( knownErrors.Contains( txt ) ) return; knownErrors.Add( txt ); msg = txt; }
-            else if ( arg?.Length > 0 ) msg = string.Join( ", ", new object[] { msg }.Union( arg ).Select( e => e?.ToString() ?? "null" ) );
-            else msg = msg?.ToString();
-            line = DateTime.Now.ToString( time ?? "mm:ss " ) + line + ( msg ?? "null" );
-         } catch ( Exception e ) { // toString error, format error, stacktrace error...
+            line = DateTime.Now.ToString( time ?? "mm:ss " ) + line + Format( msg, arg );
+         } catch ( Exception e ) { // ToString error, time format error, stacktrace error...
             if ( msg is Exception ex ) line = msg.GetType() + ": " + ex.Message;
             else { Warn( e ); if ( msg is string txt ) line = txt; else return; }
          }
          lock ( buffer ) buffer.Add( line );
          if ( level == TraceLevel.Error || FlushInterval == 0 ) Flush();
+      }
+
+      protected virtual string Format ( object msg, object[] arg ) {
+         for ( var i = arg.Length - 1 ; i >= 0 ; i-- ) if ( arg[i] is Func<string> f ) arg[i] = f();
+         if ( msg is string txt && txt.Contains( '{' ) && arg?.Length > 0 ) msg = string.Format( msg.ToString(), arg );
+         else if ( msg is Exception ) lock ( knownErrors ) { txt = msg.ToString(); if ( knownErrors.Contains( txt ) ) return; knownErrors.Add( txt ); msg = txt; }
+         else if ( arg?.Length > 0 ) msg = string.Join( ", ", new object[] { msg }.Union( arg ).Select( e => e?.ToString() ?? "null" ) );
+         else msg = msg?.ToString();
+         return msg?.ToString() ?? "null";
       }
    }
 }
