@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Text;
 using static System.Diagnostics.TraceLevel;
 using static System.Reflection.BindingFlags;
@@ -19,7 +20,7 @@ namespace ZyMod {
       public static ZyLogger Log { get; private set; }
       internal static string ModName { get { lock ( sync ) return instance?.GetModName() ?? "ZyMod"; } }
 
-      private static bool ignoreAssembly ( Assembly asm ) => asm.IsDynamic || asm.FullName.StartsWith( "DMDASM." ) || asm.FullName.StartsWith( "HarmonyDTFAssembly" );
+      private static bool ignoreAssembly ( Assembly asm ) => asm is AssemblyBuilder || asm.FullName.StartsWith( "DMDASM." ) || asm.FullName.StartsWith( "HarmonyDTFAssembly" );
       private static bool isTargetAssembly ( Assembly asm ) => asm.FullName.StartsWith( "Assembly-CSharp," );
 
       public void Initialize () {
@@ -100,7 +101,7 @@ namespace ZyMod {
 
       public static bool TryParse ( Type valueType, string val, out object parsed, bool logWarnings = true ) { parsed = null; try {
          if ( valueType == typeof( string ) ) { parsed = val; return false; }
-         if ( string.IsNullOrWhiteSpace( val ) || val == "null" ) return ! ( valueType.IsValueType || valueType.IsEnum );
+         if ( IsBlank( val ) || val == "null" ) return ! ( valueType.IsValueType || valueType.IsEnum );
          switch ( valueType.FullName ) {
             case "System.SByte"   : if ( SByte .TryParse( val, out sbyte  bval ) ) parsed = bval; break;
             case "System.Int16"   : if ( Int16 .TryParse( val, out short  sval ) ) parsed = sval; break;
@@ -216,6 +217,16 @@ namespace ZyMod {
          return " " + result.Replace( ".0,", "," ).Replace( ".0)", ")" ).Replace( "Pos (0, 0, 0)", "" ).Replace( "Scale (1, 1, 1)", "" ).Replace( "Rotate (0, 0, 0, 1)", "" ).Trim();
       }
       /**/
+
+      #if DotNet35
+      public static StringBuilder Clear ( this StringBuilder str ) { str.Length = 0; return str; }
+      public static T GetCustomAttribute < T > ( this MemberInfo me ) where T: Attribute => me.GetCustomAttributes( typeof( T ), false ).FirstOrDefault() as T;
+      public static bool IsBlank ( string me ) => me == null || me.Trim().Length == 0;
+      public static IEnumerable< string > ReadLines ( string path ) { using ( var sr = new StreamReader( path ) ) while ( ! sr.EndOfStream ) yield return sr.ReadLine(); } 
+      #else
+      public static bool IsBlank ( string me ) => string.IsNullOrWhiteSpace( me );
+      public static IEnumerable< string > ReadLines ( string path ) => File.ReadLines( path );
+      #endif
    }
 
    public abstract class BaseConfig { // Abstract code to load and save simple config object to text-based file.  By default only process public instant fields, may be filtered by attributes.
@@ -253,10 +264,10 @@ namespace ZyMod {
          _Log( Info, "Creating {0} from {1}", path, type.FullName );
          using ( TextWriter tw = File.CreateText( path ) ) {
             var attr = type.GetCustomAttribute<ConfigAttribute>();
-            var comment = ! string.IsNullOrWhiteSpace( attr?.Comment ) ? attr.Comment : null;
+            var comment = ! ModHelpers.IsBlank( attr?.Comment ) ? attr.Comment : null;
             _WriteData( tw, subject, type, subject, comment );
             foreach ( var f in _LoadFields( subject ) ) {
-               comment = ( attr = f.GetCustomAttribute<ConfigAttribute>() ) != null && ! string.IsNullOrWhiteSpace( attr.Comment ) ? attr.Comment : null;
+               comment = ( attr = f.GetCustomAttribute<ConfigAttribute>() ) != null && ! string.IsNullOrEmpty( attr.Comment ) ? attr.Comment : null;
                _WriteData( tw, subject, f, f.GetValue( subject ), comment );
             }
             _WriteData( tw, subject, type, subject, "" );
@@ -283,7 +294,7 @@ namespace ZyMod {
          using ( var reader = new StreamReader( path, true ) ) while ( reader.TryReadCsvRow( out var row, buf ) ) {
             var cells = row.ToArray();
             if ( ++rowCount == 1 && cells.Length == 3 && cells[0] == "Config" && cells[1] == "Value" ) continue;
-            if ( cells.Length < 2 || string.IsNullOrWhiteSpace( cells[0] ) || ! _ReadField( subject, cells[0].Trim(), out var field ) ) continue;
+            if ( cells.Length < 2 || ModHelpers.IsBlank( cells[0] ) || ! _ReadField( subject, cells[0].Trim(), out var field ) ) continue;
             _LoadField( subject, field, cells[1] ?? "" );
          }
       }
@@ -355,7 +366,7 @@ namespace ZyMod {
       protected MethodInfo UnpatchAll ( MethodInfo orig ) { if ( orig != null ) lock ( sync ) harmony?.Unpatch( orig, All, harmony.Id ); return null; }
 
       protected HarmonyMethod ToHarmony ( string name ) {
-         if ( string.IsNullOrWhiteSpace( name ) ) return null;
+         if ( ModHelpers.IsBlank( name ) ) return null;
          return new HarmonyMethod( GetType().GetMethod( name, Public | NonPublic | Static ) ?? throw new NullReferenceException( name + " not found" ) );
       }
    }
@@ -379,7 +390,7 @@ namespace ZyMod {
 
       public ZyLogger ( string path, uint? interval = null ) { new FileInfo( path ); try {
          try { File.Delete( LogPath = path ); } catch ( IOException ) { }
-         LoadLogOptions( path, ref FlushInterval );
+         try { LoadLogOptions( path, ref FlushInterval ); } catch ( Exception ) { }
          if ( ( FlushInterval = Math.Min( interval ?? FlushInterval, 60 ) ) > 0 ) {
             flushTimer = new System.Timers.Timer( FlushInterval * 1000 ){ AutoReset = true };
             flushTimer.Elapsed += ( _, __ ) => Flush();
@@ -391,11 +402,11 @@ namespace ZyMod {
          flushTimer?.Start();
       } catch ( Exception ) { } }
 
-      protected virtual void LoadLogOptions ( string path, ref uint flushInterval ) { try {
+      protected virtual void LoadLogOptions ( string path, ref uint flushInterval ) {
          var conf = Path.Combine( Path.GetDirectoryName( path ), Path.GetFileNameWithoutExtension( path ) + "-log.conf" );
          buffer.Add( $"Logging controlled by {conf}.  First line is log level (Off/Error/Warn/Verbose).  Second line is write interval in seconds, 0 to 60, default 2." );
          if ( ! File.Exists( conf ) ) return;
-         var lines = File.ReadLines( conf ).GetEnumerator();
+         var lines = ModHelpers.ReadLines( conf ).GetEnumerator();
          if ( lines.MoveNext() ) switch ( ( ( lines.Current?.ToUpperInvariant() ?? "" ) + "?" )[0] ) {
             case 'O' : LogLevel = TraceLevel.Off; break;
             case 'E' : LogLevel = TraceLevel.Error; break;
@@ -403,8 +414,9 @@ namespace ZyMod {
             case 'I' : LogLevel = TraceLevel.Info; break;
             case 'V' : case 'F' : LogLevel = TraceLevel.Verbose; break;
          }
-         if ( lines.MoveNext() && uint.TryParse( lines.Current, out uint i ) ) flushInterval = i;
-      } catch ( Exception ) { } }
+         uint i = 0;
+         if ( lines.MoveNext() && uint.TryParse( lines.Current, out i ) ) flushInterval = i;
+      }
 
       public void Error ( object msg, params object[] arg ) => Write( TraceLevel.Error, msg, arg );
       public void Warn  ( object msg, params object[] arg ) => Write( TraceLevel.Warning, msg, arg );
@@ -445,7 +457,11 @@ namespace ZyMod {
          for ( var i = arg.Length - 1 ; i >= 0 ; i-- ) if ( arg[i] is Func<string> f ) arg[i] = f();
          if ( msg is string txt && txt.Contains( '{' ) && arg?.Length > 0 ) msg = string.Format( msg.ToString(), arg );
          else if ( msg is Exception ) lock ( knownErrors ) { txt = msg.ToString(); if ( knownErrors.Contains( txt ) ) return null; knownErrors.Add( txt ); msg = txt; }
+         #if DotNet35
+         else if ( arg?.Length > 0 ) msg = string.Join( ", ", new object[] { msg }.Union( arg ).Select( e => e?.ToString() ?? "null" ).ToArray() );
+         #else
          else if ( arg?.Length > 0 ) msg = string.Join( ", ", new object[] { msg }.Union( arg ).Select( e => e?.ToString() ?? "null" ) );
+         #endif
          else msg = msg?.ToString();
          return DateTime.Now.ToString( timeFormat ?? "mm:ss " ) + tag + ( msg?.ToString() ?? "null" );
       }
