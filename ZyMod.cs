@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using static System.Diagnostics.TraceLevel;
 using static System.Reflection.BindingFlags;
 using static HarmonyLib.HarmonyPatchType;
 
@@ -44,7 +45,7 @@ namespace ZyMod {
          if ( ignoreAssembly( asm ) ) return;
          Log.Fine( "DLL {0}, {1}", asm.FullName, asm.CodeBase );
          if ( ! isTargetAssembly( asm ) ) return;
-         if ( Log.LogLevel <= TraceLevel.Info ) AppDomain.CurrentDomain.AssemblyLoad -= AsmLoaded;
+         if ( Log.LogLevel <= Info ) AppDomain.CurrentDomain.AssemblyLoad -= AsmLoaded;
          GameLoaded( asm );
       }
 
@@ -228,16 +229,16 @@ namespace ZyMod {
          if ( ! File.Exists( path ) ) {
             Save( subject, path );
          } else {
-            _Log( TraceLevel.Info, "Loading {0} into {1}", path, new object[]{ subject.GetType().FullName } );
+            _Log( Info, "Loading {0} into {1}", path, new object[]{ subject.GetType().FullName } );
             _ReadFile( subject, path );
          }
-         foreach ( var prop in GetType().GetFields() ) _Log( TraceLevel.Info, "Config {0} = {1}", prop.Name, prop.GetValue( this ) );
-      } catch ( Exception ex ) {  _Log( TraceLevel.Warning, ex ); } }
+         foreach ( var prop in GetType().GetFields() ) _Log( Info, "Config {0} = {1}", prop.Name, prop.GetValue( this ) );
+      } catch ( Exception ex ) {  _Log( Warning, ex ); } }
 
       protected abstract void _ReadFile ( object subject, string path );
       protected virtual bool _ReadField ( object subject, string name, out FieldInfo field ) {
          field = subject.GetType().GetField( name );
-         if ( field == null ) _Log( TraceLevel.Warning, "Unknown field: {0}", field ); // Legacy fields are expected to be kept in config class as [Obsolete].
+         if ( field == null ) _Log( Warning, "Unknown field: {0}", field ); // Legacy fields are expected to be kept in config class as [Obsolete].
          return field != null;
       }
       protected virtual void _LoadField ( object subject, FieldInfo f, string val ) {
@@ -249,7 +250,7 @@ namespace ZyMod {
       public void Save ( object subject ) => Save( subject, GetDefaultPath() );
       public virtual void Save ( object subject, string path ) { try {
          var type = subject.GetType();
-         _Log( TraceLevel.Info, "Creating {0} from {1}", path, type.FullName );
+         _Log( Info, "Creating {0} from {1}", path, type.FullName );
          using ( TextWriter tw = File.CreateText( path ) ) {
             var attr = type.GetCustomAttribute<ConfigAttribute>();
             var comment = ! string.IsNullOrWhiteSpace( attr?.Comment ) ? attr.Comment : null;
@@ -260,9 +261,9 @@ namespace ZyMod {
             }
             _WriteData( tw, subject, type, subject, "" );
          }
-         if ( File.Exists( path ) ) _Log( TraceLevel.Verbose, "{0} bytes written", new FileInfo( path ).Length );
-         else _Log( TraceLevel.Warning, "Config file not written." );
-      } catch ( Exception ex ) { _Log( TraceLevel.Warning, "Cannot create config file: {0}", ex ); } }
+         if ( File.Exists( path ) ) _Log( Verbose, "{0} bytes written", new FileInfo( path ).Length );
+         else _Log( Warning, "Config file not written." );
+      } catch ( Exception ex ) { _Log( Warning, "Cannot create config file: {0}", ex ); } }
 
       protected virtual IEnumerable<FieldInfo> _LoadFields ( object subject ) {
          var fields = subject.GetType().GetFields();
@@ -365,7 +366,7 @@ namespace ZyMod {
       public TraceLevel LogLevel {
          get { lock ( buffer ) return _LogLevel; } // ReaderWriterLockSlim is tempting, but expected use case is 1 thread logging + 1 thread flushing.
          set { lock ( buffer ) { _LogLevel = value;
-                  if ( value == TraceLevel.Off ) { flushTimer?.Stop(); buffer.Clear(); }
+                  if ( value == Off ) { flushTimer?.Stop(); buffer.Clear(); }
                   else flushTimer?.Start(); }  } }
       private string _TimeFormat = "HH:mm:ss.fff ";
       public string TimeFormat { get { lock ( buffer ) return _TimeFormat; } set { lock ( buffer ) _TimeFormat = value; } }
@@ -382,14 +383,14 @@ namespace ZyMod {
             flushTimer.Elapsed += ( _, __ ) => Flush();
             AppDomain.CurrentDomain.ProcessExit += Terminate;
          }
-         if ( _LogLevel == TraceLevel.Off ) return;
+         if ( _LogLevel == Off ) return;
          buffer.Insert( 0, $"{DateTime.Now:u} {RootMod.ModName} initiated, log level {_LogLevel}, " + ( FlushInterval > 0 ? $"refresh every {FlushInterval}s." : "no buffer." ) );
          Flush();
          flushTimer?.Start();
       } catch ( Exception ) { } }
 
       private void Initialize ( string path ) { try {
-         try { File.Delete( LogPath = path ); } catch ( IOException ) { }
+         try { File.Delete( path ); } catch ( IOException ) { }
          var conf = Path.Combine( Path.GetDirectoryName( path ), Path.GetFileNameWithoutExtension( path ) + "-log.conf" );
          buffer.Clear();
          buffer.Add( $"Logging controlled by {conf}.  First line is log level (Off/Error/Warn/Verbose).  Second line is write interval in seconds, 0 to 60, default 2." );
@@ -412,13 +413,13 @@ namespace ZyMod {
 
       public void Flush () { try {
          string[] buf;
-         lock ( buffer ) { if ( buffer.Count == 0 || _LogLevel == TraceLevel.Off ) return; buf = buffer.ToArray(); buffer.Clear(); }
+         lock ( buffer ) { if ( buffer.Count == 0 || _LogLevel == Off ) return; buf = buffer.ToArray(); buffer.Clear(); }
          using ( TextWriter f = File.AppendText( LogPath ) ) foreach ( var line in buf ) f.WriteLine( line );
       } catch ( Exception ) { } }
 
-      private void Terminate ( object _, EventArgs __ ) { Flush(); LogLevel = TraceLevel.Off; AppDomain.CurrentDomain.ProcessExit -= Terminate; }
+      private void Terminate ( object _, EventArgs __ ) { Flush(); LogLevel = Off; AppDomain.CurrentDomain.ProcessExit -= Terminate; }
 
-      private readonly HashSet< string > knownErrors = new HashSet<string>(); // Duplicate exception are ignored.  Modding is risky.
+      private readonly HashSet< string > knownErrors = new HashSet<string>(); // Known exceptions are ignored.  Modding is risky.
 
       public void Write ( TraceLevel level, object msg, params object[] arg ) {
          string line = "INFO ", time;
