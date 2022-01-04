@@ -371,15 +371,16 @@ namespace ZyMod {
                   else flushTimer?.Start(); }  } }
       private string _TimeFormat = "HH:mm:ss.fff ";
       public string TimeFormat { get { lock ( buffer ) return _TimeFormat; } set { lock ( buffer ) _TimeFormat = value; } }
-      public uint FlushInterval { get; private set; } = 2; // Seconds.  0 to write and flush every line, reliable but way slower.
-      public string LogPath { get; private set; }
+      public readonly uint FlushInterval = 2; // Seconds.  0 to write and flush every line, reliable but way slower.
+      public readonly string LogPath;
 
       private readonly List< string > buffer = new List<string>();
       private readonly System.Timers.Timer flushTimer;
 
-      public ZyLogger ( string path, uint interval = 2 ) { new FileInfo( path ); try {
-         Initialize( path );
-         if ( ( FlushInterval = Math.Min( interval, 60 ) ) > 0 ) {
+      public ZyLogger ( string path, uint? interval = null ) { new FileInfo( path ); try {
+         try { File.Delete( LogPath = path ); } catch ( IOException ) { }
+         LoadLogOptions( path, ref FlushInterval );
+         if ( ( FlushInterval = Math.Min( interval ?? FlushInterval, 60 ) ) > 0 ) {
             flushTimer = new System.Timers.Timer( FlushInterval * 1000 ){ AutoReset = true };
             flushTimer.Elapsed += ( _, __ ) => Flush();
             AppDomain.CurrentDomain.ProcessExit += Terminate;
@@ -390,10 +391,8 @@ namespace ZyMod {
          flushTimer?.Start();
       } catch ( Exception ) { } }
 
-      private void Initialize ( string path ) { try {
-         try { File.Delete( path ); } catch ( IOException ) { }
+      protected virtual void LoadLogOptions ( string path, ref uint flushInterval ) { try {
          var conf = Path.Combine( Path.GetDirectoryName( path ), Path.GetFileNameWithoutExtension( path ) + "-log.conf" );
-         buffer.Clear();
          buffer.Add( $"Logging controlled by {conf}.  First line is log level (Off/Error/Warn/Verbose).  Second line is write interval in seconds, 0 to 60, default 2." );
          if ( ! File.Exists( conf ) ) return;
          var lines = File.ReadLines( conf ).GetEnumerator();
@@ -404,7 +403,7 @@ namespace ZyMod {
             case 'I' : LogLevel = TraceLevel.Info; break;
             case 'V' : case 'F' : LogLevel = TraceLevel.Verbose; break;
          }
-         if ( lines.MoveNext() && uint.TryParse( lines.Current, out uint i ) ) FlushInterval = i;
+         if ( lines.MoveNext() && uint.TryParse( lines.Current, out uint i ) ) flushInterval = i;
       } catch ( Exception ) { } }
 
       public void Error ( object msg, params object[] arg ) => Write( TraceLevel.Error, msg, arg );
