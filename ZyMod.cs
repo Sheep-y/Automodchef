@@ -15,24 +15,24 @@ using static HarmonyLib.HarmonyPatchType;
 // Everything I need.  Bootstrap, Background Logging, Roundtrip Config, Reflection, Manual Patcher with Unpatch.  Enjoy!
 namespace ZyMod {
    public abstract class RootMod {
-      protected static object sync = new object();
-      internal static RootMod instance;
+      protected static readonly object sync = new object();
+      private static RootMod instance;
       public static ZyLogger Log { get; private set; }
       internal static string ModName { get { lock ( sync ) return instance?.GetModName() ?? "ZyMod"; } }
 
-      private static bool ignoreAssembly ( Assembly asm ) => asm is AssemblyBuilder || asm.FullName.StartsWith( "DMDASM." ) || asm.FullName.StartsWith( "HarmonyDTFAssembly" );
-      private static bool isTargetAssembly ( Assembly asm ) => asm.FullName.StartsWith( "Assembly-CSharp," );
+      private static bool IgnoreAssembly ( Assembly asm ) => asm is AssemblyBuilder || asm.FullName.StartsWith( "DMDASM." ) || asm.FullName.StartsWith( "HarmonyDTFAssembly" );
+      private static bool IsTargetAssembly ( Assembly asm ) => asm.FullName.StartsWith( "Assembly-CSharp," );
 
       public void Initialize () {
-         lock ( sync ) { if ( instance != null ) { Log.Warn( "Mod already initialized" ); return; } instance = this; }
+         lock ( sync ) { if ( instance != null ) { Log?.Warn( "Mod already initialized" ); return; } instance = this; }
          try {
             Log = new ZyLogger( Path.Combine( AppDataDir, ModName + ".log" ) );
             AppDomain.CurrentDomain.UnhandledException += ( _, evt ) => Log.Error( evt.ExceptionObject );
             AppDomain.CurrentDomain.AssemblyResolve += ( _, evt ) => { Log.Fine( "Resolving {0}", evt.Name ); return null; };
             foreach ( var asm in AppDomain.CurrentDomain.GetAssemblies() ) {
-               if ( ignoreAssembly( asm ) ) continue;
+               if ( IgnoreAssembly( asm ) ) continue;
                Log.Fine( "DLL {0}, {1}", asm.FullName, asm.CodeBase );
-               if ( isTargetAssembly( asm ) ) { GameLoaded( asm ); return; }
+               if ( IsTargetAssembly( asm ) ) { GameLoaded( asm ); return; }
             }
             AppDomain.CurrentDomain.AssemblyLoad += AsmLoaded;
             Log.Info( "Mod Initiated" );
@@ -43,9 +43,9 @@ namespace ZyMod {
 
       private void AsmLoaded ( object sender, AssemblyLoadEventArgs args ) {
          var asm = args.LoadedAssembly;
-         if ( ignoreAssembly( asm ) ) return;
+         if ( IgnoreAssembly( asm ) ) return;
          Log.Fine( "DLL {0}, {1}", asm.FullName, asm.CodeBase );
-         if ( ! isTargetAssembly( asm ) ) return;
+         if ( ! IsTargetAssembly( asm ) ) return;
          if ( Log.LogLevel <= Info ) AppDomain.CurrentDomain.AssemblyLoad -= AsmLoaded;
          GameLoaded( asm );
       }
@@ -346,10 +346,10 @@ namespace ZyMod {
       protected ModPatch Patch ( Type type, string method, string prefix = null, string postfix = null, string transpiler = null ) =>
          Patch( type.Method( method ), prefix, postfix, transpiler );
       protected ModPatch Patch ( MethodBase method, string prefix = null, string postfix = null, string transpiler = null ) {
-         lock( sync ) if ( harmony == null ) harmony = new Harmony( RootMod.ModName );
+         lock ( sync ) if ( harmony == null ) harmony = new Harmony( RootMod.ModName );
          RootMod.Log.Fine( "Patching {0} {1} | Pre: {2} | Post: {3} | Trans: {4}", method.DeclaringType, method, prefix, postfix, transpiler );
          var patch = new ModPatch( harmony ) { original = method, prefix = ToHarmony( prefix ), postfix = ToHarmony( postfix ), transpiler = ToHarmony( transpiler ) };
-         lock( sync ) harmony.Patch( method, patch.prefix, patch.postfix, patch.transpiler );
+         lock ( sync ) harmony.Patch( method, patch.prefix, patch.postfix, patch.transpiler );
          return patch;
       }
 
@@ -362,7 +362,7 @@ namespace ZyMod {
          return null;
       } }
 
-      protected void UnpatchAll () { lock( sync ) harmony?.UnpatchSelf(); }
+      protected void UnpatchAll () { lock ( sync ) harmony?.UnpatchSelf(); }
       protected MethodInfo UnpatchAll ( MethodInfo orig ) { if ( orig != null ) lock ( sync ) harmony?.Unpatch( orig, All, harmony.Id ); return null; }
 
       protected HarmonyMethod ToHarmony ( string name ) {
