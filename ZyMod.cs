@@ -11,7 +11,7 @@ using static System.Diagnostics.TraceLevel;
 using static System.Reflection.BindingFlags;
 using static HarmonyLib.HarmonyPatchType;
 
-// Sheepy's "Universal" skeleton mod and tools!  No depency other than Harmony / HarmonyX.
+// Sheepy's "Universal" skeleton mod and tools!  No depency other than Harmony2 / HarmonyX.
 // Everything I need.  Bootstrap, Background Logging, Roundtrip Config, Reflection, Manual Patcher with Unpatch.  Enjoy!
 namespace ZyMod {
    public abstract class RootMod {
@@ -77,7 +77,7 @@ namespace ZyMod {
       protected abstract void OnGameAssemblyLoaded ( Assembly game ); // Put all the actions here.
    }
 
-   public static class ModHelpers { // Log and reflection helpers.  Reinventing the wheels.  But then Log4J JNDI Injection exploded during development of this code.  No whistles and bells thanks.
+   public static class ModHelpers { // Assorted helpers
       public static void Err ( object msg ) => Error( msg );
       public static T Err < T > ( object msg, T val ) { Error( msg ); return val; }
       public static void Error ( object msg, params object[] arg ) => RootMod.Log?.Error( msg, arg );
@@ -128,10 +128,10 @@ namespace ZyMod {
          return parsed != null;
       } catch ( ArgumentException ) { if ( logWarnings ) Warn( "Invalid value for {0}: {1}", valueType.FullName, val ); return false; } }
 
-      /* Write data as a csv row, and then start a new line.  Null will be written as "null". */
+      /** Write data as a csv row, and then start a new line.  Null will be written as "null". */
       public static void WriteCsvLine ( this TextWriter tw, params object[] values ) => tw.Write( new StringBuilder().AppendCsvLine( values ).Append( "\r\n" ) );
 
-      /* Write data as a csv row, on a new line if builder is non-empty.  Null will be written as "null". */
+      /** Append data as a csv row, on a new line if builder is non-empty.  Null will be written as "null". */
       public static StringBuilder AppendCsvLine ( this StringBuilder buf, params object[] values ) {
          if ( buf.Length > 0 ) buf.Append( "\r\n" );
          foreach ( var val in values ) {
@@ -144,11 +144,20 @@ namespace ZyMod {
       }
       private static char[] NeedCsvQuote = new char[] { ',', '"', '\n', '\r' };
 
-      /* Try read a csv row from StreamReader or StringReader. Linebreaks will be converted to \n */
+      /** <summary>Try read a csv row from a Reader.  May consume multiple lines.  Linebreaks in cells will become \n</summary>
+       * <param name="source">Reader to get line data from.</param>
+       * <param name="row">Cell data enumeration (forward-only), or null if no more rows.</param>
+       * <param name="quoteBuffer">Thread-local buffer for quote parsing. If null, a new one will be created when necessary.</param>
+       * <returns>True on success, false on no more rows.</returns>
+       * <see cref="StreamReader.ReadLine"/> */
       public static bool TryReadCsvRow ( this TextReader source, out IEnumerable<string> row, StringBuilder quoteBuffer = null )
          => ( row = ReadCsvRow( source, quoteBuffer ) ) != null;
 
-      /* Read a csv row from StreamReader or StringReader. Return null if no more rows. Linebreaks will be converted to \n */
+      /** <summary>Read a csv row from a Reader.  May consume multiple lines.  Linebreaks in cells will become \n</summary>
+       * <param name="source">Reader to get line data from.</param>
+       * <param name="quoteBuffer">Thread-local buffer for quote parsing. If null, a new one will be created when necessary.</param>
+       * <returns>Cell data enumeration (forward-only), or null if no more rows.</returns>
+       * <see cref="StreamReader.ReadLine"/> */
       public static IEnumerable<string> ReadCsvRow ( this TextReader source, StringBuilder quoteBuffer = null ) {
          var line = source.ReadLine();
          return line == null ? null : ReadCsvCells( source, line, quoteBuffer );
@@ -165,14 +174,14 @@ namespace ZyMod {
             int end = line.IndexOf( ',', pos ), head = pos;
             if ( end < 0 ) { pos = len + 1; return line.Substring( head ); } // Last cell.
             if ( end == pos ) { pos++; return ""; } // Empty cell.
-            pos = end + 1;
+            pos = end + 1; // Normal Cell.
             return line.Substring( head, end - head );
          }
          if ( buf == null ) buf = new StringBuilder(); else buf.Clear();
          var start = ++pos; // Drop opening quote.
          while ( true ) {
             int end = pos < len ? line.IndexOf( '"', pos ) : -1, next = end + 1;
-            if ( end < 0 ) { // End of line.  Append and read next line.
+            if ( end < 0 ) { // End of line.  Add to buffer and read next line.
                buf.Append( line, start, len - start );
                if ( ( line = source.ReadLine() ) == null ) return buf.ToString();
                buf.Append( '\n' );
@@ -180,10 +189,10 @@ namespace ZyMod {
             } else if ( next == len || line[ next ] == ',' ) { // End of cell.
                pos = end + 2;
                return buf.Append( line, start, end - start ).ToString();
-            } else if ( line[ next ] == '"' ) { // Double quote.
+            } else if ( line[ next ] == '"' ) { // Two double quotes.
                buf.Append( line, start, end - start + 1 );
                pos = start = end + 2;
-            } else // Single quote not followed by EOL or comma.
+            } else // One double quote not followed by EOL or comma.
                pos++;
          }
       }
