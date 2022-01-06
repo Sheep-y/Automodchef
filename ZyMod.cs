@@ -128,10 +128,10 @@ namespace ZyMod {
          return parsed != null;
       } catch ( ArgumentException ) { if ( logWarnings ) Warn( "Invalid value for {0}: {1}", valueType.FullName, val ); return false; } }
 
-      public static void WriteCsvLine ( this TextWriter tw, params object[] values ) => tw.WriteCsvLine( tw, null, values );
-      public static void WriteCsvLine ( this TextWriter tw, StringBuilder buffer, params object[] values ) =>
-         tw.Write( ( buffer?.Clear() ?? new StringBuilder() ).AppendCsvLine( values ).Append( "\r\n" ) );
-      private static char[] NeedCsvQuote = new char[] { ',', '"', '\n', '\r' };
+      /* Write data as a csv row, and then start a new line.  Null will be written as "null". */
+      public static void WriteCsvLine ( this TextWriter tw, params object[] values ) => tw.Write( new StringBuilder().AppendCsvLine( values ).Append( "\r\n" ) );
+
+      /* Write data as a csv row, on a new line if builder is non-empty.  Null will be written as "null". */
       public static StringBuilder AppendCsvLine ( this StringBuilder buf, params object[] values ) {
          if ( buf.Length > 0 ) buf.Append( "\r\n" );
          foreach ( var val in values ) {
@@ -139,9 +139,10 @@ namespace ZyMod {
             if ( v.IndexOfAny( NeedCsvQuote ) >= 0 ) buf.Append( '"' ).Append( v.Replace( "\"", "\"\"" ) ).Append( "\"," );
             else buf.Append( v ).Append( ',' );
          }
-         --buf.Length;
+         if ( values.Length > 0 ) --buf.Length;
          return buf;
       }
+      private static char[] NeedCsvQuote = new char[] { ',', '"', '\n', '\r' };
 
       /* Try read a csv row from StreamReader or StringReader. Linebreaks will be converted to \n */
       public static bool TryReadCsvRow ( this TextReader source, out IEnumerable<string> row, StringBuilder quoteBuffer = null )
@@ -154,16 +155,16 @@ namespace ZyMod {
       }
 
       private static IEnumerable<string> ReadCsvCells ( TextReader source, string line, StringBuilder buf ) {
-         for ( var pos = 0 ; line?.Length >= pos ; ) yield return ReadCsvCell( source, ref line, ref pos, buf );
+         for ( var pos = 0 ; line?.Length >= pos ; ) yield return ReadCsvCell( source, ref line, ref pos, ref buf );
       }
 
-      private static string ReadCsvCell ( TextReader source, ref string line, ref int pos, StringBuilder buf ) {
+      private static string ReadCsvCell ( TextReader source, ref string line, ref int pos, ref StringBuilder buf ) {
          var len = line.Length;
-         if ( pos >= len ) { pos = len + 1; return ""; }
+         if ( pos >= len ) { pos = len + 1; return ""; } // End of line.
          if ( line[ pos ] != '"' ) { // Unquoted cell.
             int end = line.IndexOf( ',', pos ), head = pos;
-            if ( end < 0 ) { pos = len + 1; return line.Substring( head ); }
-            if ( end == pos ) { pos++; return ""; }
+            if ( end < 0 ) { pos = len + 1; return line.Substring( head ); } // Last cell.
+            if ( end == pos ) { pos++; return ""; } // Empty cell.
             pos = end + 1;
             return line.Substring( head, end - head );
          }
@@ -172,8 +173,9 @@ namespace ZyMod {
          while ( true ) {
             int end = pos < len ? line.IndexOf( '"', pos ) : -1, next = end + 1;
             if ( end < 0 ) { // End of line.  Append and read next line.
-               buf.Append( line, start, len - start ).Append( "\n" );
+               buf.Append( line, start, len - start );
                if ( ( line = source.ReadLine() ) == null ) return buf.ToString();
+               buf.Append( '\n' );
                start = pos = 0; len = line.Length;
             } else if ( next == len || line[ next ] == ',' ) { // End of cell.
                pos = end + 2;
@@ -404,7 +406,7 @@ namespace ZyMod {
 
       protected virtual void LoadLogOptions ( string path, ref uint flushInterval ) {
          var conf = Path.Combine( Path.GetDirectoryName( path ), Path.GetFileNameWithoutExtension( path ) + "-log.conf" );
-         buffer.Add( $"Logging controlled by {conf}.  First line is log level (Off/Error/Warn/Verbose).  Second line is write interval in seconds, 0 to 60, default 2." );
+         buffer.Add( $"Logging controlled by {conf}.  First line is log level (Off/Error/Warn/Info/Verbose).  Second line is write interval in seconds, 0 to 60, default 2." );
          if ( ! File.Exists( conf ) ) return;
          var lines = ModHelpers.ReadLines( conf ).GetEnumerator();
          if ( lines.MoveNext() ) switch ( ( ( lines.Current?.ToUpperInvariant() ?? "" ) + "?" )[0] ) {
