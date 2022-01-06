@@ -11,7 +11,7 @@ using static System.Diagnostics.TraceLevel;
 using static System.Reflection.BindingFlags;
 using static HarmonyLib.HarmonyPatchType;
 
-// Sheepy's "Universal" skeleton mod and tools!  No depency other than Harmony2 / HarmonyX.
+// Sheepy's "Universal" skeleton mod and tools.  No depency other than Harmony2 / HarmonyX.
 // Everything I need.  Bootstrap, Background Logging, Roundtrip Config, Reflection, Manual Patcher with Unpatch.  Enjoy!
 namespace ZyMod {
    public abstract class RootMod {
@@ -147,7 +147,7 @@ namespace ZyMod {
       /** <summary>Try read a csv row from a Reader.  May consume multiple lines.  Linebreaks in cells will become \n</summary>
        * <param name="source">Reader to get line data from.</param>
        * <param name="row">Cell data enumeration (forward-only), or null if no more rows.</param>
-       * <param name="quoteBuffer">Thread-local buffer for quote parsing. If null, a new one will be created when necessary.</param>
+       * <param name="quoteBuffer">Thread-local buffer for quote parsing. If null, one will be created on demand.</param>
        * <returns>True on success, false on no more rows.</returns>
        * <see cref="StreamReader.ReadLine"/> */
       public static bool TryReadCsvRow ( this TextReader source, out IEnumerable<string> row, StringBuilder quoteBuffer = null )
@@ -155,7 +155,7 @@ namespace ZyMod {
 
       /** <summary>Read a csv row from a Reader.  May consume multiple lines.  Linebreaks in cells will become \n</summary>
        * <param name="source">Reader to get line data from.</param>
-       * <param name="quoteBuffer">Thread-local buffer for quote parsing. If null, a new one will be created when necessary.</param>
+       * <param name="quoteBuffer">Thread-local buffer for quote parsing. If null, one will be created on demand.</param>
        * <returns>Cell data enumeration (forward-only), or null if no more rows.</returns>
        * <see cref="StreamReader.ReadLine"/> */
       public static IEnumerable<string> ReadCsvRow ( this TextReader source, StringBuilder quoteBuffer = null ) {
@@ -277,17 +277,17 @@ namespace ZyMod {
             var attr = type.GetCustomAttribute<ConfigAttribute>();
             var comment = ! ModHelpers.IsBlank( attr?.Comment ) ? attr.Comment : null;
             _WriteData( tw, subject, type, subject, comment );
-            foreach ( var f in _LoadFields( subject ) ) {
+            foreach ( var f in _ListFields( subject ) ) {
                comment = ( attr = f.GetCustomAttribute<ConfigAttribute>() ) != null && ! string.IsNullOrEmpty( attr.Comment ) ? attr.Comment : null;
                _WriteData( tw, subject, f, f.GetValue( subject ), comment );
             }
             _WriteData( tw, subject, type, subject, "" );
          }
-         if ( File.Exists( path ) ) _Log( Verbose, "{0} bytes written", new FileInfo( path ).Length );
+         if ( File.Exists( path ) ) _Log( Verbose, "{0} bytes written", (Func<string>) ( () => new FileInfo( path ).Length.ToString() ) );
          else _Log( Warning, "Config file not written." );
       } catch ( Exception ex ) { _Log( Warning, "Cannot create config file: {0}", ex ); } }
 
-      protected virtual IEnumerable<FieldInfo> _LoadFields ( object subject ) {
+      protected virtual IEnumerable<FieldInfo> _ListFields ( object subject ) {
          var fields = subject.GetType().GetFields();
          if ( fields.Any( e => e.GetCustomAttribute<ConfigAttribute>() != null ) ) // If any field has ConfigAttribute, save only these fields.
             fields = fields.Where( e => e.GetCustomAttribute<ConfigAttribute>() != null ).ToArray();
@@ -339,7 +339,7 @@ namespace ZyMod {
       public string Comment;
    }
 
-   public class Patcher { // Patch classes may inherit from this class for manual patching.  Or you can use Harmony.PatchAll, of course.
+   public class Patcher { // Patch classes may inherit from this class for manual patching.  You can still use Harmony.PatchAll, of course.
       protected static readonly object sync = new object();
       public Harmony harmony { get; private set; }
 
@@ -382,8 +382,8 @@ namespace ZyMod {
       }
    }
 
-   // Thread safe logger.  Buffer and write in background thread by default.
-   // Common usage: Log an Exception (will ignore duplicates), Log a formatted string with params, or log multiple objects (in one call and on one line).
+   // Thread safe logger.  Buffer and write in background thread unless interval is set to 0.
+   // Common usages: Log an Exception (will ignore duplicates), Log a formatted string with params, Log multiple objects (in one call and on one line).
    public class ZyLogger {
       private TraceLevel _LogLevel = TraceLevel.Info;
       public TraceLevel LogLevel {
